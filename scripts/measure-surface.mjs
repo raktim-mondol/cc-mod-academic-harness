@@ -18,6 +18,7 @@ import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { createHost } from '../server/src/host.mjs'
+import { adapt } from '../server/src/render.mjs'
 import { discover, classify } from '../server/src/manifest.mjs'
 import { upstreamDir } from '../server/src/paths.mjs'
 
@@ -71,7 +72,21 @@ export async function compare({ upstream = upstreamDir() } = {}) {
   for (const e of rec.perEntry) for (const t of e.tools) recorded.set(t.name, { ...t, file: e.file, cls: classOf.get(`${e.file}#${e.fn}`) })
 
   const notFromManifest = rec.upstreamNames.filter(n => !recorded.has(n))
-  const host = await createHost({ upstream, areas: 'all', cwd: here, logger: () => {} })
+  // The host loads every module in this process: give it a scratch home and switch the installers off, then put the environment back.
+  const saved = { ...process.env }
+  const hostRoot = join(homedir(), '.cache', 'ah-test-homes')
+  mkdirSync(hostRoot, { recursive: true })
+  const scratch = mkdtempSync(join(hostRoot, 'host-'))
+  process.env.DSH_HOME = scratch
+  for (const f of ['ACADEMIC_HARNESS_SKIP_INSTALL', 'ACADEMIC_HARNESS_MODAL_SKIP_INSTALL', 'TEXTFOLD_SKIP_INSTALL', 'PAPERMEMORY_SKIP_INSTALL', 'ZVEC_GREP_SKIP_INSTALL']) process.env[f] = '1'
+  let host
+  try {
+    host = await createHost({ upstream, areas: 'all', cwd: here, logger: () => {}, env: { ...process.env, AH_MOD_HOME: scratch } })
+  } finally {
+    for (const k of Object.keys(process.env)) if (!(k in saved)) delete process.env[k]
+    Object.assign(process.env, saved)
+  }
+  const cleanup = () => rmSync(scratch, { recursive: true, force: true })
   // The host's own tools (jobtools.mjs) are not upstream's; they are checked by their own tests.
   const hostTools = new Set(['job_status', 'job_wait', 'job_log', 'job_kill'])
   const served = host.list().filter(t => !hostTools.has(t.name))
@@ -80,11 +95,12 @@ export async function compare({ upstream = upstreamDir() } = {}) {
   for (const t of served) {
     const u = recorded.get(t.name)
     if (!u) { mismatched.push({ tool: t.name, why: 'served but not registered upstream' }); continue }
-    if (u.description !== t.description) mismatched.push({ tool: t.name, why: 'description differs' })
+    if (adapt(u.description) !== t.description) mismatched.push({ tool: t.name, why: 'description differs' })
     else if (JSON.stringify(u.parameters) !== JSON.stringify(t.inputSchema)) mismatched.push({ tool: t.name, why: 'parameters differ' })
     else if (u.cls?.tier !== 1) mismatched.push({ tool: t.name, why: `served although its module is ${u.cls?.tier}` })
   }
   const servedNames = new Set(served.map(t => t.name))
+  cleanup()
   const notServed = [...recorded.values()].filter(u => !servedNames.has(u.name))
   const unexplained = notServed.filter(u => u.cls?.tier === 1)
   await host.dispose()

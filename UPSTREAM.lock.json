@@ -2,7 +2,7 @@
   "source": "github.com/raktim-mondol/academic-harness",
   "commit": "a3f17eb8ae15221adeaa45cd19918c1f82f82973",
   "version": "0.54.1",
-  "archiveSha256": "4031daf175be7e563a02a26510b9be5abbf0d83733d4415be80bfbbd5e555d20",
+  "archiveSha256": "43e76005e39c6a3fbc35e0a3c75e7f46e9c68854af0495d83dbf6801b38b2ce5",
   "paths": [
     "package.json",
     "LICENSE",
@@ -15,6 +15,8 @@
     "skills",
     "vendor/papermemory",
     "vendor/academic-harness",
+    "vendor/open-deepreview",
+    "vendor/supervisor-skills",
     "ablation-store.js",
     "ablation.js",
     "academic-databases.js",

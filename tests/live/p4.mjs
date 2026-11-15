@@ -9,12 +9,14 @@
 //                Code children on Haiku with a $1.5 cap.
 // compute_ask    a paid-compute call is refused under -p with the approval text, and nothing is rented or recorded.
 // power          a tool from one of the plain new areas (analysis) runs and its answer reaches the model.
+// deep_review    a real manuscript review on the model route (Haiku): the engine's comments are stored, the job completed.
+// analysis       analysis_run: a frozen plan, a run of python3, the manifest on disk.
 // job_surface    the job tools and the model route's settings are visible to the model.
 // The interactive notice (job ends -> notification -> the model picks the result up) needs a terminal: tests/live/p4-tui.mjs.
 // Costs a few cents each, the deep research one about 10 cents. Needs a working `claude` login.
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -23,10 +25,11 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const base = join(homedir(), '.cache', 'ah-cc-p4', 'live-tests')
 const PREFIX = 'mcp__plugin_academic-harness_ah__'
 
-function run(name, prompt, { allow, env = {}, budget = '0.6', timeout = 600_000 } = {}) {
+function run(name, prompt, { allow, env = {}, budget = '0.6', timeout = 600_000, files = {} } = {}) {
   const cwd = join(base, name)
   rmSync(cwd, { recursive: true, force: true })
   mkdirSync(cwd, { recursive: true })
+  for (const [to, from] of Object.entries(files)) copyFileSync(from, join(cwd, to))
   const home = join(base, `${name}-home`)
   rmSync(home, { recursive: true, force: true })
   const args = ['-p', prompt, '--plugin-dir', root, '--model', 'haiku', '--max-budget-usd', budget, '--allowedTools', allow.join(','), '--output-format', 'stream-json', '--verbose']
@@ -47,7 +50,35 @@ const jobsOf = r => {
   return existsSync(dir) ? readdirSync(dir).filter(n => n.endsWith('.json')).map(n => JSON.parse(readFileSync(join(dir, n), 'utf8'))) : []
 }
 
+const fixture = n => join(root, 'tests', 'fixtures', n)
+
 const scenarios = {
+  deep_review() {
+    const r = run('deep_review', "Use the academic-harness deep_review tool (load it with ToolSearch) on manuscript.md: first action 'estimate' with topology LOW, then action 'review' with topology LOW and thinking_level LOW. If the review goes on as a background job, call job_wait with its job id (seconds 60) until it ends. Reply with the number of comments the review found.",
+      { allow: ['ToolSearch', `${PREFIX}deep_review`, `${PREFIX}job_wait`, `${PREFIX}job_status`], files: { 'manuscript.md': fixture('manuscript.md') }, env: { AH_LLM_MODEL: 'haiku', AH_LLM_BUDGET_USD: '1.5', AH_JOB_FOREGROUND_MS: '15000' }, budget: '1.0', timeout: 900_000 })
+    const calls = r.calls.filter(c => c.name === `${PREFIX}deep_review`)
+    assert.ok(calls.some(c => c.input.action === 'review'), `no review call: ${calls.map(c => c.input.action)}`)
+    const jobs = jobsOf(r).filter(j => j.kind === 'deep_review')
+    assert.ok(jobs.length >= 1 && jobs.every(j => j.status === 'completed'), `job states: ${jobs.map(j => j.status)}`)
+    const dir = join(r.cwd, '.dsh', 'deep-review')
+    const keys = existsSync(dir) ? readdirSync(dir) : []
+    assert.ok(keys.length === 1, `stored reviews: ${keys}`)
+    const review = JSON.parse(readFileSync(join(dir, keys[0], 'review.json'), 'utf8'))
+    const comments = (review.result?.anchoredComments ?? []).length
+    assert.ok(comments >= 1, `no anchoredComments in review.json`)
+    assert.match(r.result?.result ?? '', /\d+/)
+    return `review ran on the model route, ${comments} comments stored, answer "${String(r.result.result).trim().slice(0, 50)}", ${cost(r)}`
+  },
+  analysis() {
+    const r = run('analysis', "Use the academic-harness analysis_run tool (load it with ToolSearch). Call action 'plan' with slug demo and a plan {question: 'Is the mean of 1..10 equal to 5.5?', hypotheses: ['mean = 5.5'], inputs: [], outputs: ['out.json'], methods: ['python'], alpha: 0.05, seed: 1}. The file calc.py is in the folder: call action 'run' with slug demo, command ['python3', 'calc.py'] and outputs ['out.json']. Then call action 'status' with slug demo and tell me the exit code of the run.",
+      { allow: ['ToolSearch', `${PREFIX}analysis_run`, `${PREFIX}job_wait`, `${PREFIX}job_status`, 'Write'], env: { AH_JOB_FOREGROUND_MS: '30000' }, files: { 'calc.py': fixture('calc.py') } })
+    const calls = r.calls.filter(c => c.name === `${PREFIX}analysis_run`).map(c => c.input.action)
+    assert.deepEqual(['plan', 'run'].filter(a => !calls.includes(a)), [], `calls: ${calls}`)
+    assert.ok(existsSync(join(r.cwd, 'out.json')), 'the analysis did not produce out.json')
+    const runs = join(r.cwd, '.dsh', 'analysis', 'demo', 'runs')
+    assert.ok(existsSync(runs) && readdirSync(runs).length >= 1, 'no run manifest')
+    return `plan frozen, run recorded (${readdirSync(runs).length}), output written, ${cost(r)}`
+  },
   deep_research() {
     const r = run('deep_research',
       "Use the academic-harness deep_research tool (load it with ToolSearch). Call it with action 'start', effort 'low', and this query word for word: 'Quickly: what is retrieval-augmented generation, and name the original paper?'. Then call it again with action 'run' and the run_id it gave. If a call says the run is going on as a background job, call job_wait with that job id (seconds 60) again and again until the job has ended. Finally say the title of the report's first heading.",

@@ -105,6 +105,35 @@ describe('ah-hook with a stand-in engine', () => {
   })
 })
 
+describe("ah-hook with upstream's own scripted engine (scripts/helpers/fake-ah-engine.mjs)", { skip: !existsSync(join(UP, 'scripts', 'helpers', 'fake-ah-engine.mjs')) }, () => {
+  const helper = join(UP, 'scripts', 'helpers', 'fake-ah-engine.mjs')
+  const run = (event, payload, script, name) => {
+    const dir = project(`up-${name}`)
+    const scriptFile = join(root, `${name}.script.json`)
+    const log = join(root, `${name}.log`)
+    const state = join(root, `${name}.state.json`)
+    writeFileSync(scriptFile, JSON.stringify(script))
+    return hook(event, { cwd: dir, ...payload }, { ACADEMIC_HARNESS_CLI: `node ${helper}`, FAKE_AH_SCRIPT: scriptFile, FAKE_AH_LOG: log, FAKE_AH_STATE: state }).then(r => ({ ...r, log: existsSync(log) ? readFileSync(log, 'utf8').trim().split('\n').map(l => JSON.parse(l)) : [] }))
+  }
+
+  test('its replies come through unchanged, in order, for each event the guard sends', async () => {
+    const deny = { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: 'scripted deny' } }
+    const pre = await run('pre', { tool_name: 'Write', tool_input: { file_path: 'x' } }, { pre: [deny] }, 'pre')
+    assert.equal(pre.code, 0)
+    assert.deepEqual(JSON.parse(pre.out), deny)
+    assert.equal(pre.log[0].event, 'pre')
+    assert.equal(pre.log[0].payload.tool_name, 'Write')
+
+    const block = { decision: 'block', reason: 'AH gate (attempt 1/3)' }
+    const stop = await run('stop', { hook_event_name: 'Stop' }, { stop: [block] }, 'stop')
+    assert.deepEqual(JSON.parse(stop.out), block)
+
+    const quiet = await run('post', { tool_name: 'Edit', tool_input: {} }, { post: [null] }, 'post')
+    assert.equal(quiet.code, 0)
+    assert.equal(quiet.out.trim(), '')
+  })
+})
+
 describe('ah-hook with no engine', () => {
   test('exit 3 and a message that says what to run', async () => {
     const dir = project('f')

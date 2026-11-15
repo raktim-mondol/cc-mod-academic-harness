@@ -52,7 +52,7 @@ export async function build(manifest) {
   userConfig.tool_areas = {
     type: 'string',
     title: 'Tool areas',
-    description: 'Which tool groups the academic-harness server offers: search, papers, notebook, skills, writing, reviews, tournament, analysis, provenance, study, data, submission, deep, compute, figures, or all. Comma separated.',
+    description: 'Which tool groups the academic-harness server offers: search, papers, notebook, skills, writing, reviews, tournament, analysis, provenance, study, data, submission, deep, compute, figures, memory, or all. Comma separated.',
     default: 'all',
   }
   userConfig.llm_model = {

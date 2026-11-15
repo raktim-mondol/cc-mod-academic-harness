@@ -2,7 +2,7 @@
 // Scratch state lives under ~/.cache (plan ground rule 4). The real PaperMemory store is only ever
 // stat()ed: the live test asserts it is unchanged.
 import assert from 'node:assert/strict'
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, rmSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
@@ -83,6 +83,24 @@ function rpc(child) {
     child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id, method, params }) + '\n')
   })
 }
+
+describe('install without uv', { timeout: 240000 }, () => {
+  // upstream's installer falls back to `python -m venv` and pip when uv is missing or fails. UV points at a program that is not there,
+  // which is how the installer is told "this is the uv to use" and finds it broken.
+  test('a missing uv falls back to python -m venv and pip, and the result runs', async () => {
+    const home = join(scratch, 'home-nouv')
+    const env = { ...process.env, AH_MOD_HOME: home, PAPERMEMORY_DB: join(scratch, 'pm-nouv.db'), UV: join(scratch, 'no-such-uv') }
+    delete env.AH_UPSTREAM
+    delete env.PAPERMEMORY_CLI
+    const r = await new Promise(res => { const c = spawn(process.execPath, [BIN, '--install'], { env, stdio: ['ignore', 'pipe', 'pipe'] }); let err = ''; c.stderr.on('data', d => { err += d }); c.on('close', code => res({ code, err })) })
+    assert.equal(r.code, 0, r.err)
+    assert.ok(existsSync(join(home, 'papermemory', 'installed-version')))
+    const where = JSON.parse(await new Promise(res => { const c = spawn(process.execPath, [BIN, '--where'], { env, stdio: ['ignore', 'pipe', 'ignore'] }); let out = ''; c.stdout.on('data', d => { out += d }); c.on('close', () => res(out)) }))
+    assert.match(JSON.stringify(where), /\.venv/)
+    const v = spawnSync(where.command, [...where.args, 'version'], { encoding: 'utf8', env })
+    assert.equal(v.status, 0, v.stderr)
+  })
+})
 
 describe('live server', { timeout: 180000 }, () => {
   const home = join(scratch, 'home')

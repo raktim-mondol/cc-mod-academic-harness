@@ -13,7 +13,7 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { engineStatus } from '../src/engine.mjs'
+import { engineDir, engineStatus } from '../src/engine.mjs'
 import { upstreamDir } from '../src/paths.mjs'
 
 export const EXIT_NO_ENGINE = 3
@@ -46,7 +46,9 @@ export async function main(argv = process.argv.slice(2), env = process.env, stdi
   env.ACADEMIC_HARNESS_SKIP_INSTALL = '1'
   const status = engineStatus(env, undefined, { verify: false })
   if (!status.ok) {
-    process.stderr.write(`ah-hook: no engine to run: ${status.why}\n`)
+    const { installing } = await import('../src/engine-install.mjs')
+    const building = installing(engineDir(upstreamDir(env)))
+    process.stderr.write(`ah-hook: no engine to run: ${building ? 'the engine is being installed (it takes under a minute); try again shortly' : status.why}\n`)
     return EXIT_NO_ENGINE
   }
   const upstream = upstreamDir(env)

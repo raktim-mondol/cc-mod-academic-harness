@@ -6,7 +6,7 @@ The rest of the tool surface, long-running work and the model route. Measured on
 
 | Piece | Where | Notes |
 |---|---|---|
-| Remaining modules | `server/src/manifest.mjs` (new areas) | `reviews`, `tournament`, `analysis`, `provenance`, `study`, `data`, `submission`, `deep`, `compute`, `figures`. The host serves **132 of 136** upstream tools, plus 4 of its own (`job_status`, `job_wait`, `job_log`, `job_kill`). Not served: `zvec_index` (P6, a mount), `paper_mcp` and `paper_backfill` (PaperMemory), `ah_rsi` (D10, P6) |
+| Remaining modules | `server/src/manifest.mjs` (new areas) | `reviews`, `tournament`, `analysis`, `provenance`, `study`, `data`, `submission`, `deep`, `compute`, `figures`. The host serves **134 of 136** upstream tools, plus 4 of its own (`job_status`, `job_wait`, `job_log`, `job_kill`). Not served: `zvec_index` (P6, a mount) and `ah_rsi` (D10, P6) |
 | Jobs service | `server/src/jobs.mjs` | The shape `job-runner.js` expects (`start`, `wait`, `kill`; a job with `append` and `updateProgress`), kept on disk: `<home>/jobs/<id>.json` and `.log`. A record names its session and folder. A running record whose server has gone reads as `interrupted`. Upstream's `runAsJob` runs over it unchanged |
 | Detached calls | `server/src/host.mjs` | `deep_research`, `deep_review` and `analysis_run` run as a job the host owns (`bindParentJob`, upstream's own adoption path). The call waits `AH_JOB_FOREGROUND_MS` (30 s), then answers with the job id and the work goes on. Cancelling the call inside the window kills the job. A result handed to the model (inline, `job_status`, `job_wait`) is marked delivered and gets no notice |
 | Job tools | `server/src/jobtools.mjs` | `job_status` (one job with its result, or this session's list), `job_wait` (at most 120 s a call), `job_log`, `job_kill` |
@@ -24,7 +24,7 @@ The rest of the tool surface, long-running work and the model route. Measured on
 | `node --test 'tests/server/*.test.mjs' 'tests/scripts/*.test.mjs'` | 98 pass (21 new in `jobs.test.mjs`: the service, upstream's `runAsJob` over it, the model route against a stand-in `claude`, detached calls, kill, cancel, delivered results) |
 | `claude plugin test .` | 41 pass (7 new: compute asks, denies over the cap, still asks when the script fails or cannot start, passes the cap setting, leaves other tools alone; 5 for the notices through the mock clock) |
 | `claude plugin validate .`, `tsc`, `build-manifest.mjs --check` | Pass |
-| Surface parity | upstream registers 136; the host serves 132 of them, identical descriptions and parameters; the 4 left are named above |
+| Surface parity | upstream registers 136; the host serves 134 of them, identical descriptions and parameters (after the wording fix); the 2 left are named above |
 | Upstream's tests, `--all` | 125 of 125 (the 6 DSH-only ones excluded by name in `test-upstream.mjs`) |
 | Direct, real model route, low-effort deep research on Haiku | start, run and wait: 6 model calls, 2 minutes, **$0.017**, a cited report on disk. 246 sources swept, cite check 16 cited, 1 challenged |
 | Live, nested `claude -p` (`tests/live/p4.mjs`) | `deep_research` (the model starts and runs it, follows the job with `job_wait`, the report is on disk, every job record `completed`; $0.024 for the session, the model route's calls are extra), `compute_ask` (refused under `-p` with the approval text, no ledger entry), `power` (a tool from a new area: 64 per group), `job_surface` (all six names found by `ToolSearch`) |
@@ -56,4 +56,4 @@ The rest of the tool surface, long-running work and the model route. Measured on
 - **The prompt queued by a notice appears as "Prompt from the academic-harness plugin"** and the model may reply that a job it already read about is a duplicate. Delivered results are not announced, but a notice for a job read a moment earlier can still land.
 - **Plan mode, subagent-started jobs and several concurrent sessions** sharing one mod home were not tried. Records carry the session id, so notices stay per session.
 - **Descriptions still say DSH in places** (kept identical to upstream for the parity check).
-- **`paper_mcp`, `paper_backfill`, `zvec_index`, `ah_rsi`** are P6.
+- **`zvec_index`, `ah_rsi`** are P6. (`paper_mcp`, `paper_backfill` and the dream pass were added by the audit, `docs/AUDIT-P0-P4.md`.)

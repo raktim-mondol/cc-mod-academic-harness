@@ -40,6 +40,9 @@ export const ALLOW = [
   'vendor/papermemory',
   // P3: the writing engine (Python). Its virtual environment is built inside the snapshot by install-engine.mjs.
   'vendor/academic-harness',
+  // P4: deep_review runs the vendored Open Deep Review engine (TypeScript, run by node), and supervisor-skills is its licence record.
+  'vendor/open-deepreview',
+  'vendor/supervisor-skills',
   // P2: the tool modules and what they read at run time. `*.js` means every .js file at the root.
   '*.js',
   'package-lock.json',

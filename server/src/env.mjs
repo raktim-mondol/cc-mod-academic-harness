@@ -4,8 +4,16 @@ import { isDevMode, modHome } from './paths.mjs'
 
 export const KEY_ENV_PREFIX = 'AH_KEY_'
 
-/** Installers switched off in development mode and for modules the host does not load yet. */
-const SKIP_FLAGS = ['ACADEMIC_HARNESS_SKIP_INSTALL', 'ACADEMIC_HARNESS_MODAL_SKIP_INSTALL', 'TEXTFOLD_SKIP_INSTALL', 'PAPERMEMORY_SKIP_INSTALL', 'ZVEC_GREP_SKIP_INSTALL']
+/** Installers that stay off: the engine's (the mod builds it itself, engine-install.mjs), PaperMemory's (its launcher installs it) and zvec-grep's (P6). */
+const ALWAYS_SKIP = ['ACADEMIC_HARNESS_SKIP_INSTALL', 'PAPERMEMORY_SKIP_INSTALL', 'ZVEC_GREP_SKIP_INSTALL']
+/**
+ * Installers that run in the background, into the mod's home, when a module that needs them is loaded (plan P2 step 6):
+ * flag -> the areas whose modules read it. `AH_MANAGED_INSTALLS=0` switches them off (tests, offline use).
+ */
+export const MANAGED_INSTALLS = {
+  TEXTFOLD_SKIP_INSTALL: ['notebook', 'submission'],
+  ACADEMIC_HARNESS_MODAL_SKIP_INSTALL: ['compute'],
+}
 
 /**
  * Plugin userConfig reaches the server as AH_KEY_<NAME> (an unset field arrives as ""). Copy each
@@ -24,11 +32,20 @@ export function applyKeyEnv(env) {
   return set
 }
 
-export function prepareEnv(env = process.env) {
+/**
+ * `areas` are the tool areas the host will load. Given, the managed installers of those areas are left on; without it
+ * (a tool that only reads, a test) every installer is off. A flag the person set always wins.
+ */
+export function prepareEnv(env = process.env, { areas } = {}) {
   const home = modHome(env)
   mkdirSync(home, { recursive: true })
   env.DSH_HOME = home
-  for (const flag of SKIP_FLAGS) env[flag] ??= '1'
+  const managed = Array.isArray(areas) && env.AH_MANAGED_INSTALLS?.trim() !== '0' && !isDevMode(env)
+  for (const flag of ALWAYS_SKIP) env[flag] ??= '1'
+  for (const [flag, needed] of Object.entries(MANAGED_INSTALLS)) {
+    if (env[flag] !== undefined) continue
+    if (!(managed && needed.some(a => areas.includes(a)))) env[flag] = '1'
+  }
   if (isDevMode(env)) env.AH_DEV_MODE = '1'
   return applyKeyEnv(env)
 }

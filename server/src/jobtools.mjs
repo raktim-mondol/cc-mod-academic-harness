@@ -21,7 +21,9 @@ export function describe(record, now = Date.now()) {
   return lines.join('\n')
 }
 
+/** `cwd` is a path or a function that returns the current one (the session directory can change). */
 export function jobTools({ jobs, sessionId = null, cwd = process.cwd(), maxChars = 40_000 }) {
+  const here = () => (typeof cwd === 'function' ? cwd() : cwd)
   const need = id => {
     if (typeof id !== 'string' || !id.trim()) throw new Error('job_id is required (job_status with no job_id lists this session\'s jobs)')
     const record = jobs.get(id.trim())
@@ -33,7 +35,7 @@ export function jobTools({ jobs, sessionId = null, cwd = process.cwd(), maxChars
     if (!FINISHED.has(record.status)) return head
     jobs.deliver(record.id)
     if (!record.result) return head
-    const { content } = clip([{ type: 'text', text: record.result }], { maxChars, cwd, tool: `job-${record.id}`, callId: record.id })
+    const { content } = clip([{ type: 'text', text: record.result }], { maxChars, cwd: here(), tool: `job-${record.id}`, callId: record.id })
     return `${head}\n\nResult:\n${content.map(c => c.text).join('\n')}`
   }
   return [

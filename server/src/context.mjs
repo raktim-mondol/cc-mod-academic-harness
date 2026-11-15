@@ -20,13 +20,16 @@ export class Registry {
   subscriptions = []
   disposers = []
 
+  /** Called when a tool is added or removed after start (a mounted server's tools): the host tells the client the list changed. */
+  onChange = null
+
   register(definition) {
     if (!definition || typeof definition.name !== 'string' || typeof definition.execute !== 'function') {
       throw new TypeError('tools.register: expected a tool definition with a name and an execute function')
     }
     if (this.tools.has(definition.name)) throw new Error(`tool "${definition.name}" is registered twice`)
     this.tools.set(definition.name, definition)
-    return () => { if (this.tools.get(definition.name) === definition) this.tools.delete(definition.name) }
+    return () => { if (this.tools.get(definition.name) === definition) { this.tools.delete(definition.name); try { this.onChange?.() } catch { /* a listener must not break a removal */ } } }
   }
 
   async dispose() {
@@ -49,7 +52,16 @@ export function createContext(registry, { log = () => {}, module = '', services 
   }
   const own = {
     tools,
-    get: () => undefined,
+    // Optional services (`approval`, ...), when the host built them; undefined otherwise, as upstream's own lookups expect.
+    get: name => services.optional?.[name],
+    // `ctx.plugin(McpClient, { transport: 'stdio', ... })` is how paper_mcp mounts a generated server (mounts.mjs). Any other plugin is not ported.
+    plugin(factory, options) {
+      if (options?.transport === 'stdio' && typeof services.mount === 'function') {
+        Promise.resolve(services.mount(options)).catch(error => log(`mount of ${options.serverName} failed: ${error.message}`))
+        return undefined
+      }
+      throw new UnportedServiceError('plugin', `${module || 'a module'} mounts something other than a stdio MCP server`)
+    },
     // Subscriptions are recorded, never fired: the events (session/created, agent/disposed) are DSH's.
     on(event, handler) {
       registry.subscriptions.push({ module, event, handler })
@@ -61,7 +73,8 @@ export function createContext(registry, { log = () => {}, module = '', services 
       return () => {}
     },
     // Real services, when the host built them: `jobs` (jobs.mjs) and `llm` (llm.mjs).
-    ...services,
+    ...(services.jobs ? { jobs: services.jobs } : {}),
+    ...(services.llm ? { llm: services.llm } : {}),
     logger: {
       debug: () => {},
       info: m => log(String(m)),

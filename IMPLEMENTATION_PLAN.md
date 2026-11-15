@@ -1,6 +1,6 @@
 # cc-mod-academic-harness: implementation plan
 
-Status: **P0, P1, P2, P3 and P4 done** (2026-11-16). P0: the scaffold loads and the eight platform checks are answered in `docs/PLATFORM-NOTES.md`. P1: skills, research mode, PaperMemory and agents, results in `docs/P1-RESULTS.md`. P2: the tool host serves 35 tier-1 tools, results in `docs/P2-RESULTS.md`. P3: the writing engine and its guards; 38 `ah_*` tools (73 served in all), results in `docs/P3-RESULTS.md`. P4: 132 of 136 tools served plus 4 job tools, a jobs service, a model route and compute approvals, results in `docs/P4-RESULTS.md`. Sections below are unchanged from the plan as written, except where a P0 result corrected them (marked "P0 result").
+Status: **P0, P1, P2, P3 and P4 done** (2026-11-16). P0: the scaffold loads and the eight platform checks are answered in `docs/PLATFORM-NOTES.md`. P1: skills, research mode, PaperMemory and agents, results in `docs/P1-RESULTS.md`. P2: the tool host serves 35 tier-1 tools, results in `docs/P2-RESULTS.md`. P3: the writing engine and its guards; 38 `ah_*` tools (73 served in all), results in `docs/P3-RESULTS.md`. P4: 134 of 136 tools served plus 4 job tools, a jobs service, a model route and compute approvals, results in `docs/P4-RESULTS.md`. Sections below are unchanged from the plan as written, except where a P0 result corrected them (marked "P0 result").
 
 | | |
 |---|---|
@@ -311,7 +311,7 @@ Work:
 
 **Risks:** a job dies with the server process when the session ends. Whether deep research can resume from its store needs reading before this phase is sized.
 
-**P4 result:** met. The host serves 132 of 136 upstream tools (the four left are P6: `zvec_index`, `paper_mcp`, `paper_backfill`, `ah_rsi`) and four job tools. D7 is decided: the model route is a headless Claude Code child. A deep research run goes from start to notice to report in a real terminal session, and the model reads the result with no polling. Paid compute always asks. Upstream's tests pass 125 of 125 (six DSH-only ones excluded). Decisions, costs and open items are in `docs/P4-RESULTS.md`.
+**P4 result:** met. The host serves 134 of 136 upstream tools (the two left are P6: `zvec_index`, `ah_rsi`) and four job tools. An audit of P0 to P4 after the phase found and fixed eleven gaps; see `docs/AUDIT-P0-P4.md`. D7 is decided: the model route is a headless Claude Code child. A deep research run goes from start to notice to report in a real terminal session, and the model reads the result with no polling. Paid compute always asks. Upstream's tests pass 125 of 125 (six DSH-only ones excluded). Decisions, costs and open items are in `docs/P4-RESULTS.md`.
 
 ### P5. Terminal UI and task commands (M)
 

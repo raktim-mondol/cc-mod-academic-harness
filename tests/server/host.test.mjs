@@ -5,13 +5,14 @@ import { spawn } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { after, before, describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { applyKeyEnv, prepareEnv } from '../../server/src/env.mjs'
+import { applyKeyEnv, MANAGED_INSTALLS, prepareEnv } from '../../server/src/env.mjs'
 import { createContext, Registry, UnportedServiceError } from '../../server/src/context.mjs'
 import { makeExec } from '../../server/src/exec.mjs'
 import { classify, discover, indexComponents, parseAreas, plan, presetModules, AREAS, TIER1, HOST_ONLY } from '../../server/src/manifest.mjs'
-import { adapt, blocksToContent, clip } from '../../server/src/render.mjs'
+import { adapt, blocksToContent, clip, fixSkillSearch } from '../../server/src/render.mjs'
 import { toInputSchema } from '../../server/src/schema.mjs'
 import { upstreamDir } from '../../server/src/paths.mjs'
 import { hostOver, serve } from '../../server/src/host.mjs'
@@ -118,6 +119,17 @@ describe('manifest', () => {
 })
 
 describe('render', () => {
+  test('wording: a mounted server\'s tool names carry the plugin prefix, and "restart dsh" says Claude Code', () => {
+    assert.equal(adapt('Tools should appear as mcp__demo__*. If they do not, restart dsh.'), 'Tools should appear as mcp__plugin_academic-harness_ah__mcp__demo__*. If they do not, restart Claude Code.')
+    assert.equal(adapt('mcp__plugin_academic-harness_ah__echo stays'), 'mcp__plugin_academic-harness_ah__echo stays')
+  })
+  test('skill_search: a listed skill says how to load it, a left-out one says so', () => {
+    const t = '- `peer-review` (in the session catalogue): reviews\n- `deep-research` (in the session catalogue): x\n- `other`: y'
+    const out = fixSkillSearch(t, new Set(['peer-review']))
+    assert.match(out, /`peer-review` \(listed: load it with the Skill tool as academic-harness:peer-review\)/)
+    assert.match(out, /`deep-research` \(a core skill left out of this build/)
+    assert.match(out, /- `other`: y/)
+  })
   test('blocks become MCP text content; a bare string and an unknown block survive', () => {
     assert.deepEqual(blocksToContent([{ type: 'text', text: 'a' }, 'b', { type: 'odd', x: 1 }]), [
       { type: 'text', text: 'a' }, { type: 'text', text: 'b' }, { type: 'text', text: '{"type":"odd","x":1}' },
@@ -145,6 +157,34 @@ describe('render', () => {
 })
 
 describe('env', () => {
+  test('managed installers stay on only for the areas that read them, and only when asked for', () => {
+    const base = { AH_MOD_HOME: join(scratch, 'home-m') }
+    const off = { ...base }
+    prepareEnv(off)
+    assert.equal(off.TEXTFOLD_SKIP_INSTALL, '1', 'no areas given: everything off')
+    const on = { ...base }
+    prepareEnv(on, { areas: ['search', 'submission', 'compute'] })
+    assert.equal(on.TEXTFOLD_SKIP_INSTALL, undefined)
+    assert.equal(on.ACADEMIC_HARNESS_MODAL_SKIP_INSTALL, undefined)
+    assert.equal(on.ACADEMIC_HARNESS_SKIP_INSTALL, '1', 'the engine is built by the mod, not by upstream\'s installer')
+    const some = { ...base }
+    prepareEnv(some, { areas: ['search', 'compute'] })
+    assert.equal(some.TEXTFOLD_SKIP_INSTALL, '1')
+    const optOut = { ...base, AH_MANAGED_INSTALLS: '0' }
+    prepareEnv(optOut, { areas: ['submission', 'compute'] })
+    assert.equal(optOut.TEXTFOLD_SKIP_INSTALL, '1')
+    const dev = { ...base, AH_UPSTREAM: '/somewhere' }
+    prepareEnv(dev, { areas: ['submission'] })
+    assert.equal(dev.TEXTFOLD_SKIP_INSTALL, '1', 'development mode installs nothing')
+    assert.ok(Object.keys(MANAGED_INSTALLS).length >= 2)
+  })
+  test('the host refuses a DSH_HOME that is unset or is the real DSH home', async () => {
+    const { assertSafeHome } = await import('../../server/src/host.mjs')
+    const { homedir } = await import('node:os')
+    assert.throws(() => assertSafeHome({}), /DSH_HOME is not set/)
+    assert.throws(() => assertSafeHome({ DSH_HOME: join(homedir(), '.dsh') }), /real DeepSeek Harness home/)
+    assert.doesNotThrow(() => assertSafeHome({ DSH_HOME: join(scratch, 'home') }))
+  })
   test('a config key is copied only when the variable is empty; the shell wins; empty config does nothing', () => {
     const env = { AH_KEY_A_API_KEY: 'from-config', A_API_KEY: '', AH_KEY_B_API_KEY: 'cfg', B_API_KEY: 'from-shell', AH_KEY_C_API_KEY: '', AH_KEY_D_API_KEY: '  spaced  ' }
     const set = applyKeyEnv(env)
@@ -179,11 +219,21 @@ describe('exec', () => {
 
 /** Spawn the server and talk to it. */
 function client(env = {}, cwd = scratch) {
-  const child = spawn(process.execPath, [BIN], { cwd, env: { ...process.env, AH_MOD_HOME: join(scratch, 'home'), CLAUDE_CODE_SESSION_ID: 'test-session', ...env }, stdio: ['pipe', 'pipe', 'pipe'] })
+  const child = spawn(process.execPath, [BIN], { cwd, env: { ...process.env, AH_MOD_HOME: join(scratch, 'home'), AH_MANAGED_INSTALLS: '0', AH_AUTO_INSTALL: '0', CLAUDE_CODE_SESSION_ID: 'test-session', ...env }, stdio: ['pipe', 'pipe', 'pipe'] })
   let buf = ''
   let err = ''
   const waiting = new Map()
-  child.stdout.on('data', d => { buf += d; let i; while ((i = buf.indexOf('\n')) >= 0) { const m = JSON.parse(buf.slice(0, i)); buf = buf.slice(i + 1); waiting.get(m.id)?.(m) } })
+  const answers = new Map() // what this stand-in client answers when the server asks it something
+  child.stdout.on('data', d => {
+    buf += d
+    let i
+    while ((i = buf.indexOf('\n')) >= 0) {
+      const m = JSON.parse(buf.slice(0, i))
+      buf = buf.slice(i + 1)
+      if (m.method && m.id !== undefined) child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id: m.id, result: answers.get(m.method)?.(m.params) ?? {} })}\n`)
+      else waiting.get(m.id)?.(m)
+    }
+  })
   child.stderr.on('data', d => { err += d })
   let n = 0
   const rpc = (method, params) => new Promise(resolve => { const id = ++n; waiting.set(id, resolve); child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id, method, params })}\n`) })
@@ -191,7 +241,7 @@ function client(env = {}, cwd = scratch) {
   const call = async (name, args = {}, id = `toolu_${name}`) => (await rpc('tools/call', { name, arguments: args, _meta: { 'claudecode/toolUseId': id } })).result
   const text = r => r.content.map(c => c.text).join('\n')
   const close = () => new Promise(resolve => { child.on('close', resolve); child.stdin.end() })
-  return { child, rpc, notify, call, text, close, stderr: () => err, nextId: () => n + 1 }
+  return { child, rpc, notify, call, text, close, answers, stderr: () => err, nextId: () => n + 1 }
 }
 
 describe('stdio server', { skip: !existsSync(join(UP, 'node_modules', 'ah-dsh-tools')) }, () => {
@@ -226,6 +276,35 @@ describe('stdio server', { skip: !existsSync(join(UP, 'node_modules', 'ah-dsh-to
     assert.equal(entry.title, 'first')
     const read = JSON.parse(c.text(await c.call('notebook', { action: 'read' })))
     assert.equal(read.count, 1)
+    await c.close()
+  })
+
+  test('roots/list: the client\'s answer becomes the working directory, and a change is followed', async () => {
+    const first = join(scratch, 'root-a'); const second = join(scratch, 'root-b')
+    mkdirSync(first, { recursive: true }); mkdirSync(second, { recursive: true })
+    const c = client({}, scratch)
+    let current = first
+    c.answers.set('roots/list', () => ({ roots: [{ uri: pathToFileURL(current).href, name: 'session' }] }))
+    await c.rpc('initialize', { protocolVersion: '2025-06-18', capabilities: { roots: { listChanged: true } } })
+    c.notify('notifications/initialized')
+    await new Promise(r => setTimeout(r, 300))
+    await c.call('notebook', { action: 'log', kind: 'note', title: 'in a', summary: 's' }, 'toolu_a')
+    assert.ok(existsSync(join(first, '.dsh', 'notebook', 'test-session.jsonl')), 'written under the first root')
+    current = second
+    c.notify('notifications/roots/list_changed')
+    await new Promise(r => setTimeout(r, 300))
+    await c.call('notebook', { action: 'log', kind: 'note', title: 'in b', summary: 's' }, 'toolu_b')
+    assert.ok(existsSync(join(second, '.dsh', 'notebook', 'test-session.jsonl')), 'written under the new root after /cd')
+    await c.close()
+  })
+
+  test('a client with no roots capability keeps the server\'s own directory', async () => {
+    const cwd = join(scratch, 'root-c'); mkdirSync(cwd, { recursive: true })
+    const c = client({}, cwd)
+    await c.rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {} })
+    c.notify('notifications/initialized')
+    await c.call('notebook', { action: 'log', kind: 'note', title: 'c', summary: 's' }, 'toolu_c')
+    assert.ok(existsSync(join(cwd, '.dsh', 'notebook', 'test-session.jsonl')))
     await c.close()
   })
 

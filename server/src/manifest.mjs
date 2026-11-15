@@ -15,7 +15,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-export const AREAS = ['search', 'papers', 'notebook', 'skills', 'writing', 'reviews', 'tournament', 'analysis', 'provenance', 'study', 'data', 'submission', 'deep', 'compute', 'figures']
+export const AREAS = ['search', 'papers', 'notebook', 'skills', 'writing', 'reviews', 'tournament', 'analysis', 'provenance', 'study', 'data', 'submission', 'deep', 'compute', 'figures', 'memory']
 
 /** Tier-1 modules by area. The order is the registration order. */
 export const TIER1 = {
@@ -39,6 +39,9 @@ export const TIER1 = {
   // Rented hardware. Every call asks first (hooks/approvals.ts) and the session spend cap is upstream's own (compute-ledger.js).
   compute: ['modal-run.js', 'runpod-run.js', 'vastai-run.js'],
   figures: ['image-generate.js'],
+  // PaperMemory's own modules: the backfill tool, a consolidation pass shortly after the server starts (upstream runs it when an agent is disposed),
+  // and paper_mcp, which mounts the MCP servers generated from papers (mounts.mjs; each mount asks the person through MCP elicitation).
+  memory: ['papermemory-backfill.js', 'papermemory-dream.js', 'paper-mcp.js'],
   submission: ['submission-pack.js', 'manuscript-diff.js', 'rebuttal.js', 'presentation-build.js', 'paper-artifacts.js', 'paper-fold.js', 'latex-compile.js', 'mermaid-render.js'],
   search: [
     'literature-search.js', 'openalex-search.js', 'semantic-scholar-search.js', 'pubmed-search.js', 'arxiv-search.js',

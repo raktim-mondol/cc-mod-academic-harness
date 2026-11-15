@@ -4,9 +4,9 @@ A Claude Code mod that brings the Academic Harness research tooling into Claude
 Code: literature and citation tools, a research skill pack, the writing-engine
 guards for `ah.yaml` projects, and a small terminal interface.
 
-**Status: phase P4 done** (tool host with 132 of Academic Harness's 136 tools plus four job tools, the
+**Status: phase P4 done** (tool host with 134 of Academic Harness's 136 tools plus four job tools, the
 writing-engine guard, background jobs and a model route). Packaging (P6) and the terminal UI (P5) are not built yet. The plan is in
-`IMPLEMENTATION_PLAN.md`; platform answers are in `docs/PLATFORM-NOTES.md`; what P1 to P4
+`IMPLEMENTATION_PLAN.md`; the audit of P0 to P4 is `docs/AUDIT-P0-P4.md`; platform answers are in `docs/PLATFORM-NOTES.md`; what P1 to P4
 built and measured is in `docs/P1-RESULTS.md` to `docs/P4-RESULTS.md`.
 
 ## What works now
@@ -32,7 +32,7 @@ built and measured is in `docs/P1-RESULTS.md` to `docs/P4-RESULTS.md`.
   shell. The paper-state card is added to each prompt, an edit that introduces a blocker is noted, and the
   turn is held (up to 3 times) until it is fixed or handed to the author. If the guard cannot run, those
   calls are refused and reads still work. `ah_author` asks you first. Outside an `ah.yaml` tree nothing
-  runs. Needs `node scripts/install-engine.mjs` once. The `evidence_check` setting (`skip` or `run`) controls
+  runs. Builds its engine once (`node scripts/install-engine.mjs`), or let the server build it in the background on first start (`AH_AUTO_INSTALL=0` turns that off). The `evidence_check` setting (`skip` or `run`) controls
   the advisory source check at the end of a turn; it is off by default because it calls a model.
 - **The rest of the tool surface** (reviews and meta-analysis, hypothesis tournaments, analysis, provenance,
   study design and grants, datasets and science toolkits, submission tools, figures). **Long tools run as
@@ -43,6 +43,11 @@ built and measured is in `docs/P1-RESULTS.md` to `docs/P4-RESULTS.md`.
   by `llm_budget_usd` ($5 a server run). **Paid compute** (`modal_run`, `runpod_run`, `vastai_run`) always asks
   first, with the cost ceiling and your session budget. `node scripts/install-helpers.mjs` builds the optional
   Python helper environment (about 770 MB) for the data and statistics tools.
+- **PaperMemory's own tools and Paper2MCP.** `paper_backfill` fills the library from the papers in a project;
+  a consolidation pass runs shortly after the server starts (at most hourly); `paper_mcp` registers an MCP
+  server generated from a paper and mounts it after you approve it in a form. Its tools appear as
+  `mcp__plugin_academic-harness_ah__mcp__<serverName>__<tool>`. The server follows `/cd` (it asks the client
+  for the session folder).
 - **API keys** are the plugin's `userConfig` fields (set them where Claude Code configures plugin options, or in `pluginConfigs`). A variable exported in the
   shell wins over a setting. `tool_areas` (search, papers, notebook, skills, writing, reviews, tournament, analysis, provenance, study, data, submission, deep, compute, figures, or all) trims the tool set.
 - **PaperMemory**: its 14 tools, as `mcp__plugin_academic-harness_papermemory__*`. The first
@@ -84,9 +89,12 @@ node scripts/measure-surface.mjs                       # host tools against what
 node scripts/test-upstream.mjs [--all]                  # upstream's own tests (--all: every one but six about DSH itself)
 node scripts/test-engine.mjs [--all]                   # the engine's own pytest suite, in a venv under ~/.cache
 node tests/live/p2.mjs                                 # nested claude -p runs, about 4 cents
-node tests/live/p3.mjs                                 # the guard matrix, 11 nested runs, about 20 cents
+node tests/live/p3.mjs                                 # the guard matrix, 15 nested runs, about 30 cents
 node tests/live/p4.mjs                                 # jobs, the model route, compute approval, a deep research run
 node tests/live/p4-tui.mjs                             # tmux: a job ends, the notice appears, the model reports (about 10 cents)
+node tests/live/p3-tui.mjs                             # tmux: the guard and approvals with Claude Code's own dialogs (6 checks)
+node tests/live/p1.mjs                                 # agents, skills, research mode, PaperMemory
+node tests/live/p2-config.mjs                          # a key saved with `claude plugin configure` reaches an installed copy's server
 ```
 
 The script tests need `upstream/`. The launcher tests install into a scratch folder under

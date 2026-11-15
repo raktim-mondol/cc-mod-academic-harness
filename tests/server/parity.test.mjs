@@ -11,7 +11,7 @@ test('the host serves exactly the tier-1 tools, each identical to what upstream 
   assert.deepEqual(r.notFromManifest, [], 'a module upstream registers that the manifest does not discover')
   assert.deepEqual(r.mismatched, [])
   assert.deepEqual(r.unexplained, [], 'a tier-1 tool that upstream registers but the host does not serve')
-  assert.equal(r.served, 132)
+  assert.equal(r.served, 134)
   assert.deepEqual(r.hostServed.sort(), ['job_kill', 'job_log', 'job_status', 'job_wait'])
   assert.equal(r.upstreamTools, 136)
   assert.ok(r.notServed.every(n => n.tier === 'later' || n.tier === 'host-only'))
