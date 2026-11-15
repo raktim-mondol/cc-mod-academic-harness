@@ -1,0 +1,9 @@
+# Written by the engine when a mod loads interactively
+.claude-plugin/types/
+tsconfig.json
+# Recorded by scripts/check-upstream-clean.mjs --record
+.upstream-baseline.json
+# Built (later phases)
+upstream/
+server/dist/
+node_modules/

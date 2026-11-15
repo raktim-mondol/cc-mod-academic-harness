@@ -1,0 +1,32 @@
+{
+  "name": "ahprobe",
+  "version": "0.0.1",
+  "description": "Phase P0 platform probe for cc-mod-academic-harness. Not shipped.",
+  "userConfig": {
+    "probe_secret": {
+      "type": "string",
+      "title": "Probe secret",
+      "description": "A fake sensitive value used to test that userConfig reaches an MCP server's environment.",
+      "sensitive": true,
+      "required": false
+    },
+    "probe_plain": {
+      "type": "string",
+      "title": "Probe plain value",
+      "description": "A fake non-sensitive value used for the same test.",
+      "required": false
+    }
+  },
+  "mcpServers": {
+    "probe": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/server.mjs"],
+      "env": {
+        "PROBE_SECRET": "${user_config.probe_secret}",
+        "PROBE_PLAIN": "${user_config.probe_plain}",
+        "PROBE_ROOT_SEEN": "${CLAUDE_PLUGIN_ROOT}",
+        "PROBE_DATA_SEEN": "${CLAUDE_PLUGIN_DATA}"
+      }
+    }
+  }
+}

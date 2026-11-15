@@ -1,0 +1,8 @@
+{
+  "name": "academic-harness",
+  "version": "0.1.0",
+  "description": "Academic Harness research tools, skills and writing guards, as a Claude Code mod.",
+  "author": { "name": "Raktim Mondol" },
+  "license": "MIT",
+  "types": "./types/index.d.ts"
+}

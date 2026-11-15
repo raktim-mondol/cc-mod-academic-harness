@@ -1,0 +1,14 @@
+cc-mod-academic-harness
+=======================
+
+A Claude Code mod that runs the Academic Harness research tooling inside
+Claude Code. It is a port, not a fork: the upstream project is read at a pinned
+commit and never modified.
+
+Upstream: Academic Harness (MIT License, Copyright (c) 2026 ResearchCraft),
+https://github.com/raktim-mondol/academic-harness (read at a pinned commit). See UPSTREAM.lock.json for the pinned
+commit once the snapshot exists (phase P1). Upstream's own NOTICE, which lists
+the third-party skill catalogues and their licences, applies to every skill
+this mod copies from it and is carried with them.
+
+Code written for this mod is under the MIT License in LICENSE.
