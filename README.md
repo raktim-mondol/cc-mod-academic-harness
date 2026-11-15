@@ -4,10 +4,10 @@ A Claude Code mod that brings the Academic Harness research tooling into Claude
 Code: literature and citation tools, a research skill pack, the writing-engine
 guards for `ah.yaml` projects, and a small terminal interface.
 
-**Status: phase P1 done** (skills, research mode, PaperMemory, agents). The
-literature tools (P2) and the writing-engine guard (P3) are not built yet. The plan is in
-`IMPLEMENTATION_PLAN.md`; platform answers are in `docs/PLATFORM-NOTES.md`; what P1
-built and measured is in `docs/P1-RESULTS.md`.
+**Status: phase P4 done** (tool host with 132 of Academic Harness's 136 tools plus four job tools, the
+writing-engine guard, background jobs and a model route). Packaging (P6) and the terminal UI (P5) are not built yet. The plan is in
+`IMPLEMENTATION_PLAN.md`; platform answers are in `docs/PLATFORM-NOTES.md`; what P1 to P4
+built and measured is in `docs/P1-RESULTS.md` to `docs/P4-RESULTS.md`.
 
 ## What works now
 
@@ -17,6 +17,34 @@ built and measured is in `docs/P1-RESULTS.md`.
 - **86 core skills**, listed as `academic-harness:<name>`, plus `academic-harness:research-guides`,
   which holds the longer per-area guidance (29 files) and is read on demand.
 - **22 specialist agents** such as `academic-harness:peer-reviewer`. Reviewers cannot edit files.
+- **35 research tools** from the `ah` MCP server, named `mcp__plugin_academic-harness_ah__<tool>` and
+  found with `ToolSearch`: `literature_search`, `openalex_search`, `s2_search`, `pubmed_search`,
+  `arxiv_search`, `crossref_lookup`, the web-search tools, `paper_resolve`, `paper_get`, `paper_context`,
+  `paper_download`, `citation`, `integrity_check`, `reference_library`, `notebook`, `scientific_result`,
+  `skill_search` and `skill_load`, among others. They are Academic Harness's own code, loaded unchanged.
+  The notebook goes to `<project>/.dsh/notebook/<session id>.jsonl`. A result over 40,000 characters is
+  cut and the whole text saved under `<project>/.dsh/tool-output/`.
+- **Writing engine and guard** for projects with an `ah.yaml`. 38 `ah_*` tools (`ah_state`, `ah_check`,
+  `ah_audit`, `ah_fact`, `ah_claims`, `ah_plan`, `ah_decision_request`, `ah_author`, and the rest) run the
+  engine's CLI. In such a project a guard checks every `Write`, `Edit`, `NotebookEdit` and `Bash` call
+  (about 0.14 s each): protected files (`facts/facts.yaml`, `ah.yaml`, `sources/**`, ...) cannot be changed,
+  unit anchors cannot be dropped, and the author-only acts (waive, approve, accept) cannot be run from the
+  shell. The paper-state card is added to each prompt, an edit that introduces a blocker is noted, and the
+  turn is held (up to 3 times) until it is fixed or handed to the author. If the guard cannot run, those
+  calls are refused and reads still work. `ah_author` asks you first. Outside an `ah.yaml` tree nothing
+  runs. Needs `node scripts/install-engine.mjs` once. The `evidence_check` setting (`skip` or `run`) controls
+  the advisory source check at the end of a turn; it is off by default because it calls a model.
+- **The rest of the tool surface** (reviews and meta-analysis, hypothesis tournaments, analysis, provenance,
+  study design and grants, datasets and science toolkits, submission tools, figures). **Long tools run as
+  background jobs**: `deep_research`, `deep_review` and `analysis_run` answer after about 30 seconds with a job
+  id; `job_status`, `job_wait`, `job_log` and `job_kill` follow them, and in an interactive session you are
+  notified when one ends and the model reads the result on its own (`job_notices`). Tools that call a model
+  (deep research and review) use headless Claude Code calls under your login, on `llm_model` (sonnet) and capped
+  by `llm_budget_usd` ($5 a server run). **Paid compute** (`modal_run`, `runpod_run`, `vastai_run`) always asks
+  first, with the cost ceiling and your session budget. `node scripts/install-helpers.mjs` builds the optional
+  Python helper environment (about 770 MB) for the data and statistics tools.
+- **API keys** are the plugin's `userConfig` fields (set them where Claude Code configures plugin options, or in `pluginConfigs`). A variable exported in the
+  shell wins over a setting. `tool_areas` (search, papers, notebook, skills, writing, reviews, tournament, analysis, provenance, study, data, submission, deep, compute, figures, or all) trims the tool set.
 - **PaperMemory**: its 14 tools, as `mcp__plugin_academic-harness_papermemory__*`. The first
   session installs the CLI into `~/.local/share/cc-mod-academic-harness/home/` (about a second
   with a warm `uv` cache). The library is `~/.local/share/papermemory/papermemory.db`, shared with
@@ -29,13 +57,18 @@ read with `git archive` at a pinned commit and never written:
 
 ```
 node scripts/sync-upstream.mjs        # needs ~/academic-harness (or AH_SOURCE=<path>)
+node scripts/install-deps.mjs         # npm ci inside upstream/ (the tool modules' dependencies)
+node scripts/install-engine.mjs       # the writing engine's venv, inside upstream/vendor/academic-harness
+node scripts/install-helpers.mjs      # optional: the Python helpers' venv (data, statistics, chemistry tools)
 node scripts/build-all.mjs            # skills/, hooks/generated/, agents/
+node scripts/build-manifest.mjs       # the ah server entry and key settings in plugin.json
 claude --plugin-dir ~/cc-mod-academic-harness
 ```
 
 `skills/`, `agents/` and `hooks/generated/` are committed, so the skills and agents load without
-the sync. `upstream/` is not committed; the PaperMemory install and the on-demand skills need it
-until the packaging phase (P6).
+the sync. `upstream/` (with its `node_modules`) is not committed; the `ah` server, the PaperMemory
+install and the on-demand skills need it until the packaging phase (P6). Without it the `ah` server
+exits with a message that says what to run.
 
 Skills with non-commercial, GPL or unknown licences are left out (decision D5). A local build can
 keep them with `node scripts/build-all.mjs --include-restricted`; do not commit or share that build.
@@ -45,8 +78,15 @@ keep them with `node scripts/build-all.mjs --include-restricted`; do not commit 
 ```
 claude plugin validate .
 npx --yes -p typescript@5.6.3 tsc -p . --noEmit
-claude plugin test .                                   # hooks: research mode
-node --test "tests/scripts/*.test.mjs" "tests/server/*.test.mjs"   # builds, PaperMemory launcher
+claude plugin test .                                   # hooks: research mode, the guard, approvals
+node --test "tests/scripts/*.test.mjs" "tests/server/*.test.mjs"   # builds, launcher, tool host, parity
+node scripts/measure-surface.mjs                       # host tools against what upstream registers
+node scripts/test-upstream.mjs [--all]                  # upstream's own tests (--all: every one but six about DSH itself)
+node scripts/test-engine.mjs [--all]                   # the engine's own pytest suite, in a venv under ~/.cache
+node tests/live/p2.mjs                                 # nested claude -p runs, about 4 cents
+node tests/live/p3.mjs                                 # the guard matrix, 11 nested runs, about 20 cents
+node tests/live/p4.mjs                                 # jobs, the model route, compute approval, a deep research run
+node tests/live/p4-tui.mjs                             # tmux: a job ends, the notice appears, the model reports (about 10 cents)
 ```
 
 The script tests need `upstream/`. The launcher tests install into a scratch folder under

@@ -1,6 +1,6 @@
 # cc-mod-academic-harness: implementation plan
 
-Status: **P0 and P1 done** (2026-11-16). P0: the scaffold loads and the eight platform checks are answered in `docs/PLATFORM-NOTES.md`. P1: skills, research mode, PaperMemory and agents, results in `docs/P1-RESULTS.md`. P2 has not started. Sections below are unchanged from the plan as written, except where a P0 result corrected them (marked "P0 result").
+Status: **P0, P1, P2, P3 and P4 done** (2026-11-16). P0: the scaffold loads and the eight platform checks are answered in `docs/PLATFORM-NOTES.md`. P1: skills, research mode, PaperMemory and agents, results in `docs/P1-RESULTS.md`. P2: the tool host serves 35 tier-1 tools, results in `docs/P2-RESULTS.md`. P3: the writing engine and its guards; 38 `ah_*` tools (73 served in all), results in `docs/P3-RESULTS.md`. P4: 132 of 136 tools served plus 4 job tools, a jobs service, a model route and compute approvals, results in `docs/P4-RESULTS.md`. Sections below are unchanged from the plan as written, except where a P0 result corrected them (marked "P0 result").
 
 | | |
 |---|---|
@@ -182,7 +182,7 @@ Each has a default. Change any of them before the phase that uses it.
 | D4 | Which skills are listed | The 92 core skills, minus excluded licences. Everything else on demand | P1 |
 | D5 | Which licences are excluded by default | Non-commercial, GPL and Unknown. A local build flag includes them for personal use. Upstream's legal opinion D09 is still outstanding | P1, P6 |
 | D6 | How much prompt is always on | A short section, target 8k tokens or less: research discipline, safety, notebook, the tool-name map, a compact tool index. Per-area guidance from `prompt.js` becomes on-demand guides | P1 |
-| D7 | Model route for tools that call a model | Decide after a spike in P4. Candidate A: a headless `claude -p` child with no tools and a budget cap. Candidate B: the Anthropic API when `ANTHROPIC_API_KEY` is set | P4 |
+| D7 | Model route for tools that call a model | **Decided in P4: candidate A**, a headless `claude -p --safe-mode --tools ""` child with a budget cap (2 s a call, no key). Candidate B (the Anthropic API) was not built | P4 |
 | D8 | `defineTool` | Use the real one from `@deepseek-ai/dsh-tools` if it bundles cleanly, since `skill-mcp.mjs` shows it works outside DSH. Otherwise a shim that returns the definition object | P2 |
 | D9 | One server or several | One server named `ah`, with a `toolAreas` setting to trim areas | P2 |
 | D10 | Local self-improvement (RSI) | Deferred to P6, then port or drop | P6 |
@@ -264,6 +264,8 @@ Tier 1: `literature_search`, the OpenAlex, Semantic Scholar, PubMed, arXiv and C
 
 **Exit:** tier-1 tools work in a research-mode session. Parity is green. A key set in `userConfig` reaches a tool and appears in no log. `~/.dsh` is untouched.
 
+**P2 result:** met, with one exit item shown only through `--settings` (the interactive keychain path is open). 35 of 136 tools are served in four areas, parity with upstream is green for names, descriptions and parameters, upstream's own 25 tier-1 tests pass in the snapshot, and two live nested runs pass (search then notebook; a config key reaches a tool and appears in no output). Decisions, costs and open items are in `docs/P2-RESULTS.md`. `index.js` is not run (it seeds skills and binds a settings service); the host calls its component functions.
+
 **Risks:** modules find assets through `import.meta.url`. Unbundled, that works from `upstream/`. Bundled, the bundle must sit at the snapshot root (P6).
 
 ### P3. Writing engine and guards (M)
@@ -286,6 +288,8 @@ Work:
 
 **Exit:** the scenarios pass. With the engine deliberately broken, mutating calls are denied and reads pass. Outside an `ah.yaml` tree the guard starts no process.
 
+**P3 result:** met. The engine's venv is built inside the snapshot (`scripts/install-engine.mjs`), the guard is four function hooks plus a `tool.check` approval, and a failing guard denies mutating calls and passes reads. The engine's own suite passes in the mod's environment (519 tests), 19 hook tests and 16 bridge tests pass, and 11 live nested runs pass: protected write, protected shell, author-only shell, anchor loss, a clean edit, the stop gate holding the turn and handing off, the model handing a finding over with `ah_decision_request`, the card reaching the model, no engine process outside a project, a broken engine, and `ah_author` refused under `-p`. The interactive terminal matrix was not run. Decisions and open items are in `docs/P3-RESULTS.md`.
+
 **First release ends here.**
 
 ### P4. Ledgers and long-running work (L)
@@ -306,6 +310,8 @@ Work:
 **Exit:** surface parity for all 136 tools minus a documented exclusion list. A deep research run goes from start to notice to report in a live session. Compute tools always ask.
 
 **Risks:** a job dies with the server process when the session ends. Whether deep research can resume from its store needs reading before this phase is sized.
+
+**P4 result:** met. The host serves 132 of 136 upstream tools (the four left are P6: `zvec_index`, `paper_mcp`, `paper_backfill`, `ah_rsi`) and four job tools. D7 is decided: the model route is a headless Claude Code child. A deep research run goes from start to notice to report in a real terminal session, and the model reads the result with no polling. Paid compute always asks. Upstream's tests pass 125 of 125 (six DSH-only ones excluded). Decisions, costs and open items are in `docs/P4-RESULTS.md`.
 
 ### P5. Terminal UI and task commands (M)
 

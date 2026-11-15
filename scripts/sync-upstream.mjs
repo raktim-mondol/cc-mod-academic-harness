@@ -15,10 +15,11 @@
 
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { engineDir, engineHash, STAMP_FILE } from '../server/src/engine.mjs'
 
 export const PINNED = 'a3f17eb8ae15221adeaa45cd19918c1f82f82973'
 
@@ -29,7 +30,7 @@ export const ALLOW = [
   'package.json',
   'LICENSE',
   'NOTICE',
-  'docs/legal',
+  'docs',
   // P1: prompt, skills, PaperMemory
   'prompt.js',
   'untrusted-fence.js',
@@ -37,6 +38,28 @@ export const ALLOW = [
   'skill-licenses.js',
   'skills',
   'vendor/papermemory',
+  // P3: the writing engine (Python). Its virtual environment is built inside the snapshot by install-engine.mjs.
+  'vendor/academic-harness',
+  // P2: the tool modules and what they read at run time. `*.js` means every .js file at the root.
+  '*.js',
+  'package-lock.json',
+  'workflows.json',
+  'appraisal',
+  'assets',
+  'checklists',
+  'locale',
+  'paper',
+  'presets',
+  'python-helpers',
+  'schemas',
+  'science-sources',
+  'styles',
+  // upstream's own tests, for the snapshot-integrity check. Some read docs, the client and the preset patch as static checks.
+  'scripts',
+  'client',
+  '.github',
+  'cordis.patch.yml',
+  'README.md',
 ]
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -49,9 +72,12 @@ export function sync({ source, commit, outDir = join(root, 'upstream'), lockFile
   const sha = git(source, ['rev-parse', '--verify', `${commit}^{commit}`], { encoding: 'utf8' }).trim()
   const present = []
   const missing = []
+  const rootFiles = git(source, ['ls-tree', '--name-only', sha], { encoding: 'utf8' }).split('\n').filter(Boolean)
   for (const p of allow) {
-    const found = git(source, ['ls-tree', '--name-only', sha, '--', p], { encoding: 'utf8' }).trim()
-    ;(found ? present : missing).push(p)
+    // `*.js` is expanded against the root listing; git pathspecs would match nested files too.
+    const found = p === '*.js' ? rootFiles.filter(f => f.endsWith('.js')) : git(source, ['ls-tree', '--name-only', sha, '--', p], { encoding: 'utf8' }).split('\n').filter(Boolean)
+    if (found.length) present.push(...(p === '*.js' ? found : [p]))
+    else missing.push(p)
   }
   if (present.length === 0) throw new Error('none of the allow-listed paths exist at ' + sha)
 
@@ -64,6 +90,25 @@ export function sync({ source, commit, outDir = join(root, 'upstream'), lockFile
   execFileSync('tar', ['-x', '-C', staging], { input: tar, maxBuffer: 1 << 30 })
 
   const pkg = JSON.parse(readFileSync(join(staging, 'package.json'), 'utf8'))
+  // Installed dependencies are expensive. Keep them across a sync when the lockfile did not change.
+  const keep = join(outDir, 'node_modules')
+  const sameLock = existsSync(keep) && existsSync(join(outDir, 'package-lock.json')) && existsSync(join(staging, 'package-lock.json')) &&
+    readFileSync(join(outDir, 'package-lock.json')).equals(readFileSync(join(staging, 'package-lock.json')))
+  if (sameLock) renameSync(keep, join(staging, 'node_modules'))
+  // The engine's virtual environment is expensive too. Keep it when the engine's files are byte-identical.
+  const engineOld = engineDir(outDir)
+  const engineNew = engineDir(staging)
+  if (existsSync(join(engineOld, '.venv')) && existsSync(join(engineOld, STAMP_FILE)) && existsSync(join(engineNew, 'pyproject.toml')) &&
+    readFileSync(join(engineOld, STAMP_FILE), 'utf8').trim() === engineHash(engineNew)) {
+    renameSync(join(engineOld, '.venv'), join(engineNew, '.venv'))
+    copyFileSync(join(engineOld, STAMP_FILE), join(engineNew, STAMP_FILE))
+    for (const f of ['installed-version']) if (existsSync(join(engineOld, f))) copyFileSync(join(engineOld, f), join(engineNew, f))
+  }
+  // The helper environment (install-helpers.mjs, hundreds of MB): kept when its lock and project file are byte-identical.
+  const helperOld = join(outDir, 'python-helpers')
+  const helperNew = join(staging, 'python-helpers')
+  const same = f => existsSync(join(helperOld, f)) && existsSync(join(helperNew, f)) && readFileSync(join(helperOld, f)).equals(readFileSync(join(helperNew, f)))
+  if (existsSync(join(helperOld, '.venv')) && existsSync(helperNew) && same('uv.lock') && same('pyproject.toml')) renameSync(join(helperOld, '.venv'), join(helperNew, '.venv'))
   rmSync(outDir, { recursive: true, force: true })
   renameSync(staging, outDir)
 

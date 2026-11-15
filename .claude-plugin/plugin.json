@@ -18,6 +18,402 @@
         "on",
         "off"
       ]
+    },
+    "tool_areas": {
+      "type": "string",
+      "title": "Tool areas",
+      "description": "Which tool groups the academic-harness server offers: search, papers, notebook, skills, writing, reviews, tournament, analysis, provenance, study, data, submission, deep, compute, figures, or all. Comma separated.",
+      "default": "all"
+    },
+    "llm_model": {
+      "type": "string",
+      "title": "Model for tools that call a model",
+      "description": "deep_research, deep_review and the other tools that call a model run it through a headless Claude Code call under your login. The alias or id passed to --model (sonnet, opus, haiku, or a full model id).",
+      "default": "sonnet"
+    },
+    "llm_budget_usd": {
+      "type": "string",
+      "title": "Model spend cap per server run (USD)",
+      "description": "The most the model route spends while the academic-harness server runs. A call past it fails with a message that says so. Each single call is also capped at 1 USD.",
+      "default": "5"
+    },
+    "job_notices": {
+      "type": "string",
+      "title": "When a background job ends",
+      "description": "deep_research, deep_review and analysis_run go on as background jobs. prompt: notify you and prompt the model to read the result and carry on. notify: notify only. off: neither (job_status and job_wait still work). Interactive sessions only.",
+      "default": "prompt",
+      "options": [
+        "prompt",
+        "notify",
+        "off"
+      ]
+    },
+    "evidence_check": {
+      "type": "string",
+      "title": "Evidence check at the end of a turn",
+      "description": "In a project with an ah.yaml, the stop gate can run an advisory check: a verifier model reads the sources cited by the paragraphs the turn changed (one model call per paragraph, and it only advises). skip never runs it; run runs it once per turn.",
+      "default": "skip",
+      "options": [
+        "skip",
+        "run"
+      ]
+    },
+    "parallel_api_key": {
+      "type": "string",
+      "title": "Parallel API key",
+      "description": "Key or token for Parallel. Leave empty to use the PARALLEL_API_KEY environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "firecrawl_api_key": {
+      "type": "string",
+      "title": "Firecrawl API key",
+      "description": "Key or token for Firecrawl. Leave empty to use the FIRECRAWL_API_KEY environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "consensus_api_key": {
+      "type": "string",
+      "title": "Consensus API key",
+      "description": "Key or token for Consensus. Leave empty to use the CONSENSUS_API_KEY environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "scite_api_key": {
+      "type": "string",
+      "title": "Scite API key",
+      "description": "Key or token for Scite. Leave empty to use the SCITE_API_KEY environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "brave_api_key": {
+      "type": "string",
+      "title": "Brave API key",
+      "description": "Key or token for Brave. Leave empty to use the BRAVE_API_KEY environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "tavily_api_key": {
+      "type": "string",
+      "title": "Tavily API key",
+      "description": "Key or token for Tavily. Leave empty to use the TAVILY_API_KEY environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "exa_api_key": {
+      "type": "string",
+      "title": "Exa API key",
+      "description": "Key or token for Exa. Leave empty to use the EXA_API_KEY environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "perplexity_api_key": {
+      "type": "string",
+      "title": "Perplexity API key",
+      "description": "Key or token for Perplexity. Leave empty to use the PERPLEXITY_API_KEY environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "jina_api_key": {
+      "type": "string",
+      "title": "Jina API key",
+      "description": "Key or token for Jina. Leave empty to use the JINA_API_KEY environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "unpaywall_email": {
+      "type": "string",
+      "title": "Unpaywall email",
+      "description": "Contact address sent to Unpaywall. Unpaywall asks for one; it is not a secret.",
+      "sensitive": false,
+      "required": false
+    },
+    "openalex_api_key": {
+      "type": "string",
+      "title": "Openalex API key",
+      "description": "Key or token for Openalex. Leave empty to use the OPENALEX_API_KEY environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "s2_api_key": {
+      "type": "string",
+      "title": "S2 API key",
+      "description": "Key or token for S2. Leave empty to use the S2_API_KEY environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "crossref_mailto": {
+      "type": "string",
+      "title": "Crossref mailto",
+      "description": "Contact address for Crossref's polite pool (faster, steadier). Not a secret.",
+      "sensitive": false,
+      "required": false
+    },
+    "ncbi_api_key": {
+      "type": "string",
+      "title": "NCBI API key",
+      "description": "Key or token for NCBI. Leave empty to use the NCBI_API_KEY environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "ncbi_email": {
+      "type": "string",
+      "title": "NCBI email",
+      "description": "Contact address NCBI asks for with PubMed requests. Not a secret.",
+      "sensitive": false,
+      "required": false
+    },
+    "core_api_key": {
+      "type": "string",
+      "title": "CORE API key",
+      "description": "Key or token for CORE. Leave empty to use the CORE_API_KEY environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "ads_api_token": {
+      "type": "string",
+      "title": "ADS API token",
+      "description": "Key or token for ADS API. Leave empty to use the ADS_API_TOKEN environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "scopus_api_key": {
+      "type": "string",
+      "title": "Scopus API key",
+      "description": "Key or token for Scopus. Leave empty to use the SCOPUS_API_KEY environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "elsevier_insttoken": {
+      "type": "string",
+      "title": "Elsevier insttoken",
+      "description": "Key or token for Elsevier insttoken. Leave empty to use the ELSEVIER_INSTTOKEN environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "wos_api_key": {
+      "type": "string",
+      "title": "WOS API key",
+      "description": "Key or token for WOS. Leave empty to use the WOS_API_KEY environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "wiley_tdm_token": {
+      "type": "string",
+      "title": "Wiley tdm token",
+      "description": "Key or token for Wiley tdm. Leave empty to use the WILEY_TDM_TOKEN environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "springer_api_key": {
+      "type": "string",
+      "title": "Springer API key",
+      "description": "Key or token for Springer. Leave empty to use the SPRINGER_API_KEY environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "ieee_api_key": {
+      "type": "string",
+      "title": "IEEE API key",
+      "description": "Key or token for IEEE. Leave empty to use the IEEE_API_KEY environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "elicit_api_key": {
+      "type": "string",
+      "title": "Elicit API key",
+      "description": "Key or token for Elicit. Leave empty to use the ELICIT_API_KEY environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "futurehouse_api_key": {
+      "type": "string",
+      "title": "Futurehouse API key",
+      "description": "Key or token for Futurehouse. Leave empty to use the FUTUREHOUSE_API_KEY environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "typesafe_api_key": {
+      "type": "string",
+      "title": "Typesafe API key",
+      "description": "Key or token for Typesafe. Leave empty to use the TYPESAFE_API_KEY environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "cohere_api_key": {
+      "type": "string",
+      "title": "Cohere API key",
+      "description": "Key or token for Cohere. Leave empty to use the COHERE_API_KEY environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "sherpa_romero_api_key": {
+      "type": "string",
+      "title": "Sherpa romero API key",
+      "description": "Key or token for Sherpa romero. Leave empty to use the SHERPA_ROMERO_API_KEY environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "openfda_api_key": {
+      "type": "string",
+      "title": "Openfda API key",
+      "description": "Key or token for Openfda. Leave empty to use the OPENFDA_API_KEY environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "datacite_api_key": {
+      "type": "string",
+      "title": "Datacite API key",
+      "description": "Key or token for Datacite. Leave empty to use the DATACITE_API_KEY environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "zenodo_api_key": {
+      "type": "string",
+      "title": "Zenodo API key",
+      "description": "Key or token for Zenodo. Leave empty to use the ZENODO_API_KEY environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "figshare_api_key": {
+      "type": "string",
+      "title": "Figshare API key",
+      "description": "Key or token for Figshare. Leave empty to use the FIGSHARE_API_KEY environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "orcid_token": {
+      "type": "string",
+      "title": "Orcid token",
+      "description": "Key or token for Orcid. Leave empty to use the ORCID_TOKEN environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "patentsview_api_key": {
+      "type": "string",
+      "title": "Patentsview API key",
+      "description": "Key or token for Patentsview. Leave empty to use the PATENTSVIEW_API_KEY environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "gemini_api_key": {
+      "type": "string",
+      "title": "Gemini API key",
+      "description": "Key or token for Gemini. Leave empty to use the GEMINI_API_KEY environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "image_model": {
+      "type": "string",
+      "title": "Image model",
+      "description": "Optional. The IMAGE_MODEL environment variable wins when it is set.",
+      "sensitive": false,
+      "required": false
+    },
+    "modal_token_id": {
+      "type": "string",
+      "title": "Modal token ID",
+      "description": "Key or token for Modal token ID. Leave empty to use the MODAL_TOKEN_ID environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "modal_token_secret": {
+      "type": "string",
+      "title": "Modal token secret",
+      "description": "Key or token for Modal token secret. Leave empty to use the MODAL_TOKEN_SECRET environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "runpod_api_key": {
+      "type": "string",
+      "title": "Runpod API key",
+      "description": "Key or token for Runpod. Leave empty to use the RUNPOD_API_KEY environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "vast_api_key": {
+      "type": "string",
+      "title": "Vast API key",
+      "description": "Key or token for Vast. Leave empty to use the VAST_API_KEY environment variable, or none.",
+      "sensitive": true,
+      "required": false
+    },
+    "co_scientist_max_hypotheses": {
+      "type": "string",
+      "title": "Co scientist max hypotheses",
+      "description": "Optional. The CO_SCIENTIST_MAX_HYPOTHESES environment variable wins when it is set.",
+      "sensitive": false,
+      "required": false
+    },
+    "co_scientist_step_budget": {
+      "type": "string",
+      "title": "Co scientist step budget",
+      "description": "Optional. The CO_SCIENTIST_STEP_BUDGET environment variable wins when it is set.",
+      "sensitive": false,
+      "required": false
+    },
+    "co_scientist_dup_threshold": {
+      "type": "string",
+      "title": "Co scientist dup threshold",
+      "description": "Optional. The CO_SCIENTIST_DUP_THRESHOLD environment variable wins when it is set.",
+      "sensitive": false,
+      "required": false
+    },
+    "co_scientist_seed": {
+      "type": "string",
+      "title": "Co scientist seed",
+      "description": "Optional. The CO_SCIENTIST_SEED environment variable wins when it is set.",
+      "sensitive": false,
+      "required": false
+    },
+    "co_scientist_embed_model": {
+      "type": "string",
+      "title": "Co scientist embed model",
+      "description": "Optional. The CO_SCIENTIST_EMBED_MODEL environment variable wins when it is set.",
+      "sensitive": false,
+      "required": false
+    },
+    "co_scientist_limitation_rounds": {
+      "type": "string",
+      "title": "Co scientist limitation rounds",
+      "description": "Optional. The CO_SCIENTIST_LIMITATION_ROUNDS environment variable wins when it is set.",
+      "sensitive": false,
+      "required": false
+    },
+    "deep_review_default_rubric": {
+      "type": "string",
+      "title": "Deep review default rubric",
+      "description": "Optional. The DEEP_REVIEW_DEFAULT_RUBRIC environment variable wins when it is set.",
+      "sensitive": false,
+      "required": false
+    },
+    "deep_review_max_rounds": {
+      "type": "string",
+      "title": "Deep review max rounds",
+      "description": "Optional. The DEEP_REVIEW_MAX_ROUNDS environment variable wins when it is set.",
+      "sensitive": false,
+      "required": false
+    },
+    "deep_review_cost_ceiling_usd": {
+      "type": "string",
+      "title": "Deep review cost ceiling usd",
+      "description": "Optional. The DEEP_REVIEW_COST_CEILING_USD environment variable wins when it is set.",
+      "sensitive": false,
+      "required": false
+    },
+    "rebuttal_max_tasks": {
+      "type": "string",
+      "title": "Rebuttal max tasks",
+      "description": "Optional. The REBUTTAL_MAX_TASKS environment variable wins when it is set.",
+      "sensitive": false,
+      "required": false
+    },
+    "compute_session_cap_usd": {
+      "type": "string",
+      "title": "Compute session cap usd",
+      "description": "Optional. The COMPUTE_SESSION_CAP_USD environment variable wins when it is set.",
+      "sensitive": false,
+      "required": false
     }
   },
   "mcpServers": {
@@ -26,6 +422,68 @@
       "args": [
         "${CLAUDE_PLUGIN_ROOT}/server/bin/papermemory-mcp.mjs"
       ]
+    },
+    "ah": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/server/bin/ah-mcp.mjs"
+      ],
+      "env": {
+        "AH_TOOL_AREAS": "${user_config.tool_areas}",
+        "AH_LLM_MODEL": "${user_config.llm_model}",
+        "AH_LLM_BUDGET_USD": "${user_config.llm_budget_usd}",
+        "AH_KEY_PARALLEL_API_KEY": "${user_config.parallel_api_key}",
+        "AH_KEY_FIRECRAWL_API_KEY": "${user_config.firecrawl_api_key}",
+        "AH_KEY_CONSENSUS_API_KEY": "${user_config.consensus_api_key}",
+        "AH_KEY_SCITE_API_KEY": "${user_config.scite_api_key}",
+        "AH_KEY_BRAVE_API_KEY": "${user_config.brave_api_key}",
+        "AH_KEY_TAVILY_API_KEY": "${user_config.tavily_api_key}",
+        "AH_KEY_EXA_API_KEY": "${user_config.exa_api_key}",
+        "AH_KEY_PERPLEXITY_API_KEY": "${user_config.perplexity_api_key}",
+        "AH_KEY_JINA_API_KEY": "${user_config.jina_api_key}",
+        "AH_KEY_UNPAYWALL_EMAIL": "${user_config.unpaywall_email}",
+        "AH_KEY_OPENALEX_API_KEY": "${user_config.openalex_api_key}",
+        "AH_KEY_S2_API_KEY": "${user_config.s2_api_key}",
+        "AH_KEY_CROSSREF_MAILTO": "${user_config.crossref_mailto}",
+        "AH_KEY_NCBI_API_KEY": "${user_config.ncbi_api_key}",
+        "AH_KEY_NCBI_EMAIL": "${user_config.ncbi_email}",
+        "AH_KEY_CORE_API_KEY": "${user_config.core_api_key}",
+        "AH_KEY_ADS_API_TOKEN": "${user_config.ads_api_token}",
+        "AH_KEY_SCOPUS_API_KEY": "${user_config.scopus_api_key}",
+        "AH_KEY_ELSEVIER_INSTTOKEN": "${user_config.elsevier_insttoken}",
+        "AH_KEY_WOS_API_KEY": "${user_config.wos_api_key}",
+        "AH_KEY_WILEY_TDM_TOKEN": "${user_config.wiley_tdm_token}",
+        "AH_KEY_SPRINGER_API_KEY": "${user_config.springer_api_key}",
+        "AH_KEY_IEEE_API_KEY": "${user_config.ieee_api_key}",
+        "AH_KEY_ELICIT_API_KEY": "${user_config.elicit_api_key}",
+        "AH_KEY_FUTUREHOUSE_API_KEY": "${user_config.futurehouse_api_key}",
+        "AH_KEY_TYPESAFE_API_KEY": "${user_config.typesafe_api_key}",
+        "AH_KEY_COHERE_API_KEY": "${user_config.cohere_api_key}",
+        "AH_KEY_SHERPA_ROMERO_API_KEY": "${user_config.sherpa_romero_api_key}",
+        "AH_KEY_OPENFDA_API_KEY": "${user_config.openfda_api_key}",
+        "AH_KEY_DATACITE_API_KEY": "${user_config.datacite_api_key}",
+        "AH_KEY_ZENODO_API_KEY": "${user_config.zenodo_api_key}",
+        "AH_KEY_FIGSHARE_API_KEY": "${user_config.figshare_api_key}",
+        "AH_KEY_ORCID_TOKEN": "${user_config.orcid_token}",
+        "AH_KEY_PATENTSVIEW_API_KEY": "${user_config.patentsview_api_key}",
+        "AH_KEY_GEMINI_API_KEY": "${user_config.gemini_api_key}",
+        "AH_KEY_IMAGE_MODEL": "${user_config.image_model}",
+        "AH_KEY_MODAL_TOKEN_ID": "${user_config.modal_token_id}",
+        "AH_KEY_MODAL_TOKEN_SECRET": "${user_config.modal_token_secret}",
+        "AH_KEY_RUNPOD_API_KEY": "${user_config.runpod_api_key}",
+        "AH_KEY_VAST_API_KEY": "${user_config.vast_api_key}",
+        "AH_KEY_CO_SCIENTIST_MAX_HYPOTHESES": "${user_config.co_scientist_max_hypotheses}",
+        "AH_KEY_CO_SCIENTIST_STEP_BUDGET": "${user_config.co_scientist_step_budget}",
+        "AH_KEY_CO_SCIENTIST_DUP_THRESHOLD": "${user_config.co_scientist_dup_threshold}",
+        "AH_KEY_CO_SCIENTIST_SEED": "${user_config.co_scientist_seed}",
+        "AH_KEY_CO_SCIENTIST_EMBED_MODEL": "${user_config.co_scientist_embed_model}",
+        "AH_KEY_CO_SCIENTIST_LIMITATION_ROUNDS": "${user_config.co_scientist_limitation_rounds}",
+        "AH_KEY_DEEP_REVIEW_DEFAULT_RUBRIC": "${user_config.deep_review_default_rubric}",
+        "AH_KEY_DEEP_REVIEW_MAX_ROUNDS": "${user_config.deep_review_max_rounds}",
+        "AH_KEY_DEEP_REVIEW_COST_CEILING_USD": "${user_config.deep_review_cost_ceiling_usd}",
+        "AH_KEY_REBUTTAL_MAX_TASKS": "${user_config.rebuttal_max_tasks}",
+        "AH_KEY_COMPUTE_SESSION_CAP_USD": "${user_config.compute_session_cap_usd}"
+      }
     }
   }
 }

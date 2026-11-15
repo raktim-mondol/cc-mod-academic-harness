@@ -33,12 +33,10 @@ const IS_WIN = process.platform === 'win32'
 
 export const say = msg => process.stderr.write(`${LOG}: ${msg}\n`)
 
-export function modRoot() { return resolve(HERE, '..', '..') }
-export function modHome(env = process.env) { return env.AH_MOD_HOME?.trim() || join(homedir(), '.local', 'share', 'cc-mod-academic-harness', 'home') }
+export { modRoot, modHome, upstreamDir, isDevMode } from './paths.mjs'
+import { isDevMode, modHome, upstreamDir } from './paths.mjs'
 export function installDir(env = process.env) { return join(modHome(env), 'papermemory') }
-export function upstreamDir(env = process.env) { return env.AH_UPSTREAM?.trim() || join(modRoot(), 'upstream') }
 export function vendorDir(env = process.env) { return join(upstreamDir(env), 'vendor', 'papermemory') }
-export function isDevMode(env = process.env) { return Boolean(env.AH_UPSTREAM?.trim()) }
 
 const venvBin = (env, name) => join(installDir(env), '.venv', IS_WIN ? 'Scripts' : 'bin', IS_WIN ? `${name}.exe` : name)
 const stampPath = env => join(installDir(env), 'installed-version')

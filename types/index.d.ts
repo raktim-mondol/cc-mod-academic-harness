@@ -6,6 +6,14 @@ export type ModeOverride = 'auto' | 'on' | 'off' | null
 
 declare module 'claude-code' {
   interface PluginState {
-    'academic-harness': { override: ModeOverride }
+    'academic-harness': {
+      override: ModeOverride
+      /** Sessions whose stop gate already handed its findings to the author this turn. */
+      handedOff: string[]
+      /** Sessions that already got the advisory evidence-check note this turn. */
+      t3Steered: string[]
+      /** Background jobs already announced to the person. */
+      noticed: string[]
+    }
   }
 }
