@@ -1,0 +1,19 @@
+{
+  "source": "github.com/raktim-mondol/academic-harness",
+  "commit": "a3f17eb8ae15221adeaa45cd19918c1f82f82973",
+  "version": "0.54.1",
+  "archiveSha256": "3426673fd28fc66a7fb7f463400cece5a1f374357a8cd774df003c1e5c121fcc",
+  "paths": [
+    "package.json",
+    "LICENSE",
+    "NOTICE",
+    "docs/legal",
+    "prompt.js",
+    "untrusted-fence.js",
+    "skills-core.json",
+    "skill-licenses.js",
+    "skills",
+    "vendor/papermemory"
+  ],
+  "missing": []
+}

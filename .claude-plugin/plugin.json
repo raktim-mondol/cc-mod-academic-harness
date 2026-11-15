@@ -1,8 +1,31 @@
 {
   "name": "academic-harness",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Academic Harness research tools, skills and writing guards, as a Claude Code mod.",
-  "author": { "name": "Raktim Mondol" },
+  "author": {
+    "name": "Raktim Mondol"
+  },
   "license": "MIT",
-  "types": "./types/index.d.ts"
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "research_mode": {
+      "type": "string",
+      "title": "Research mode",
+      "description": "auto turns research mode on in a folder with an ah.yaml; on always; off never. /academic overrides it for one session.",
+      "default": "auto",
+      "options": [
+        "auto",
+        "on",
+        "off"
+      ]
+    }
+  },
+  "mcpServers": {
+    "papermemory": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/server/bin/papermemory-mcp.mjs"
+      ]
+    }
+  }
 }

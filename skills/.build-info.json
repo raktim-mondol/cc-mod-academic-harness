@@ -1,0 +1,384 @@
+{
+  "commit": "a3f17eb8ae15221adeaa45cd19918c1f82f82973",
+  "restricted": false,
+  "coreListed": 92,
+  "included": [
+    {
+      "name": "abstract-writer",
+      "license": null
+    },
+    {
+      "name": "academic-harness",
+      "license": null
+    },
+    {
+      "name": "academic-search",
+      "license": null
+    },
+    {
+      "name": "agent-browser",
+      "license": null
+    },
+    {
+      "name": "agentic-data-science-pipeline",
+      "license": "MIT"
+    },
+    {
+      "name": "ah-audit-section",
+      "license": null
+    },
+    {
+      "name": "ah-draft-from-plan",
+      "license": "MIT"
+    },
+    {
+      "name": "ah-fix-findings",
+      "license": null
+    },
+    {
+      "name": "ah-plan-section",
+      "license": null
+    },
+    {
+      "name": "ah-revise-from-review",
+      "license": null
+    },
+    {
+      "name": "ah-write-unit",
+      "license": null
+    },
+    {
+      "name": "authorship-credit",
+      "license": "MIT"
+    },
+    {
+      "name": "benchmark-paper-template",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "name": "causal-dag",
+      "license": "MIT"
+    },
+    {
+      "name": "citation-checker",
+      "license": null
+    },
+    {
+      "name": "citation-network",
+      "license": "MIT"
+    },
+    {
+      "name": "clinicaltrials",
+      "license": "MIT"
+    },
+    {
+      "name": "co-scientist-tournament",
+      "license": "MIT"
+    },
+    {
+      "name": "data-management-plan",
+      "license": "MIT"
+    },
+    {
+      "name": "deep-review",
+      "license": "MIT"
+    },
+    {
+      "name": "designing-the-analysis",
+      "license": null
+    },
+    {
+      "name": "diagram-design",
+      "license": "MIT"
+    },
+    {
+      "name": "docx",
+      "license": "MIT"
+    },
+    {
+      "name": "drawio-reconstruction",
+      "license": "MIT"
+    },
+    {
+      "name": "establishing-feasibility-first",
+      "license": null
+    },
+    {
+      "name": "experiment-tracking",
+      "license": "MIT"
+    },
+    {
+      "name": "experimental-design",
+      "license": "MIT"
+    },
+    {
+      "name": "figure-designer",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "name": "framing-research-questions",
+      "license": null
+    },
+    {
+      "name": "generating-scientific-hypotheses",
+      "license": "MIT"
+    },
+    {
+      "name": "gget",
+      "license": "BSD-2-Clause"
+    },
+    {
+      "name": "grade-certainty",
+      "license": "MIT"
+    },
+    {
+      "name": "grant-budget",
+      "license": "MIT"
+    },
+    {
+      "name": "hyperparameter-optimization",
+      "license": "MIT"
+    },
+    {
+      "name": "idea-evaluator",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "name": "integrity-audit",
+      "license": "MIT"
+    },
+    {
+      "name": "investigating-anomalous-results",
+      "license": null
+    },
+    {
+      "name": "limitation-mining",
+      "license": "MIT"
+    },
+    {
+      "name": "literature-researcher",
+      "license": null
+    },
+    {
+      "name": "literature-review",
+      "license": "MIT"
+    },
+    {
+      "name": "manuscript-editor",
+      "license": null
+    },
+    {
+      "name": "manuscript-revision",
+      "license": "MIT"
+    },
+    {
+      "name": "markdown-mermaid-writing",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "meta-analysis",
+      "license": "MIT"
+    },
+    {
+      "name": "method-code-alignment",
+      "license": "MIT"
+    },
+    {
+      "name": "modal",
+      "license": null
+    },
+    {
+      "name": "novelty-triage",
+      "license": "MIT"
+    },
+    {
+      "name": "numbers-audit",
+      "license": "MIT"
+    },
+    {
+      "name": "openfda",
+      "license": "MIT"
+    },
+    {
+      "name": "paper2agent",
+      "license": "MIT"
+    },
+    {
+      "name": "paper2mcp",
+      "license": "MIT"
+    },
+    {
+      "name": "paper2skill",
+      "license": "MIT"
+    },
+    {
+      "name": "papermemory",
+      "license": "MIT"
+    },
+    {
+      "name": "pdf",
+      "license": "MIT"
+    },
+    {
+      "name": "peer-reviewer",
+      "license": null
+    },
+    {
+      "name": "power-and-sample-size",
+      "license": "MIT"
+    },
+    {
+      "name": "pptx",
+      "license": "MIT"
+    },
+    {
+      "name": "pre-submission-reviewer",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "name": "preregistering-analysis",
+      "license": null
+    },
+    {
+      "name": "presentation-build",
+      "license": "MIT"
+    },
+    {
+      "name": "provenance-audit",
+      "license": "MIT"
+    },
+    {
+      "name": "pytorch-lightning",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "rebuttal-experiments",
+      "license": "MIT"
+    },
+    {
+      "name": "reference-audit",
+      "license": "MIT"
+    },
+    {
+      "name": "remove-ai-signs",
+      "license": null
+    },
+    {
+      "name": "reporting-guidelines",
+      "license": "MIT"
+    },
+    {
+      "name": "reproducible-analysis",
+      "license": "MIT"
+    },
+    {
+      "name": "requesting-red-team-review",
+      "license": null
+    },
+    {
+      "name": "research-ethics",
+      "license": "MIT"
+    },
+    {
+      "name": "research-monitoring",
+      "license": "MIT"
+    },
+    {
+      "name": "risk-of-bias-appraisal",
+      "license": "MIT"
+    },
+    {
+      "name": "runpod",
+      "license": null
+    },
+    {
+      "name": "scanpy",
+      "license": "BSD-3-Clause"
+    },
+    {
+      "name": "science-data",
+      "license": "MIT"
+    },
+    {
+      "name": "scientific-figure-making",
+      "license": "MIT"
+    },
+    {
+      "name": "scientific-visualization",
+      "license": "MIT"
+    },
+    {
+      "name": "statistical-reviewer",
+      "license": null
+    },
+    {
+      "name": "submission-package",
+      "license": "MIT"
+    },
+    {
+      "name": "subset-first-eval",
+      "license": "MIT"
+    },
+    {
+      "name": "systematic-review-ledger",
+      "license": "MIT"
+    },
+    {
+      "name": "tech-paper-template",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "name": "using-science-superpowers",
+      "license": null
+    },
+    {
+      "name": "vastai",
+      "license": null
+    },
+    {
+      "name": "verifying-results-before-claiming",
+      "license": null
+    },
+    {
+      "name": "vibe-research-workflow",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "name": "xlsx",
+      "license": "MIT"
+    }
+  ],
+  "excluded": [
+    {
+      "name": "bioservices",
+      "license": "GPLv3 license",
+      "reason": "GPL"
+    },
+    {
+      "name": "deep-research",
+      "license": "CC-BY-NC-SA-4.0",
+      "reason": "non-commercial"
+    },
+    {
+      "name": "intro-drafter",
+      "license": "CC-BY-NC-SA-4.0",
+      "reason": "non-commercial"
+    },
+    {
+      "name": "paper-polish",
+      "license": "CC-BY-NC-SA-4.0",
+      "reason": "non-commercial"
+    },
+    {
+      "name": "paper-writer",
+      "license": "CC-BY-NC-SA-4.0",
+      "reason": "non-commercial"
+    },
+    {
+      "name": "rebuttal-guidance",
+      "license": "CC-BY-NC-SA-4.0",
+      "reason": "non-commercial"
+    }
+  ],
+  "descriptionChars": 30118
+}

@@ -1,6 +1,6 @@
 # cc-mod-academic-harness: implementation plan
 
-Status: **P0 done** (2026-11-16). The scaffold loads and the eight platform checks are answered in `docs/PLATFORM-NOTES.md`; P1 has not started. Sections below are unchanged from the plan as written, except where a P0 result corrected them (marked "P0 result").
+Status: **P0 and P1 done** (2026-11-16). P0: the scaffold loads and the eight platform checks are answered in `docs/PLATFORM-NOTES.md`. P1: skills, research mode, PaperMemory and agents, results in `docs/P1-RESULTS.md`. P2 has not started. Sections below are unchanged from the plan as written, except where a P0 result corrected them (marked "P0 result").
 
 | | |
 |---|---|
@@ -235,6 +235,8 @@ Work:
 **Tests:** build-script unit tests. `tests/mode.test.ts` under `claude plugin test`. One nested-claude run that loads a core skill by name.
 
 **Exit:** `/academic on` adds the section and `/academic off` removes it. The core skills are listed. The 14 PaperMemory tools are callable. Agents are offered. `~/.dsh` and the source are untouched.
+
+**P1 result:** met. 86 of 92 core skills are listed (6 excluded by D5), the always-on section is about 4,100 tokens, 14 PaperMemory tools answer, 22 agents are offered, and the source and `~/.dsh` are untouched. Deviations and costs are in `docs/P1-RESULTS.md`.
 
 ### P2. Tool host and tier-1 tools (L)
 

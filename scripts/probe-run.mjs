@@ -2,7 +2,9 @@
 // Runs one nested `claude -p` scenario against the P0 probe plugin (and the mod),
 // from a scratch directory under ~/.cache. Ground rules 4 and 7 of the plan.
 //
-//   node scripts/probe-run.mjs <name> [--probe-env K=V]... [--no-mod] [--no-probe] -- <claude args...>
+//   node scripts/probe-run.mjs <name> [--probe-env K=V]... [--file NAME=TEXT]... [--no-mod] [--no-probe] -- <claude args...>
+//
+// --file puts NAME (relative, with TEXT as its content) in the scratch working directory before the run.
 //
 // Writes ~/.cache/ah-cc-p0/out/<name>/{stream.jsonl,stderr.txt,probe.jsonl}.
 // The prompt is the last claude argument, as usual for `claude -p`.
@@ -27,10 +29,12 @@ const env = { ...process.env }
 for (const k of ENV_DROP) delete env[k]
 let useMod = true
 let useProbe = true
+const files = []
 for (let i = 0; i < mine.length; i++) {
   if (mine[i] === '--probe-env') { const [k, ...v] = mine[++i].split('='); env[k] = v.join('=') }
   else if (mine[i] === '--no-mod') useMod = false
   else if (mine[i] === '--no-probe') useProbe = false
+  else if (mine[i] === '--file') { const [k, ...v] = mine[++i].split('='); files.push([k, v.join('=')]) }
 }
 
 const outDir = join(cache, 'out', name)
@@ -39,6 +43,7 @@ mkdirSync(outDir, { recursive: true })
 const work = join(cache, 'work', name)
 rmSync(work, { recursive: true, force: true })
 mkdirSync(work, { recursive: true })
+for (const [k, v] of files) writeFileSync(join(work, k), v + '\n')
 env.AH_PROBE_OUT = join(outDir, 'probe.jsonl')
 
 const dirs = []
