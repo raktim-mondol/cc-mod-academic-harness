@@ -6,14 +6,18 @@ The latest release in the `0.4.x` line is supported. The mod is Linux only and n
 
 ## Reporting a vulnerability
 
-**Do not open a public issue, a discussion or a pull request** for a vulnerability. While the repository is private, contact the repository owner directly (the GitHub account that owns it). GitHub's private vulnerability reporting is offered only on public repositories; when this repository is made public it is switched on and this page then points to the private advisory form instead ([Releasing](docs/maintain/releasing.md)). A useful report has:
+**Do not open a public issue, a discussion or a pull request** for a vulnerability. Use GitHub's private security advisory for this repository:
+
+<https://github.com/raktim-mondol/cc-mod-academic-harness/security/advisories/new>
+
+If that is not available to you, contact the repository owner directly. A useful report has:
 
 - the version (`/academic doctor` shows it) and the Claude Code and Node.js versions;
 - the smallest reproduction, with the project layout and the command or call that triggers it;
 - what the impact is, and whether a secret, a paid run or a file outside the project is exposed;
 - the relevant part of `/academic doctor`, with **no key values** in it.
 
-The owner will acknowledge the report, confirm the impact, and coordinate a fix and a disclosure date. This is a private project without a bounty.
+The owner will acknowledge the report, confirm the impact, and coordinate a fix and a disclosure date. This is a small project without a bounty.
 
 ## In scope
 

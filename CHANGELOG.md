@@ -1,12 +1,13 @@
 # Changelog
 
-## Unreleased
+## 0.4.0 (2026-11-16)
 
+- **Licence review, with the repository made public.** `NOTICE` now credits what is copied from other projects: the K-Dense MIT skills with their copyright lines, three Supervisor-Skills skills under CC BY 4.0 (with their changes), and the one reference file adapted from Wikipedia under CC BY-SA 4.0, and says what the plugin downloads on first start and under whose licences. The README and the architecture page say the same, and `tests/scripts/repo.test.mjs` fails when a copied skill's licence is not one the build allows or is missing from `NOTICE`.
 - **One check command.** `npm run check` runs the node suites, the `plugin.json` check and the served-tool-surface check in one place; CI runs the same gate. `npm run typecheck`, `npm run test:plugin`, `npm run build` and `npm run doctor` cover the steps that need the engine's types or a real session.
 - **Tool arguments are checked on the server.** Before a tool runs, `ah` checks the call's arguments against the tool's schema (`server/src/validate.mjs`, no dependency). `AH_VALIDATE_TOOL_ARGS=enforce` (the default) refuses a call whose arguments the schema refuses, with a message that names fields, never values, and starts no job for it; `warn` runs the call anyway, notes the field paths on standard error and counts it as invalid, which `/academic usage` shows; `off` does not check. The default moved from `warn` to `enforce` after the live scripts (`p1`, `p4`, `p5`, `fit`) made 19 counted tool calls across 9 server runs, none of them invalid.
 - Fixed: the first-start fetch of an installed copy ran inside the `ah` server, so a session that ended before the download did (a headless `claude -p`, over in seconds) cut it short, and a run of such sessions never got the tools. The fetch is now a detached process (`server/bin/ah-bootstrap.mjs`) that outlives the session; the next server waits for it. Found by the `install marketplace` live script.
 - Fixed: the background build of the writing engine's environment ran inside the `ah` server too, so a session shorter than the build cut it short and the next one started it again from nothing. It is now a detached process (`server/bin/ah-engine-install.mjs`); the guard says "being installed" from the moment it starts.
-- **Repository settings are written down.** `docs/maintain/releasing.md` lists the rules for `main` (no required approval while there is one maintainer, the four required checks and how a `TESTED_VERSIONS` change renames one), the tag ruleset, and private vulnerability reporting for when the repository goes public; `SECURITY.md` and the issue form say to contact the owner directly until then. Live-script results go in the release notes.
+- **Repository settings are written down.** `docs/maintain/releasing.md` lists the rules for `main` (no required approval while there is one maintainer, the four required checks and how a `TESTED_VERSIONS` change renames one), and the tag ruleset; private vulnerability reporting is on now that the repository is public. Live-script results go in the release notes.
 - **Pinned CI actions.** Every action in the workflows is pinned to a commit SHA, a repository test fails on a tag, and Dependabot proposes updates in one grouped weekly PR.
 - **Repository hygiene.** `CONTRIBUTING.md`, `SECURITY.md`, `.editorconfig`, issue forms, a pull request template and `CODEOWNERS`; `package.json` carries the scripts, the Node 22 floor and one version number that a test keeps equal to `plugin.json`, the README and this file.
 - Fixed: the task commands' workspace check refused every path when the session folder was the filesystem root, and research mode's project search stopped at a fixed 64 folder levels.
@@ -17,9 +18,6 @@
 - The unit suites keep their scratch files in a folder named for the process, so two runs on one machine no longer overwrite each other's fixtures.
 - The scripts no longer import the same module twice, and the host says why it checks `process.env` rather than the config object for a safe `DSH_HOME`.
 - Documentation: the release page no longer says CI runs no checks; the testing page and the scripts index name the new gate.
-
-## 0.4.0 (not tagged)
-
 - **Usage counts, and `/academic usage`.** The mod keeps a count per tool, skill, agent and command (names and numbers only, on this machine; the `usage_counts` setting turns it off) and shows what is used and what never is, as input for the next review of what to leave out. `/academic doctor` gives one line.
 - **A weekly watch on Academic Harness** (`.github/workflows/upstream-watch.yml`): when its newest commit is past the one the plugin holds, one issue is opened with the report of what it changes; nothing is applied.
 - **CI on GitHub** (`.github/workflows/ci.yml`): the node suites on Node 22 and 24 after a fresh `setup.mjs --github` (no source checkout), the manifest and tool-parity checks, and `claude plugin validate --strict` and `claude plugin test` on each Claude Code version the mod was seen on (which must pass) and on `latest` (which only reports).
