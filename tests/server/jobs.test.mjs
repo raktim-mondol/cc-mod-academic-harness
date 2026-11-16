@@ -297,16 +297,16 @@ describe('detached calls', { skip: !HAVE_UP }, () => {
     assert.match(rec.result, /REPORT/)
   })
 
-  test('a call whose arguments are refused starts no job (enforce), and still runs as a job in warn mode', async () => {
+  test('a call whose arguments are refused starts no job (enforce, the default), and still runs as a job in warn mode', async () => {
     let ran = 0
     const work = async () => { ran++; return { status: 'done', report: 'REPORT' } }
-    const strict = hostWith(work, { foreground: 2000, dir: 'strict', validate: 'enforce' })
+    const strict = hostWith(work, { foreground: 2000, dir: 'strict' })
     const refused = await strict.call('deep_research', { query: 42 }, { callId: 'toolu_bad' })
     assert.equal(refused.isError, true)
     assert.match(text(refused), /Invalid arguments for deep_research: "query" must be a string/)
     assert.equal(ran, 0)
     assert.equal(strict.jobs.list().length, 0, 'no job record for a refused call')
-    const lenient = hostWith(work, { foreground: 2000, dir: 'lenient' })
+    const lenient = hostWith(work, { foreground: 2000, dir: 'lenient', validate: 'warn' })
     const r = await lenient.call('deep_research', { query: 42 }, { callId: 'toolu_warn' })
     assert.equal(r.isError, undefined)
     assert.equal(ran, 1)
@@ -361,7 +361,7 @@ describe('detached calls', { skip: !HAVE_UP }, () => {
 
   test('job tools reject a missing or unknown id with a clear error', async () => {
     const host = hostWith(async () => ({}), { dir: 'ids' })
-    assert.match(text(await host.call('job_wait', {})), /job_id is required/)
+    assert.match(text(await host.call('job_wait', {})), /"job_id" is required/)
     assert.match(text(await host.call('job_status', { job_id: 'job-nope' })), /no job job-nope/)
   })
 })

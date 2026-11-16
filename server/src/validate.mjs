@@ -9,9 +9,9 @@
 // What it never does: put an argument VALUE in a message (a value can be a manuscript passage or a key). Messages name the field path, which comes
 // from the schema, and what the field should be. A property the schema does not declare is neither checked nor named.
 
-/** How the modes are written in AH_VALIDATE_TOOL_ARGS. An unknown or empty value is the default, `warn`. */
+/** How the modes are written in AH_VALIDATE_TOOL_ARGS. An unknown or empty value is the default, `enforce`. (`warn` was the default while the usage counts showed whether a valid call would be refused; none was.) */
 export const MODES = ['off', 'warn', 'enforce']
-export const DEFAULT_MODE = 'warn'
+export const DEFAULT_MODE = 'enforce'
 export function validationMode(raw) {
   const mode = typeof raw === 'string' ? raw.trim().toLowerCase() : ''
   return MODES.includes(mode) ? mode : DEFAULT_MODE

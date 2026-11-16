@@ -338,7 +338,7 @@ describe('stdio server', { skip: !existsSync(join(UP, 'node_modules', 'ah-dsh-to
     await c.rpc('initialize', {})
     const r = await c.call('notebook', { action: 'bogus' })
     assert.equal(r.isError, true)
-    assert.match(c.text(r), /invalid arguments: "action" must be one of/)
+    assert.match(c.text(r), /Invalid arguments for notebook: "action" must be one of/)
     await c.close()
   })
 
@@ -505,7 +505,7 @@ describe('argument validation at the host', () => {
     assert.deepEqual([usage.data.tools.search.calls, usage.data.tools.search.errors, usage.data.tools.search.invalid], [1, 1, 1])
   })
   test('warn runs the tool, writes one stderr line with paths only, and counts the call as invalid but not failed', async () => {
-    const { host, ran, usage } = validatingHost()
+    const { host, ran, usage } = validatingHost({ AH_VALIDATE_TOOL_ARGS: 'warn' })
     let r
     const err = await stderrOf(async () => { r = await host.call('search', { query: 'q', limit: 'SECRET-TEXT' }) })
     assert.equal(r.isError, undefined)
@@ -533,11 +533,13 @@ describe('argument validation at the host', () => {
     assert.equal(ran.length, 1)
     assert.equal(usage.data.tools.search.invalid, undefined)
   })
-  test('an unknown value is the default, warn', async () => {
-    const { host, ran } = validatingHost({ AH_VALIDATE_TOOL_ARGS: 'strict' })
-    const err = await stderrOf(() => host.call('search', {}))
-    assert.match(err, /refuses/)
-    assert.equal(ran.length, 1)
+  test('enforce is the default, and so is an unknown value', async () => {
+    for (const env of [{}, { AH_VALIDATE_TOOL_ARGS: 'strict' }]) {
+      const { host, ran } = validatingHost(env)
+      const r = await host.call('search', {})
+      assert.equal(r.isError, true, JSON.stringify(env))
+      assert.deepEqual(ran, [])
+    }
   })
   test('a tool that declares no parameters accepts any arguments', async () => {
     const registry = new Registry()

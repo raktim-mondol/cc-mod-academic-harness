@@ -94,8 +94,8 @@ describe('the messages', () => {
 })
 
 describe('the setting', () => {
-  test('warn is the default, and an unknown value is the default', () => {
-    for (const v of [undefined, '', '  ', 'maybe', 'ON', 5]) assert.equal(validationMode(v), 'warn')
+  test('enforce is the default, and an unknown value is the default', () => {
+    for (const v of [undefined, '', '  ', 'maybe', 'ON', 5]) assert.equal(validationMode(v), 'enforce')
     assert.equal(validationMode('enforce'), 'enforce')
     assert.equal(validationMode(' Off '), 'off')
     assert.equal(validationMode('warn'), 'warn')
