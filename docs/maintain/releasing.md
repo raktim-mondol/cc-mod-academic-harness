@@ -6,7 +6,7 @@ A release is a tagged commit of the repository, which is public: a tag and a Git
 
 1. `node scripts/update-upstream.mjs` reports nothing you have not decided (or you chose to hold at the commit in the lock).
 2. The checks in [Testing](testing.md): types, `validate`, `plugin test`, the node suites, the parity check.
-3. **The live scripts**: the whole matrix in [Testing](testing.md), on the final code. They are the only checks that see a real session. Rerun a failure once before calling it a defect, and fix a defect in its own change. The evidence goes in the release notes, not in a commit: the Claude Code version, the Node version, the scripts run and what each said. No live output is committed; it can hold paths and prompts.
+3. **The live scripts**: the whole matrix in [Testing](testing.md), on the final code. They are the only checks that see a real session. Rerun a failure once before calling it a defect, and fix a defect in its own change; a `BLOCKED` run (no login, usage limit, the model declined to exercise the guard) is not a failure and does not count as either run. The evidence goes in the release notes, not in a commit: the Claude Code version, the Node version, the scripts run and what each said. No live output is committed; it can hold paths and prompts.
 4. `node scripts/check-upstream-clean.mjs`.
 5. A secret scan of the files that would be committed: copy `git ls-files -co --exclude-standard` to a scratch folder and scan that (the snapshot would otherwise be scanned too). No personal address in committed files.
 6. `CHANGELOG.md` has the entry; `.claude-plugin/plugin.json` has the version.
