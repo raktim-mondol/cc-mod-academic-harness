@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **One place for every key.** Each credential a tool can read is a plugin option, saved with `claude plugin configure` and kept in Claude Code's secure store; `docs/guide/keys.md` says how to save one, where it is stored, what wins over what, and what every key unlocks, and a test keeps the page in step with `plugin.json`. The keys of the restorable left-out tools (Brave, Tavily, Exa, Perplexity, Elicit) and three the engine's list did not name (`GITHUB_TOKEN`, `OSF_TOKEN`, `IMAGE_API_KEY`) are now offered too.
+- Semantic Scholar requests are paced at one every two seconds across all tools when a key is set, under the key's one per second (`AH_S2_MIN_INTERVAL_MS` raises the gap). Before, the first tool to call Semantic Scholar set the gap, and three of them asked for exactly the limit.
+- Fixed: `tests/live/p2-config.mjs` failed for anyone with a key exported in the shell.
 - The diagrams in the documentation are Mermaid sources in `docs/assets/` rendered with Pele: the architecture page and the mod-anatomy page use colour diagrams, and the history page's two text diagrams became a colour diagram and a tree. The README has a colour architecture diagram (`docs/assets/architecture.mmd`, rendered to SVG with Pele), says the repository is public, and the copyright holder is named Academic Harness (formerly ResearchCraft) in `LICENSE`, `NOTICE` and the architecture page. The getting-started page and `CONTRIBUTING.md` no longer say the repository is private.
 
 ## 0.4.0 (2026-11-16)

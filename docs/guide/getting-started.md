@@ -52,6 +52,10 @@ If it fails, the doctor shows the step and the error, and the next start tries a
 | The writing engine | `upstream/vendor/academic-harness/.venv` | `setup`, or in the background on first start (`AH_AUTO_INSTALL=0` turns that off) |
 | Python helpers | `upstream/python-helpers/.venv` | Only `setup --helpers` or `node scripts/install-helpers.mjs` |
 
+## Keys
+
+None is needed to start. To add one, run `claude plugin configure academic-harness@academic-harness-mod`: it lists every option, and saves keys in Claude Code's secure store. See [Keys and credentials](keys.md).
+
 ## Check it
 
 `/academic doctor` inside a session, or `node server/bin/ah-doctor.mjs` outside one. It says what is ready and what is not, with the command that fixes each gap. See [Troubleshooting](troubleshooting.md).

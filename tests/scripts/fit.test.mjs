@@ -189,3 +189,17 @@ describe('the research-mode text', () => {
     for (const s of slugs) assert.ok(files.has(s), `the prompt lists a guide with no file: ${s}`)
   })
 })
+
+describe('the keys page', () => {
+  test('names every key and address option of the plugin, and no option that does not exist', () => {
+    const manifest = JSON.parse(read('.claude-plugin', 'plugin.json'))
+    const page = read('docs', 'guide', 'keys.md')
+    const options = Object.entries(manifest.mcpServers.ah.env).filter(([k]) => k.startsWith('AH_KEY_')).map(([, v]) => /user_config\.([a-z0-9_]+)/.exec(v)[1])
+    // Keys, tokens and addresses belong on the page; tool tuning (co_scientist_*, deep_review_*, ...) is in settings.md.
+    const wanted = options.filter(o => manifest.userConfig[o].sensitive || /_(email|mailto)$/.test(o))
+    for (const o of wanted) assert.ok(page.includes(`\`${o}\``), `${o} is not on docs/guide/keys.md`)
+    const tableNames = [...page.matchAll(/^\| ((?:`[a-z0-9_]+`(?:, )?)+) \|/gm)].flatMap(m => [...m[1].matchAll(/`([a-z0-9_]+)`/g)].map(x => x[1]))
+    for (const n of tableNames) assert.ok(manifest.userConfig[n], `${n} is on the page but is not a plugin option`)
+    assert.ok(tableNames.length >= wanted.length)
+  })
+})

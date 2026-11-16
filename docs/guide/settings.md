@@ -8,7 +8,7 @@ Set the settings where Claude Code configures plugin options (they are the plugi
 |---|---|---|
 | `research_mode` | `auto` | `auto`, `on` or `off`. `/academic on\|off\|auto` overrides it for a session |
 | `tool_areas` | `all` | Which tool groups load; see [Tools](tools-skills-agents.md) for the names |
-| `restore_tools` | empty | Tools the plugin leaves out, to bring back by name. The shell variable `AH_RESTORE_TOOLS` does the same. A restored tool reads its key from its environment variable. `paper_mcp`, `zvec_index` and `ah_rsi` cannot come back: their machinery is gone |
+| `restore_tools` | empty | Tools the plugin leaves out, to bring back by name. The shell variable `AH_RESTORE_TOOLS` does the same. A restored tool's key has its own option ([Keys](keys.md)). `paper_mcp`, `zvec_index` and `ah_rsi` cannot come back: their machinery is gone |
 | `llm_model` | `sonnet` | The model of the tools that call a model (the alias or id passed to `--model`) |
 | `llm_budget_usd` | `5` | The most the model route spends in one server run; one call is also capped at 1 USD. Calls that run together reserve their caps, so together they can never be allowed more than is left |
 | `job_notices` | `prompt` | When a background job ends: `prompt` notifies you and prompts the model to read the result, `notify` only notifies, `off` neither (`job_status` and `job_wait` still work). Interactive sessions only |
@@ -19,7 +19,7 @@ Set the settings where Claude Code configures plugin options (they are the plugi
 
 ## Keys
 
-About 30 optional key and address fields, all sensitive ones stored in Claude Code's secure store. None is needed to start. Worth setting first:
+Every key, token and address a tool can use is a plugin option, saved with `claude plugin configure academic-harness@academic-harness-mod` and kept in Claude Code's secure store. None is needed to start. [Keys and credentials](keys.md) has how to save one, where it is stored, and the full list. Worth setting first:
 
 | Field | Why |
 |---|---|
@@ -27,7 +27,7 @@ About 30 optional key and address fields, all sensitive ones stored in Claude Co
 | `UNPAYWALL_EMAIL` | Open-access PDFs for `paper_download` (an address, not a secret) |
 | `CROSSREF_MAILTO` | Crossref's faster, steadier pool (an address) |
 
-The others unlock one source or tool each: Consensus, Scite and Firecrawl as sources of `literature_search`, Parallel, TypeSafe (routing and reranking), Gemini (`image_generate`), the rented-compute providers, FutureHouse, and so on. `/academic doctor` lists which names are set, never the values.
+`/academic doctor` lists which names are set, never the values.
 
 ## Environment switches
 
@@ -48,6 +48,7 @@ The others unlock one source or tool each: Consensus, Scite and Firecrawl as sou
 | `AH_LLM_MODEL`, `AH_LLM_BUDGET_USD` | The model route, from the shell |
 | `AH_SOURCE` | A local Academic Harness checkout that `setup` and `update-upstream` read before going to GitHub (default `~/academic-harness`) |
 | `AH_UPSTREAM` | Development mode: run from a checkout of the engine code, read-only, with every installer off |
+| `AH_S2_MIN_INTERVAL_MS` | The gap between Semantic Scholar requests when a key is set (default 2000; never below 1100, so the key's one request per second is not reached) |
 | `AH_KEYS_REPORT=<file>` | Diagnostic: write the name, length and a short hash of each key the server received. Never a value |
 
 Next: [State and privacy](state-and-privacy.md).
