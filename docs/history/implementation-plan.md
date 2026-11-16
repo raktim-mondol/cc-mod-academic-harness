@@ -55,25 +55,9 @@ Each line says how it was established.
 
 A mod's hooks module has no Node and no DOM. It reaches the outside only through the engine interface (`$`). So the mod has two halves.
 
-```
-Claude Code session
-│
-├── hooks module (hooks/register.tsx)           runs inside the engine
-│     research mode, prompt section, slash commands
-│     guard bridge  ──────── $.process.run ───►  node server/bin/ah-hook.mjs ──► ah hook <event>
-│     approvals (tool.check)
-│     status line, pane, notifications  ◄── $.fs reads job records
-│
-├── MCP server "ah" (server/)                   one Node process, stdio
-│     loads upstream tool modules through a small context shim
-│     136 tools, deferred behind ToolSearch
-│     jobs service, model route
-│
-├── MCP server "papermemory"                    launcher → `papermemory mcp`
-│
-├── skills/        core pack, listed
-└── agents/        specialist definitions
-```
+![The plan's architecture: the hooks module with its guard bridge, the ah MCP server with 136 tools, the papermemory launcher, skills and agents](../assets/plan-architecture.svg)
+
+The source is `docs/assets/plan-architecture.mmd`.
 
 ### 4.1 How each DSH piece maps
 
@@ -116,49 +100,9 @@ Claude Code defers MCP tools behind ToolSearch. The model sees tool names and lo
 
 ## 5. Folder layout
 
-```
-cc-mod-academic-harness/
-├── docs/history/implementation-plan.md
-├── README.md
-├── UPSTREAM.lock.json            source commit, version, archive hash
-├── .claude-plugin/plugin.json    name, version, types, userConfig, mcpServers
-├── hooks/
-│   ├── hooks.json                { "modules": ["./register.tsx"] }
-│   ├── register.tsx              wires the modules below
-│   ├── mode.ts                   research mode, /academic, prompt.compose
-│   ├── guard.ts                  ah hook bridge
-│   ├── approvals.ts              tool.check asks
-│   ├── tasks.ts                  task commands
-│   ├── ui.tsx                    status line, pane, notices
-│   └── generated/                prompt text, task constants, fold-core (built)
-├── types/index.d.ts              the $.state contract
-├── server/
-│   ├── src/host.mjs              MCP loop
-│   ├── src/context.mjs           the context given to upstream apply()
-│   ├── src/exec.mjs              per-call context (cwd, session id, signal)
-│   ├── src/schema.mjs            DSH parameter DSL → JSON Schema
-│   ├── src/manifest.mjs          which upstream modules load, by area
-│   ├── src/jobs.mjs              jobs service
-│   ├── src/llm.mjs               model route
-│   ├── bin/ah-hook.mjs           runs `ah hook <event>`
-│   ├── bin/papermemory-mcp.mjs   launcher
-│   └── dist/                     bundle (built, P6)
-├── upstream/                     snapshot of the source at the pinned commit (built)
-├── skills/                       core pack (built)
-├── agents/                       specialist definitions
-├── scripts/
-│   ├── sync-upstream.mjs
-│   ├── build-skills.mjs
-│   ├── build-prompt.mjs
-│   ├── build-server.mjs
-│   ├── measure-surface.mjs
-│   └── check-upstream-clean.mjs
-├── tests/
-│   ├── *.test.ts                 run by `claude plugin test`
-│   ├── server/*.test.mjs         run by `node --test`
-│   └── live/                     nested-claude scenarios
-└── docs/design/platform-notes.md        results of the P0 checks
-```
+![The planned repository layout: docs, README, the lock, the manifest, hooks, types, server, upstream, skills, agents, scripts and tests](../assets/repo-tree.svg)
+
+The source is `docs/assets/repo-tree.mmd`.
 
 State outside the folder:
 

@@ -1,0 +1,28 @@
+flowchart TB
+  subgraph CC["Claude Code session (the plan, 136 tools)"]
+    direction TB
+    H["Hooks module<br/>research mode, prompt section,<br/>slash commands, approvals,<br/>status line, pane, notifications"]
+    GB["Guard bridge"]
+    AH["MCP server ah<br/>136 tools, deferred behind ToolSearch<br/>jobs service, model route"]
+    PM["MCP server papermemory<br/>launcher"]
+    SK["skills/ core pack, listed"]
+    AG["agents/ specialist definitions"]
+  end
+  H --- GB
+  GB -->|"$.process.run"| HOOK["node server/bin/ah-hook.mjs"]
+  HOOK --> EH["ah hook event"]
+  AH -->|"writes job records"| REC[("Job records")]
+  REC -->|"$.fs reads"| H
+  PM --> PMC["papermemory mcp"]
+
+  classDef hooks fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#1e3a8a
+  classDef server fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d
+  classDef content fill:#fef9c3,stroke:#ca8a04,stroke-width:2px,color:#713f12
+  classDef engine fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#4c1d95
+  classDef store fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#7c2d12
+  class H,GB,HOOK hooks
+  class AH,PM,PMC server
+  class SK,AG content
+  class EH engine
+  class REC store
+  style CC fill:#f8fafc,stroke:#94a3b8,stroke-width:2px,color:#334155

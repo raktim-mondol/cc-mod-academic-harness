@@ -2,26 +2,17 @@
 
 The plugin gives Claude Code the Academic Harness research toolkit: its tools, skills, a writing engine and a library of papers. A Claude Code mod's hooks module has no Node and no DOM and reaches the outside only through the engine interface `$`, so the plugin has two halves that talk through processes and MCP.
 
-```
-Claude Code session
-│
-├── hooks module (hooks/register.tsx)              inside Claude Code; no Node
-│     research mode and the system-prompt section
-│     slash commands: /academic, /ah-*, /fold, /ah-watch
-│     status line, pane, completion notices
-│     the writing-engine guard, approvals (tool.check)
-│     └── $.process.run ──► node server/bin/ah-{hook,approve,ui,doctor}.mjs
-│
-├── MCP server "ah"  (server/bin/ah-mcp.mjs)       one Node process, stdio
-│     loads the research tool modules from the engine code through a small context shim
-│     121 tools + job_* + doctor, deferred behind ToolSearch
-│     jobs service, model route (headless claude -p)
-│     fetches the engine code itself on first start (bootstrap.mjs)
-│
-├── MCP server "papermemory"  (server/bin/papermemory-mcp.mjs)   launcher → `papermemory mcp`
-├── skills/    54 core skills + the guides   (generated)
-└── agents/    21 specialists                (generated)
-```
+![How the plugin is built: the hooks module, the ah and papermemory MCP servers, skills and agents, the pinned Academic Harness snapshot and the writing engine](../assets/architecture.svg)
+
+Blue is code that runs inside Claude Code's hooks, green the MCP servers and background jobs, purple the writing engine, orange stored data, yellow skills and agents, and grey what is outside the plugin. The source is `docs/assets/architecture.mmd`, rendered with Pele.
+
+| Part | Where | What it does |
+|---|---|---|
+| Hooks module | `hooks/register.tsx` | Runs inside Claude Code, with no Node. Research mode and the system-prompt section; the slash commands `/academic`, `/ah-*`, `/fold`, `/ah-watch`; the status line, pane and completion notices; the writing-engine guard and approvals (`tool.check`). It reaches the outside with `$.process.run`, which starts `node server/bin/ah-{hook,approve,ui,doctor}.mjs` |
+| MCP server `ah` | `server/bin/ah-mcp.mjs` | One Node process over stdio. Loads the research tool modules from the engine code through a small context shim; 121 tools plus the `job_*` tools and `doctor`, deferred behind ToolSearch; the jobs service and the model route (headless `claude -p`); fetches the engine code itself on first start (`bootstrap.mjs`) |
+| MCP server `papermemory` | `server/bin/papermemory-mcp.mjs` | A launcher for `papermemory mcp` |
+| Skills | `skills/` | 54 core skills and the guides (generated) |
+| Agents | `agents/` | 21 specialists (generated) |
 
 ## The engine code
 
