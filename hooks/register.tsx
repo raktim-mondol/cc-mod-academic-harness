@@ -27,7 +27,7 @@ export const register: Register = (on, options) => {
 
   on('command.run', { command: 'academic' }, async ($, e) => {
     const word = (e.args ?? '').trim().toLowerCase()
-    if (word === 'doctor' || word === 'doctor --online') return { text: await doctorText($, word) }
+    if (/^doctor(\s|$)/.test(word)) return { text: await doctorText($, word) }
     const text = await run($, options, e.args)
     return { text: word === '' || word === 'pane' ? `${text}\n${await openPane($, options)}` : text }
   })

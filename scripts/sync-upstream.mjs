@@ -28,6 +28,7 @@ import { treeDigest } from '../server/src/snapshot.mjs'
 
 export const PINNED = 'a3f17eb8ae15221adeaa45cd19918c1f82f82973'
 export const SOURCE_REPO = 'raktim-mondol/academic-harness'
+const DOWNLOAD_TIMEOUT_MS = 5 * 60_000
 
 // Paths taken from the source. Each phase adds what it needs; a path that does not
 // exist at the commit is reported and skipped, never silently ignored.
@@ -83,6 +84,8 @@ export function git(source, args, opts = {}) {
  */
 export async function obtainFromGithub({ commit, staging, allow = ALLOW, repo = SOURCE_REPO, fetchTarball = download }) {
   if (!/^[0-9a-f]{40}$/.test(commit)) throw new Error('a download needs the full 40-character commit, not a branch or a short sha')
+  // a new machine or a container may have no ~/.cache yet
+  mkdirSync(join(homedir(), '.cache'), { recursive: true })
   const scratch = mkdtempSync(join(homedir(), '.cache', 'ah-sync-'))
   try {
     const file = join(scratch, 'source.tar.gz')
@@ -110,7 +113,8 @@ export async function obtainFromGithub({ commit, staging, allow = ALLOW, repo = 
 }
 
 async function download(url, file) {
-  const res = await fetch(url, { redirect: 'follow' })
+  // a download that hangs must end: the server's first start waits on it, and so does every other server that starts meanwhile
+  const res = await fetch(url, { redirect: 'follow', signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS) })
   if (!res.ok) throw new Error(`download of ${url} failed: HTTP ${res.status}`)
   writeFileSync(file, Buffer.from(await res.arrayBuffer()))
 }
@@ -141,6 +145,14 @@ export async function sync({ source, commit, github = false, outDir = join(root,
   }
 
   const pkg = JSON.parse(readFileSync(join(staging, 'package.json'), 'utf8'))
+  const before = existsSync(lockFile) ? JSON.parse(readFileSync(lockFile, 'utf8')) : null
+  // A download of the locked commit must hold the bytes the lock describes: otherwise the commit changed under us, or the download is wrong.
+  // Checked here, before anything is replaced, so a download that is refused never becomes the snapshot the server loads.
+  const digest = treeDigest(staging)
+  if (github && before?.commit === sha && before.treeSha256 && before.treeSha256 !== digest.sha256) {
+    rmSync(staging, { recursive: true, force: true })
+    throw new Error(`the download of ${sha.slice(0, 7)} does not match the lock (${digest.fileCount} files, digest ${digest.sha256.slice(0, 12)}, expected ${before.fileCount} files, ${before.treeSha256.slice(0, 12)}). Nothing was replaced: ${outDir} and the lock are as they were.`)
+  }
   // Installed dependencies are expensive. Keep them across a sync when the lockfile did not change.
   const keep = join(outDir, 'node_modules')
   const sameLock = existsSync(keep) && existsSync(join(outDir, 'package-lock.json')) && existsSync(join(staging, 'package-lock.json')) &&
@@ -163,8 +175,6 @@ export async function sync({ source, commit, github = false, outDir = join(root,
   rmSync(outDir, { recursive: true, force: true })
   renameSync(staging, outDir)
 
-  const digest = treeDigest(outDir)
-  const before = existsSync(lockFile) ? JSON.parse(readFileSync(lockFile, 'utf8')) : null
   const lock = {
     source: 'github.com/raktim-mondol/academic-harness',
     commit: sha,
@@ -175,10 +185,6 @@ export async function sync({ source, commit, github = false, outDir = join(root,
     fileCount: digest.fileCount,
     paths: present,
     missing,
-  }
-  // A download of the locked commit must hold the bytes the lock describes: otherwise the commit changed under us, or the download is wrong.
-  if (github && before?.commit === sha && before.treeSha256 && before.treeSha256 !== digest.sha256) {
-    throw new Error(`the download of ${sha.slice(0, 7)} does not match the lock (${digest.fileCount} files, digest ${digest.sha256.slice(0, 12)}, expected ${before.fileCount} files, ${before.treeSha256.slice(0, 12)}). The snapshot in ${outDir} is the new one; the lock is unchanged.`)
   }
   writeFileSync(lockFile, JSON.stringify(lock, null, 2) + '\n')
   return lock

@@ -1,4 +1,4 @@
-// What is ready and what is not: the checks behind `/academic doctor` and `node scripts/doctor.mjs`.
+// What is ready and what is not: the checks behind `/academic doctor` and `node server/bin/ah-doctor.mjs`.
 //
 // Read-only. Nothing is installed, no key value is read out (names only), and no network call is made unless `online` is asked for.
 import { execFileSync } from 'node:child_process'
@@ -36,7 +36,11 @@ export async function diagnose({ env = process.env, online = false, root = modRo
   const major = Number(process.versions.node.split('.')[0])
   add('node', major >= 22 ? 'ok' : 'missing', 'Node.js', `v${process.versions.node}${major >= 22 ? '' : ' (22 or newer is needed for node:sqlite)'}`, major >= 22 ? undefined : 'install a current Node.js')
 
-  const fetching = isDevMode(env) ? null : readState(env)
+  // A fetch that failed leaves its error behind until a server fetches again. Once the snapshot is usable (`node scripts/setup.mjs` after
+  // the failure, say) no server needs to fetch, so the old error would stay for ever: it is only reported while the snapshot is unusable.
+  const usable = existsSync(join(upstream, 'node_modules', 'ah-dsh-tools'))
+  const state = isDevMode(env) ? null : readState(env)
+  const fetching = state?.error && usable ? null : state
   if (fetching && !fetching.error) {
     add('snapshot', 'info', 'Source snapshot', `being set up by the server (started ${Math.max(0, Math.round((Date.now() - fetching.startedAt) / 1000))} s ago): ${fetching.step}. The other tools appear when it is done`)
   } else if (fetching?.error) {

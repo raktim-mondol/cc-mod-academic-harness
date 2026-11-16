@@ -144,6 +144,18 @@ describe('ah-hook with no engine', () => {
     assert.match(r.err, /no engine to run/)
     assert.match(r.err, /sync-upstream/)
   })
+  test('AH_NO_ENFORCE=1, the way on that the refusal names, lets pre, post and stop pass with no engine', async () => {
+    const dir = project('g')
+    const empty = join(root, 'empty-upstream')
+    const env = { AH_UPSTREAM: empty, ACADEMIC_HARNESS_CLI: '', AH_CMD: '', AH_NO_ENFORCE: '1' }
+    for (const event of ['pre', 'post', 'stop']) {
+      const r = await hook(event, { cwd: dir, tool_name: 'Write', tool_input: {} }, env)
+      assert.equal(r.code, 0, event)
+      assert.equal(r.out, '', `${event} prints nothing, which the hooks module reads as "go on"`)
+    }
+    assert.equal((await hook('userprompt', { cwd: dir, prompt: 'x' }, env)).code, 3, 'the state card still needs the engine')
+    assert.equal((await hook('pre', { cwd: dir, tool_name: 'Write', tool_input: {} }, { ...env, AH_NO_ENFORCE: '0' })).code, 3, 'only the value 1 switches the guard off')
+  })
 })
 
 describe('engine status', () => {

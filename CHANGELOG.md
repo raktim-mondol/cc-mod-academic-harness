@@ -4,6 +4,14 @@
 
 - **Install from the marketplace.** The repository is its own marketplace (`/plugin install academic-harness --marketplace raktim-mondol/cc-mod-academic-harness`). An installed copy, or a clone nobody set up, fetches the engine code on first start, verified against `UPSTREAM.lock.json`; until it is done the server offers the `doctor` tool and then swaps in the full list.
 - **`/ah-watch`** runs the saved literature searches that are due and prints what is new (`/loop 1d /ah-watch` to schedule).
+- Fixed after a review of the whole repository:
+  - A download that does not match the lock is now refused before anything is replaced. It used to become the snapshot first and fail afterwards, so a clone that already had its dependencies would load it on the next start.
+  - The first-start fetch failed on a machine with no `~/.cache` folder, and a download that hung never ended (it now gives up after five minutes).
+  - The fetch refuses to run with `AH_UPSTREAM` set: the folder it replaces would be a source checkout.
+  - `AH_NO_ENFORCE=1`, which the guard's own refusal names as the way to work without it, did nothing when the engine was not built: every edit stayed refused.
+  - `/academic doctor` kept reporting an old failed fetch after `node scripts/setup.mjs` had repaired the snapshot.
+  - Job records and logs were kept for ever, and the status line and the notices read all of them every few seconds. Those that ended more than 30 days ago are removed when a server starts (`AH_JOBS_KEEP_DAYS`).
+  - The server now reports the plugin's version from `plugin.json` (it was a second copy of the number), says at start when the snapshot is from another version than the lock, and reads a PaperMemory database whose path holds `?`, `#` or `%`. `/academic doctor  --online` with extra spaces works.
 - **Documentation** in a guide, design notes, maintenance notes and history, with a README per folder and a test that the links resolve.
 
 ## 0.3.0

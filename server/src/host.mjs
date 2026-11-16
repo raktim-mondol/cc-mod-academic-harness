@@ -5,16 +5,16 @@
 //   serve()       the stdio MCP loop (newline-delimited JSON-RPC)
 //
 // Standard output belongs to the protocol. Everything else goes to stderr.
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { createContext, Registry } from './context.mjs'
-import { createJobs, FINISHED } from './jobs.mjs'
+import { createJobs, DEFAULT_KEEP_DAYS } from './jobs.mjs'
 import { createLlm, DEFAULT_BUDGET_USD, DEFAULT_MODEL } from './llm.mjs'
 import { doctorTool } from './doctortool.mjs'
 import { jobTools } from './jobtools.mjs'
-import { modHome } from './paths.mjs'
+import { modHome, modRoot } from './paths.mjs'
 import { makeExec, sessionIdFrom } from './exec.mjs'
 import { parseAreas, plan, restoreList } from './manifest.mjs'
 import { adapt, blocksToContent, clip, DEFAULT_MAX_CHARS, fixSkillSearch } from './render.mjs'
@@ -22,7 +22,10 @@ import { listedSkills } from './skills-list.mjs'
 import { toInputSchema } from './schema.mjs'
 
 export const SERVER_NAME = 'ah'
-export const SERVER_VERSION = '0.4.0'
+/** The plugin's version, read from its manifest so the two cannot drift apart. */
+export const SERVER_VERSION = (() => {
+  try { return String(JSON.parse(readFileSync(join(modRoot(), '.claude-plugin', 'plugin.json'), 'utf8')).version) } catch { return '0.0.0' }
+})()
 export const DEFAULT_TIMEOUT_MS = 10 * 60 * 1000
 /** Tools whose work is long: the host runs them as jobs and answers the call after a foreground window (AH_JOB_FOREGROUND_MS). */
 export const DETACHED_TOOLS = new Set(['deep_research', 'deep_review', 'analysis_run'])
@@ -61,6 +64,12 @@ export async function createHost({ upstream, areas = 'all', env = process.env, c
   const registry = new Registry()
   const sessionId = sessionIdFrom(env)
   const jobs = createJobs({ dir: join(modHome(env), 'jobs'), session: sessionId ?? null, cwd })
+  // Old records go when a server starts (AH_JOBS_KEEP_DAYS, default 30; 0 keeps everything).
+  try {
+    const keep = env.AH_JOBS_KEEP_DAYS?.trim()
+    const gone = jobs.prune({ keepDays: keep !== undefined && keep !== '' && Number(keep) >= 0 ? Number(keep) : DEFAULT_KEEP_DAYS })
+    if (gone) logger(`removed ${gone} job record${gone === 1 ? '' : 's'} that ended long ago`)
+  } catch { /* housekeeping must not stop the server */ }
   const budget = Number(env.AH_LLM_BUDGET_USD)
   const llm = createLlm({ model: env.AH_LLM_MODEL?.trim() || DEFAULT_MODEL, budgetUsd: budget > 0 ? budget : DEFAULT_BUDGET_USD, cwd, env })
   const services = { jobs, llm }

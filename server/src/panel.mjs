@@ -5,6 +5,7 @@
 import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { loadEngine } from './engine-launch.mjs'
 
 const CARD_KEEP = [/^# Paper state/, /^Bibliography:/, /^Outline status:/, /^Structure:/, /^Gate now:/, /^Done:/]
@@ -56,8 +57,8 @@ export async function libraryCounts(env = process.env) {
   if (!existsSync(path)) return null
   try {
     const { DatabaseSync } = await import('node:sqlite')
-    // immutable=1: SQLite touches nothing, not even the -shm and -wal files a read-only open of a WAL database would leave beside the shared store.
-    const db = new DatabaseSync(`file:${path}?immutable=1`, { readOnly: true })
+    // A file URL, so a `?`, `#` or `%` in the path is not read as part of the query. immutable=1: SQLite touches nothing, not even the -shm and -wal files a read-only open of a WAL database would leave beside the shared store.
+    const db = new DatabaseSync(`${pathToFileURL(path).href}?immutable=1`, { readOnly: true })
     try {
       const one = sql => { try { return Number(db.prepare(sql).get()?.c ?? 0) } catch { return 0 } }
       return {

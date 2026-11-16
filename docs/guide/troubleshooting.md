@@ -10,7 +10,7 @@ Start with `/academic doctor` (outside a session: `node server/bin/ah-doctor.mjs
 | `ah_*` tools say the engine is "being installed" or "missing" | The engine's environment builds in the background on first start (about a minute). `node scripts/install-engine.mjs` builds it now |
 | `paper_fold` says TextFold is not ready | It installs when the notebook or submission tools load; check `AH_MANAGED_INSTALLS` and the network. The doctor shows whether it is there |
 | A write in a project is refused with a reason | That is the guard. Read the reason, do not look for another way, and hand the question to the author with `ah_decision_request` |
-| A write is refused and the reason says the guard could not run | The engine is missing or broke: it fails closed for writes and shell, and reads still work. Fix the engine as above |
+| A write is refused and the reason says the guard could not run | The engine is missing or broke: it fails closed for writes and shell, and reads still work. Fix the engine as above. To work without the guard meanwhile, start Claude Code with `AH_NO_ENFORCE=1` in the shell |
 | `literature_search` reports `s2: ... 429` | Semantic Scholar's keyless pool is shared and throttled. Set `S2_API_KEY`; the other sources still answer |
 | A `deep_research` run stopped when the session ended | Jobs belong to the session. `deep_research` resumes from its own store (`action: resume`) |
 | A headless `claude -p "/ah-research ..."` returns with the job unfinished | The command ends the session when it returns. Set `AH_JOB_FOREGROUND_MS` high so the run finishes inside it |

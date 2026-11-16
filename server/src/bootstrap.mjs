@@ -9,7 +9,7 @@ import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 import { sync } from '../../scripts/sync-upstream.mjs'
 import { claim, clearState, readState, writeState } from './bootstrap-state.mjs'
-import { modHome, modRoot, upstreamDir } from './paths.mjs'
+import { isDevMode, modHome, modRoot, upstreamDir } from './paths.mjs'
 import { checkSnapshot } from './snapshot.mjs'
 
 const STAMP = '.ah-lock-sha256'
@@ -48,6 +48,8 @@ async function waitForOther(env, timeoutMs, every = 2000) {
  * Resolves `{ dir, fetched, installed }`; rejects with the reason, which is also left in the state file for the doctor.
  */
 export async function bootstrap({ env = process.env, root = modRoot(), fetchTarball, install = installDependencies, waitMs = 15 * 60_000 } = {}) {
+  // The fetch replaces the folder it fetches into. With AH_UPSTREAM that folder is a source checkout, which is only ever read.
+  if (isDevMode(env)) throw new Error('AH_UPSTREAM is set (development mode): the snapshot is a checkout, and nothing is fetched into a checkout')
   const lockPath = join(root, 'UPSTREAM.lock.json')
   if (!existsSync(lockPath)) throw new Error('UPSTREAM.lock.json is missing: this is not the plugin\'s folder')
   const lock = JSON.parse(readFileSync(lockPath, 'utf8'))

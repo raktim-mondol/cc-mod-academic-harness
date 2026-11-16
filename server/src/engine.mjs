@@ -53,7 +53,7 @@ export function venvPython(dir = engineDir(), platform = process.platform) {
  *   { ok: true, how }   an override (ACADEMIC_HARNESS_CLI or AH_CMD) or a venv built from the current engine files
  *   { ok: false, why }  what is missing, worded for the person who has to fix it
  */
-export function engineStatus(env = process.env, dir = engineDir(env.AH_UPSTREAM?.trim() || undefined), { verify = true } = {}) {
+export function engineStatus(env = process.env, dir = engineDir(upstreamDir(env)), { verify = true } = {}) {
   const override = (env.ACADEMIC_HARNESS_CLI || env.AH_CMD || '').trim()
   if (override) return { ok: true, how: 'override', command: override }
   if (!existsSync(join(dir, 'pyproject.toml'))) return { ok: false, why: `the engine is not in the snapshot (${dir}); run node scripts/sync-upstream.mjs` }

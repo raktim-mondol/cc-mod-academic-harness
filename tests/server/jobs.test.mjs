@@ -282,3 +282,28 @@ describe('detached calls', { skip: !HAVE_UP }, () => {
     assert.match(text(await host.call('job_status', { job_id: 'job-nope' })), /no job job-nope/)
   })
 })
+
+describe('old job records', () => {
+  test('records that ended long ago are removed with their logs; recent, running and live ones stay', () => {
+    const dir = join(root, 'prune')
+    let clock = Date.UTC(2026, 0, 1)
+    const day = 24 * 60 * 60 * 1000
+    const old = createJobs({ dir, session: 's', now: () => clock })
+    const a = old.create({ kind: 'old' })
+    a.append('log\n')
+    old.settle(a.id, { status: 'completed', result: 'R' })
+    const stuck = old.create({ kind: 'still-running' })
+    clock += 40 * day
+    const recent = old.create({ kind: 'recent' })
+    old.settle(recent.id, { status: 'failed', detail: 'x' })
+    // a later server: none of these are its own live jobs, and the first server's process (this one) is alive, so `stuck` reads as running
+    const next = createJobs({ dir, session: 's2', now: () => clock })
+    assert.equal(next.prune({ keepDays: 0 }), 0, '0 keeps everything')
+    assert.equal(next.prune({ keepDays: 30 }), 1)
+    assert.equal(existsSync(next.recordPath(a.id)), false)
+    assert.equal(existsSync(next.logPath(a.id)), false)
+    assert.ok(existsSync(next.recordPath(recent.id)), 'ended inside the window')
+    assert.ok(existsSync(next.recordPath(stuck.id)), 'a running job is never removed')
+    assert.equal(old.prune({ keepDays: 1 }), 0, 'a server never removes the jobs it holds')
+  })
+})

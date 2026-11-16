@@ -15,14 +15,15 @@
 // On first start without a snapshot the server answers at once with its doctor tool alone, fetches the snapshot into <home>/upstream/<sha>
 // (server/src/bootstrap.mjs), then swaps in the full tool list and tells the client it changed.
 import { createHash } from 'node:crypto'
-import { writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { bootstrap } from '../src/bootstrap.mjs'
 import { Registry } from '../src/context.mjs'
 import { prepareEnv } from '../src/env.mjs'
 import { createHost, hostOver, missingDependencies, serve } from '../src/host.mjs'
 import { lateHost } from '../src/late-host.mjs'
 import { parseAreas } from '../src/manifest.mjs'
-import { isDevMode, upstreamDir } from '../src/paths.mjs'
+import { isDevMode, modRoot, upstreamDir } from '../src/paths.mjs'
 
 // `--list` only reads: no installer may start for it.
 const keysSet = prepareEnv(process.env, { areas: process.argv.includes('--list') ? undefined : parseAreas(process.env.AH_TOOL_AREAS).areas })
@@ -48,7 +49,21 @@ async function buildEngineInBackground() {
     .catch(error => say(`the writing engine could not be installed: ${error.message}`))
 }
 
-const open = () => createHost({ upstream: upstreamDir(), areas: process.env.AH_TOOL_AREAS, cwd: process.cwd() })
+/** A pull of the plugin can move the lock to a new commit while upstream/ still holds the old snapshot, dependencies and all, and the server
+ *  would load it without a word. Comparing versions costs two small reads (the doctor compares every byte); say so on stderr. */
+function warnIfSnapshotIsOld() {
+  if (isDevMode() || listing) return
+  try {
+    const lock = JSON.parse(readFileSync(join(modRoot(), 'UPSTREAM.lock.json'), 'utf8'))
+    const held = JSON.parse(readFileSync(join(upstreamDir(), 'package.json'), 'utf8')).version
+    if (lock.version && held && lock.version !== held) say(`the snapshot is Academic Harness ${held}, the lock says ${lock.version}: run \`node scripts/setup.mjs\` in the plugin folder to take the locked one`)
+  } catch { /* no lock or no snapshot: the doctor says so */ }
+}
+
+const open = async () => {
+  warnIfSnapshotIsOld()
+  return createHost({ upstream: upstreamDir(), areas: process.env.AH_TOOL_AREAS, cwd: process.cwd() })
+}
 // The snapshot is fetched on first start (bootstrap.mjs) unless this is development mode, `--list`, or AH_BOOTSTRAP=0.
 const needsFetch = !isDevMode() && !listing && process.env.AH_BOOTSTRAP?.trim() !== '0' && missingDependencies(upstreamDir()) !== null
 

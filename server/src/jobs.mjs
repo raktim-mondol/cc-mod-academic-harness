@@ -9,13 +9,14 @@
 // A job is a record `<dir>/<id>.json` and a log `<dir>/<id>.log`. The record says which session and folder
 // started it, so a hook can find the ones that are its own. A job belongs to the server process that runs it: when
 // the process ends, its running jobs are marked `interrupted` the next time the folder is read.
-import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs'
+import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 export const RUNNING = new Set(['running', 'stopping'])
 export const FINISHED = new Set(['completed', 'failed', 'killed', 'interrupted'])
 const LOG_LIMIT = 4 * 1024 * 1024
 const RESULT_LIMIT = 200_000
+export const DEFAULT_KEEP_DAYS = 30
 
 const clipText = (s, n) => (String(s ?? '').length > n ? `${String(s).slice(0, n)}\n[clipped]` : String(s ?? ''))
 
@@ -196,6 +197,26 @@ export function createJobs({ dir, session = null, cwd = null, pid = process.pid,
     return text.length > tail ? `[earlier output not shown]\n${text.slice(-tail)}` : text
   }
 
+  /**
+   * Remove the records and logs of jobs that ended more than `keepDays` ago. The folder is read whole by every status tool and, every few
+   * seconds, by the notices and the status line, so it must not grow for ever. A running job is never removed, whoever runs it. Returns the count.
+   */
+  function prune({ keepDays = DEFAULT_KEEP_DAYS } = {}) {
+    if (!(keepDays > 0)) return 0
+    const cutoff = now() - keepDays * 24 * 60 * 60 * 1000
+    let names = []
+    try { names = readdirSync(dir).filter(n => n.endsWith('.json')) } catch { return 0 }
+    let removed = 0
+    for (const n of names) {
+      const id = n.slice(0, -5)
+      if (live.has(id)) continue
+      const r = read(id)
+      if (!r || !FINISHED.has(r.status) || !((r.endedAt ?? r.startedAt) < cutoff)) continue
+      try { rmSync(recordPath(id), { force: true }); rmSync(logPath(id), { force: true }); removed++ } catch { /* another server is removing it too */ }
+    }
+    return removed
+  }
+
   /** Kill every job this process still runs: the server is ending. */
   async function closeAll(reason = 'the server is shutting down') {
     for (const [id, entry] of live) if (!FINISHED.has(entry.record.status)) kill(id, null, reason)
@@ -203,5 +224,5 @@ export function createJobs({ dir, session = null, cwd = null, pid = process.pid,
     for (const [id, entry] of live) if (!FINISHED.has(entry.record.status)) settle(id, { status: 'killed', detail: reason })
   }
 
-  return { dir, start, wait, kill, create, settle, deliver, get, list, log, view, closeAll, logPath, recordPath, running: () => [...live.values()].filter(e => RUNNING.has(e.record.status)).length }
+  return { dir, start, wait, kill, create, settle, deliver, get, list, log, view, prune, closeAll, logPath, recordPath, running: () => [...live.values()].filter(e => RUNNING.has(e.record.status)).length }
 }

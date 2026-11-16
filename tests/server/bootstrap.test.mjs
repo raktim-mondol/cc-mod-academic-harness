@@ -216,3 +216,31 @@ describe('a host that is swapped while the server runs', () => {
     assert.deepEqual(late.list().map(t => t.name).sort(), ['a', 'doctor'])
   })
 })
+
+describe('what the fetch must never do', () => {
+  test('with AH_UPSTREAM set it refuses: the folder it would replace is a checkout', async () => {
+    const checkout = join(root, 'a-checkout')
+    mkdirSync(checkout, { recursive: true })
+    writeFileSync(join(checkout, 'package.json'), '{"name":"x","version":"9.9.9"}')
+    const env = { ...envFor('home-dev'), AH_UPSTREAM: checkout }
+    let downloads = 0
+    await assert.rejects(bootstrap({ env, root: plugin, fetchTarball: async (u, f) => { downloads++; return tarball(u, f) }, install: async () => ({}) }), /development mode/)
+    assert.equal(downloads, 0)
+    assert.ok(existsSync(join(checkout, 'package.json')), 'the checkout is untouched')
+    assert.equal(readState(env), null, 'and no fetch is recorded')
+  })
+})
+
+describe('the doctor after a failed fetch was repaired by hand', () => {
+  test('an old fetch error is not reported once the snapshot is usable', async () => {
+    const env = envFor('home-stale')
+    const up = join(root, 'repaired')
+    mkdirSync(join(up, 'node_modules', 'ah-dsh-tools'), { recursive: true })
+    writeFileSync(join(up, 'package.json'), '{"name":"x","version":"3.1.4"}')
+    writeState({ pid: 1, step: 'fetching', startedAt: Date.now() - 60_000, error: 'HTTP 503' }, env)
+    const broken = await diagnose({ env, root: plugin, upstream: join(root, 'not-there'), home: join(root, 'home-stale') })
+    assert.match(broken.checks.find(c => c.id === 'snapshot').detail, /first-start fetch failed/)
+    const repaired = await diagnose({ env, root: plugin, upstream: up, home: join(root, 'home-stale') })
+    assert.doesNotMatch(repaired.checks.find(c => c.id === 'snapshot').detail, /fetch failed/)
+  })
+})

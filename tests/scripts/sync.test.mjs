@@ -103,6 +103,17 @@ describe('sync without a checkout', () => {
     writeFileSync(lockFile, JSON.stringify({ ...real, treeSha256: '0'.repeat(64) }))
     await assert.rejects(sync({ source: '/none', commit: sha, github: true, outDir: out, lockFile, allow: ALLOW, fetchTarball: tarballOf(sha) }), /does not match the lock/)
     assert.equal(JSON.parse(readFileSync(lockFile, 'utf8')).treeSha256, '0'.repeat(64))
+    assert.equal(existsSync(out), false, 'the refused download never becomes the snapshot')
+    assert.equal(existsSync(`${out}.staging`), false, 'and its staging folder is removed')
+  })
+  test('a refused download leaves the snapshot that was there in place', async () => {
+    const out = join(root, 'snap-kept')
+    const lockFile = join(root, 'kept.lock.json')
+    const real = await sync({ source: src, commit: sha, outDir: out, lockFile, allow: ALLOW })
+    writeFileSync(join(out, 'marker-of-the-old-snapshot'), 'x')
+    writeFileSync(lockFile, JSON.stringify({ ...real, treeSha256: '0'.repeat(64) }))
+    await assert.rejects(sync({ source: '/none', commit: sha, github: true, outDir: out, lockFile, allow: ALLOW, fetchTarball: tarballOf(sha) }), /Nothing was replaced/)
+    assert.ok(existsSync(join(out, 'marker-of-the-old-snapshot')))
   })
   test('a download needs a full commit, and a failed one says so', async () => {
     await assert.rejects(sync({ source: '/none', commit: 'main', github: true, outDir: join(root, 'x'), lockFile: join(root, 'x.json'), allow: ALLOW }), /full 40-character commit/)

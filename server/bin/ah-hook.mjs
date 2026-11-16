@@ -42,6 +42,11 @@ export async function main(argv = process.argv.slice(2), env = process.env, stdi
   }
   const cwd = typeof payload.cwd === 'string' && payload.cwd ? payload.cwd : process.cwd()
 
+  // AH_NO_ENFORCE=1 is the engine's own switch for working without the guard (it skips pre, post and stop). The fail-closed text names it
+  // as the way on when the engine cannot run, so it has to hold then too: without this an engine that is not built refused every edit and the
+  // switch could not be reached. Set by the person in the environment Claude Code starts in; a tool call cannot set it.
+  if (env.AH_NO_ENFORCE === '1' && event !== 'userprompt') return 0
+
   // The installer flags stay off: this process never builds anything, it only looks for a built engine.
   env.ACADEMIC_HARNESS_SKIP_INSTALL = '1'
   const status = engineStatus(env, undefined, { verify: false })

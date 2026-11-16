@@ -58,7 +58,7 @@ export function createContext(registry, { log = () => {}, module = '', services 
     plugin() {
       throw new UnportedServiceError('plugin', `${module || 'a module'} uses a DSH plugin, which Claude Code does not have`)
     },
-    // Subscriptions are recorded, never fired: the events (session/created, agent/disposed) are DSH's.
+    // Subscriptions are recorded. The host raises the two that have a meaning here (host.mjs `start`): session/created and agent/disposed.
     on(event, handler) {
       registry.subscriptions.push({ module, event, handler })
       return () => {}
