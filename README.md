@@ -92,4 +92,4 @@ Keys reach the tools as environment variables and are reported by name, never by
 
 ## Licence
 
-MIT (`LICENSE`). Third-party notices, including those of the skill catalogues some skills come from, are in `NOTICE`. Skills under non-commercial, GPL or unknown licences are not in this repository. Contributions are under the same licence; see [CONTRIBUTING.md](CONTRIBUTING.md).
+MIT (`LICENSE`) for the code written for this mod. A few skills copied into `skills/` come from other projects and keep their own licences: three are CC BY 4.0 and one reference file is CC BY-SA 4.0; each is credited, with its changes, in `NOTICE`, which also lists the MIT sources and what the plugin downloads on first start. Skills under non-commercial, GPL or unknown licences are not in this repository. The Academic Harness snapshot the plugin fetches carries its own `NOTICE`, and a skill the model loads on demand from it can be under a non-commercial licence: its `license:` line says. Contributions are under the same licence; see [CONTRIBUTING.md](CONTRIBUTING.md).

@@ -91,7 +91,7 @@ All write under `~/.cache/ah-cc-*`, use Haiku, and cap spending per run. They ne
 | `fit.mjs` | The catalogue (skills, agents, tools), `restore_tools`, papers searched with `literature_search`, an on-demand skill | cents |
 | `install.mjs` | The first start of an installed copy: the doctor answers at once, the snapshot is fetched, the list changes (`first_start`: network, no Claude); installed from a local marketplace into a scratch configuration (`marketplace`) | cents, network |
 
-A live script prints `name: ok: ...` or `name: FAIL ...` per scenario and exits 1 if any failed. Run one by name: `node tests/live/p5.mjs papers errors`.
+A live script prints `name: ok: ...` or `name: FAIL ...` per scenario and exits 1 if any failed. `tests/live/p3.mjs` also prints `name: BLOCKED ...`: not a verdict, because the environment stopped the run (no login, the account's usage limit, a killed child) or the model declined to make the call, so the guard was never exercised. Rerun a blocked scenario; p3 exits 2 when some were blocked and none failed. Run one by name: `node tests/live/p5.mjs papers errors`.
 
 ## Writing a test
 

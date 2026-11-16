@@ -83,4 +83,15 @@ It adds what only Claude Code has: commands, a pane and a status line, the guard
 
 ## Licences
 
-Code written for the plugin is MIT (`LICENSE`). The research engine, tools and skills it runs come from Academic Harness, also MIT (Copyright 2026 ResearchCraft); its `NOTICE`, which lists the third-party skill catalogues and their licences, applies to every skill copied from it and is carried with them. Skills under non-commercial, GPL or unknown licences are not built into the repository (decision D5), and the engine code, which holds all of them, is not committed. A review of those licences is still open; settle it before making the repository public or shipping the engine code.
+Code written for the plugin is MIT (`LICENSE`). The research engine, tools and skills it runs come from Academic Harness, a public MIT repository (Copyright 2026 ResearchCraft); the plugin fetches the pinned commit on first start, so none of that code is committed here, and upstream's own `NOTICE` travels with the download.
+
+What is committed is `skills/` and `agents/`, generated from the snapshot. The review of their licences was settled on 2026-11-16, when the repository was made public:
+
+- Skills under non-commercial, GPL or unknown licences are left out by the build (decision D5), and `skills/.build-info.json` records each with its licence. The 54 that are copied name MIT (36), CC-BY-4.0 (3) or nothing (15, the source's own text).
+- Eight skills come from K-Dense (MIT): their copyright lines are in `NOTICE`.
+- Three come from Supervisor-Skills with `license: CC-BY-4.0` in their own frontmatter and are credited in `NOTICE` with their changes. That repository as a whole is CC BY-NC-SA 4.0, and the per-skill line is what lets these three in; if a reader of the licence disagrees, `ON_DEMAND_SKILLS` in `server/src/fit.mjs` is where they would be moved out.
+- `remove-ai-signs/references/signs.md` is adapted from a Wikipedia essay (CC BY-SA 4.0), and `NOTICE` says it is not under the MIT licence.
+- A skill the model loads on demand from the snapshot can be under a non-commercial licence; that is upstream's distribution, and each skill's `license:` line says.
+
+`tests/scripts/repo.test.mjs` fails when a skill is copied whose licence is not one the build allows, or when a licence other than MIT has no entry in `NOTICE`.
+

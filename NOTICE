@@ -1,14 +1,97 @@
 cc-mod-academic-harness
 =======================
 
-A Claude Code mod that runs the Academic Harness research tooling inside
-Claude Code. It is a port, not a fork: the upstream project is read at a pinned
-commit and never modified.
+A Claude Code mod that runs the Academic Harness research tooling inside Claude
+Code. It is a port, not a fork: the upstream project is read at a pinned commit
+(UPSTREAM.lock.json) and never modified.
 
-Upstream: Academic Harness (MIT License, Copyright (c) 2026 ResearchCraft),
-https://github.com/raktim-mondol/academic-harness (read at a pinned commit). See UPSTREAM.lock.json for the pinned
-commit once the snapshot exists (phase P1). Upstream's own NOTICE, which lists
-the third-party skill catalogues and their licences, applies to every skill
-this mod copies from it and is carried with them.
+Code written for this mod (hooks/, server/, scripts/, tests/, types/, docs/, the
+generated agents/ and the build tooling) is under the MIT License in LICENSE.
 
-Code written for this mod is under the MIT License in LICENSE.
+Upstream
+--------
+
+Academic Harness, MIT License, Copyright (c) 2026 ResearchCraft,
+https://github.com/raktim-mondol/academic-harness.
+
+Its tool modules, writing engine, PaperMemory and prompt are NOT in this
+repository. The plugin downloads the pinned commit on first start into the
+mod's home folder and checks it against the digests in UPSTREAM.lock.json. That
+download is upstream's own distribution and carries upstream's NOTICE, which
+lists every third-party skill catalogue it bundles and each one's licence. Some
+of those skills are licensed for non-commercial use only (CC BY-NC-SA 4.0), and
+some name a GPL library; they remain under their own licences, and this mod's
+MIT licence does not relicense them. A skill's `license:` line in its frontmatter
+names the licence it is under. None of them is copied into this repository (see
+below), but a skill the model fetches on demand from the downloaded snapshot may
+be one of them: read its `license:` line before reusing its text.
+
+What is copied into this repository
+-----------------------------------
+
+skills/ and agents/ are generated from the snapshot by scripts/build-skills.mjs
+and scripts/build-agents.mjs. The build leaves out every skill whose licence is
+non-commercial, GPL or unknown (decision D5), and records what it copied and
+what it left out, with each licence, in skills/.build-info.json. Of the 54
+skills copied, 36 name MIT, 3 name CC-BY-4.0, and 15 name no licence because
+they are the source's own text. Most are first-party Academic Harness skills
+(MIT). The ones that come from other projects, and what each needs, are:
+
+K-Dense (MIT)
+  - literature-review, from K-Dense-AI/scientific-agent-skills.
+    MIT License, Copyright (c) 2025 K-Dense Inc.
+  - designing-the-analysis, establishing-feasibility-first,
+    framing-research-questions, investigating-anomalous-results,
+    preregistering-analysis, requesting-red-team-review and
+    verifying-results-before-claiming, from K-Dense-AI/science-superpowers.
+    MIT License, Copyright (c) 2026 K-Dense, Inc.
+  Permission is granted under the MIT License terms reproduced in LICENSE, on
+  the condition that the notices above are kept with the copies.
+
+Supervisor-Skills (CC BY 4.0)
+  - figure-designer, idea-evaluator and pre-submission-reviewer, from
+    https://github.com/HKUSTDial/Supervisor-Skills at commit
+    a20d76ef3979b804d7dbf599d577826957e0a8a9. The suite is (c) 2026 Yuyu Luo
+    (methodology) and contributors. Each of these three skills declares
+    `license: CC-BY-4.0` in its own frontmatter, and is used here under
+    Creative Commons Attribution 4.0 International,
+    https://creativecommons.org/licenses/by/4.0/. They are NOT covered by this
+    repository's MIT licence. Changes: a "Routing in Academic Harness" section
+    was added to each, and "(separate plugin)" cross-references were removed.
+    The authors do not endorse this mod. The suite's other skills carry
+    different licences (some CC BY-NC-SA 4.0); none of those is copied here.
+
+Wikipedia (CC BY-SA 4.0)
+  - remove-ai-signs/references/signs.md is adapted from Wikipedia's "Signs of AI
+    writing" (WP:AICAT, https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing),
+    (c) its contributors, and is licensed under Creative Commons
+    Attribution-ShareAlike 4.0 International,
+    https://creativecommons.org/licenses/by-sa/4.0/. That file, and any
+    adaptation of it, stays under CC BY-SA 4.0; it is NOT covered by this
+    repository's MIT licence. It was adapted for general prose, technical
+    writing and LaTeX, and a routing note was added. It is a prose-editing aid,
+    not a detector-evasion tool.
+
+Acknowledged, nothing copied
+  - scientific-figure-making is a fresh adaptation of the workflow described in
+    Chen Liu's figures4papers (CC BY-NC 4.0, https://github.com/ChenLiu-1996/figures4papers).
+    No file from that repository is copied; its licence is non-commercial, which
+    is why only the ideas are used.
+  - generating-scientific-hypotheses and co-scientist-tournament implement
+    methods from Gottweis et al., "Accelerating scientific discovery with
+    Co-Scientist", Nature (2026), https://doi.org/10.1038/s41586-026-10644-y
+    (CC BY 4.0), and Ghareeb et al., "A multi-agent system for automating
+    scientific discovery", Nature (2026), https://doi.org/10.1038/s41586-026-10652-y.
+    No paper text is copied. co-scientist-tournament also ports the algorithms of
+    raktim-mondol/co-scientist (MIT License, (c) 2025 Raktim Mondol).
+  - papermemory is this author's own project, raktim-mondol/papermemory.
+
+Not in this repository, fetched or installed by the plugin at run time
+  - TextFold (Apache License 2.0, (c) 2026 Xia Chen), installed from PyPI into
+    the mod's home the first time the notebook tools load; set
+    AH_MANAGED_INSTALLS=0 to prevent it.
+  - PaperMemory, Modal's SDK and the Python packages of the writing engine,
+    installed from their registries under their own licences.
+
+To report a mistake in an attribution, see SECURITY.md for private matters or
+open an issue.
