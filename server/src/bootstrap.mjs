@@ -11,6 +11,7 @@ import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { sync } from '../../scripts/sync-upstream.mjs'
 import { claim, clearState, readState, stateFile, writeState } from './bootstrap-state.mjs'
+import { runDetached } from './detached.mjs'
 import { fetchedUpstreamDir, isDevMode, modHome, modRoot, upstreamDir } from './paths.mjs'
 import { checkSnapshot } from './snapshot.mjs'
 
@@ -104,32 +105,15 @@ const WORKER = fileURLToPath(new URL('../bin/ah-bootstrap.mjs', import.meta.url)
  * When the worker ends, `bootstrap` is run here too: after a success it only confirms the snapshot (nothing is fetched twice); after a failure
  * it tries once more in this process and so gives the real reason. `worker` and `run` are seams for tests. Resolves what `bootstrap` resolves.
  */
-export function bootstrapInWorker({ env = process.env, worker = WORKER, run = bootstrap } = {}) {
-  return new Promise((resolve, reject) => {
-    let settled = false
-    // The worker is unref'd so that it never holds this process open by itself; this timer holds it until the worker has ended. Without it a
-    // process with nothing else pending (a test, on Node 22) ends before the promise is settled. The server's own exit is explicit, so it is not delayed.
-    const hold = setInterval(() => {}, 60_000)
-    const finish = () => {
-      if (settled) return
-      settled = true
-      clearInterval(hold)
-      // A worker that ended without a word (it could not start) leaves the file written for it below: clear it, or it reads as a fetch that died.
-      try { const s = JSON.parse(readFileSync(stateFile(env), 'utf8')); if (s.pid === child?.pid && !s.error) clearState(env) } catch { /* no file: nothing to clear */ }
-      Promise.resolve().then(() => run({ env })).then(resolve, reject)
-    }
-    let child
-    try {
-      child = spawn(process.execPath, [worker], { detached: true, stdio: 'ignore', env })
-    } catch {
-      finish()
-      return
-    }
-    child.on('error', finish) // the worker could not be started: do the work here
-    child.on('exit', finish)
-    child.unref()
-    try { if (Number.isInteger(child.pid)) claim({ pid: child.pid, step: 'starting the fetch of the source snapshot', startedAt: Date.now() }, env) } catch { /* the worker writes it itself */ }
+export async function bootstrapInWorker({ env = process.env, worker = WORKER, run = bootstrap } = {}) {
+  let pid = null
+  await runDetached(worker, {
+    env,
+    onStart(p) { pid = p; claim({ pid: p, step: 'starting the fetch of the source snapshot', startedAt: Date.now() }, env) },
   })
+  // A worker that ended without a word (it could not start) leaves the file written for it above: clear it, or it reads as a fetch that died.
+  try { const s = JSON.parse(readFileSync(stateFile(env), 'utf8')); if (s.pid === pid && !s.error) clearState(env) } catch { /* no file: nothing to clear */ }
+  return run({ env })
 }
 
 

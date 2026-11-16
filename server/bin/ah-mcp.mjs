@@ -37,15 +37,16 @@ const say = text => process.stderr.write(`[academic-harness] ah: ${text}\n`)
 const listing = process.argv.includes('--list')
 
 /** The writing engine (the `ah_*` tools and the guard) needs its virtual environment. When the writing area is loaded and the
- *  environment is missing, build it in the background; until it is ready the tools and the guard say so.
+ *  environment is missing, build it in the background (a detached worker, bin/ah-engine-install.mjs); until it is ready the tools and the guard say so.
  *  AH_AUTO_INSTALL=0 turns this off. It never runs for --list, in development mode or when ACADEMIC_HARNESS_CLI is set. */
 async function buildEngineInBackground() {
   if (listing || process.env.AH_AUTO_INSTALL?.trim() === '0' || !parseAreas(process.env.AH_TOOL_AREAS).areas.includes('writing')) return
   const { engineStatus } = await import('../src/engine.mjs')
   if (engineStatus(process.env, undefined, { verify: false }).ok) return
+  // In a process of its own, so that a session that ends before the build does (a headless run) does not end the build with it.
   import('../src/engine-install.mjs')
-    .then(m => m.installEngine({ quiet: true }))
-    .then(r => say(`writing engine ${r.built ? 'installed' : r.how}`))
+    .then(m => m.installEngineInWorker())
+    .then(r => say(r.ok ? 'writing engine ready' : `the writing engine is not ready: ${r.why}. \`node scripts/install-engine.mjs\` builds it and shows why`))
     .catch(error => say(`the writing engine could not be installed: ${error.message}`))
 }
 

@@ -67,6 +67,7 @@ Adding a Claude Code version: run the live scripts on it ([What to do next](next
 | `tests/server/guard.test.mjs` | The guard bridge (with a stand-in engine and the real one), engine status, the sync keep rule |
 | `tests/server/jobs.test.mjs` | The jobs service, upstream's `runAsJob` over it, the model route against a stand-in `claude` |
 | `tests/server/papermemory.test.mjs` | The PaperMemory launcher, with installs into a scratch folder |
+| `tests/server/detached.test.mjs` | A worker that outlives the process that started it, and the writing engine's build run that way (a shell script stands in for uv) |
 | `tests/server/bootstrap.test.mjs` | Where the snapshot is looked for, the first-start fetch, two servers starting together, the swapped host |
 
 ## Upstream's own tests
