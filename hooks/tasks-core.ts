@@ -57,7 +57,7 @@ export const TASK_TOOLS: Record<TaskId, string> = {
 }
 
 export const PLUGIN_TOOL_PREFIX = 'mcp__plugin_academic-harness_ah__'
-export const toolName = (bare: string): string => `${PLUGIN_TOOL_PREFIX}${bare}`
+export const toolName = (bare: string): `mcp__${string}__${string}` => `${PLUGIN_TOOL_PREFIX}${bare}`
 
 const EMPTY: Record<string, string> = {
   deep_review: 'enter a manuscript path first',
@@ -273,6 +273,19 @@ export function withRunId(step: Step, previous: unknown): Step {
   if (!step.runIdFromPrevious) return step
   const id = previous && typeof previous === 'object' ? (previous as { run_id?: unknown }).run_id : undefined
   return { ...step, args: { ...step.args, ...(typeof id === 'string' && id ? { run_id: id } : {}) } }
+}
+
+/** The `run_id` a `deep_research` start answered with: from its JSON, or from the text the server rendered. */
+export function runIdFrom(text: string): string | undefined {
+  const body = String(text ?? '')
+  try {
+    const parsed = JSON.parse(body) as { run_id?: unknown }
+    if (typeof parsed?.run_id === 'string' && parsed.run_id) return parsed.run_id
+  } catch {
+    // not JSON: read the rendered text
+  }
+  const found = /"?run_id"?\s*[:=]\s*`?"?([A-Za-z0-9][A-Za-z0-9_-]*)/u.exec(body) ?? /\b(dr-\d{3,})\b/u.exec(body)
+  return found?.[1]
 }
 
 /** True when a workspace-relative or absolute path stays inside `cwd` (upstream's resolveWorkspacePath refuses the rest). */

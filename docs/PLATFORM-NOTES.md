@@ -141,6 +141,15 @@ Per guarded tool call, the guard adds about 0.1 s. Outside an `ah.yaml` tree the
 - **`session.start` input.** In `claude -p` it is `{ cwd, surface: null, isInteractive: false }`. A mod can use `isInteractive` to skip drawing.
 - **Nested runs** reported $0.01 to $0.02 each on Haiku (about 20 `-p` runs). The interactive tmux session's cost was not totalled.
 
+## Found in P5
+
+- **`$.tool.call` of an MCP tool from a `command.run` hook** works with no allow rule. Only a deny rule, a hook's `ask` or an organization's ask refuse such a call (the docs: "any ask beyond no rule allowing the call"). A first design added a `tool.check` allow for the mod's own calls; it was dropped, since it could have overridden another plugin's or an organization's ask. Shown by `tests/live/p5.mjs papers`: `claude -p "/ah-papers ..."` runs `literature_search` with no permission rule, no model turn and cost 0.
+- **A headless slash command ends the session when it returns.** A tool the command detaches as a job (`deep_research` after `AH_JOB_FOREGROUND_MS`) is cancelled with the server. For a headless `/ah-research`, set `AH_JOB_FOREGROUND_MS` high (the whole run then finishes inside the command: 2 min 25 s on Haiku, low effort); interactively the default window is right, and the completion notice does the rest.
+- **`$.ui.status`** is one line per plugin. `ui_status` events in `--output-format stream-json` carry its text, so a headless test can read it.
+- **Pane width is the pane's, not the terminal's.** At 200 columns a docked pane's `bodyColumns` is about 88, and inline panes (terminals under 110 columns) get the whole width. A layout choice must read `e.props.bodyColumns`. An inline pane is capped at about half the terminal's rows (28 of 56) and scrolls past that, so the parts that matter most go first and a small pane is shortened (`compactProject`, no gaps when the rows do not fit).
+- **Test clock.** `mock.clock` starts at 0, so "has this been read?" cannot be `at > 0`.
+- **A hooks module may call `$.clock.every` only if the clock is answered;** in a test without it the call is refused. The mod catches it, so a test that does not care needs no stub.
+
 ## What changes in the plan
 
 1. P3 step 3: the guard translates the `classic.PreToolUse` envelope, not stdin JSON. (Already implied; now confirmed.)

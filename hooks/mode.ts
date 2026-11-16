@@ -3,6 +3,7 @@ import type { EngineInterface, PluginOptions, PromptComposeSection } from 'claud
 
 import type { ModeOverride } from '../types'
 import { PLUGIN_ROOT_TOKEN, PROMPT_TEXT, SECTION_ID } from './generated/prompt'
+import { composeStatus, live, statusKey } from './ui-core'
 
 // Research mode: while it is on, a prompt.compose hook adds the Academic Harness section.
 //
@@ -50,7 +51,9 @@ export async function verdict($: EngineInterface, options: PluginOptions): Promi
 
 export async function showStatus($: EngineInterface, options: PluginOptions): Promise<Verdict> {
   const v = await verdict($, options)
-  $.ui.status(`research mode ${v.isOn ? 'on' : 'off'}`)
+  // The one status line of the mod: the mode, the jobs running and the gate (hooks/ui-core.ts, refreshed by hooks/ui.tsx).
+  $.ui.status(composeStatus(v.isOn, live.jobs, live.gate))
+  live.shownKey = statusKey(live.jobs, live.gate)
   return v
 }
 
@@ -61,14 +64,14 @@ export async function addSection($: EngineInterface, options: PluginOptions, sec
   return [...sections.filter(s => s.id !== SECTION_ID), { id: SECTION_ID, text, scope: 'session' }]
 }
 
-export const USAGE = 'Usage: /academic on | off | auto | status'
+export const USAGE = 'Usage: /academic [on | off | auto | status | pane]  (bare /academic opens the pane)'
 
 /** The /academic command. Returns the text to show. */
 export async function run($: EngineInterface, options: PluginOptions, args: string): Promise<string> {
   const word = (args ?? '').trim().toLowerCase()
   if (word === 'on' || word === 'off' || word === 'auto') {
     await update($, override, () => word)
-  } else if (word !== '' && word !== 'status') {
+  } else if (word !== '' && word !== 'status' && word !== 'pane') {
     return `Unknown argument "${word}". ${USAGE}`
   }
   const v = await showStatus($, options)

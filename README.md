@@ -4,16 +4,26 @@ A Claude Code mod that brings the Academic Harness research tooling into Claude
 Code: literature and citation tools, a research skill pack, the writing-engine
 guards for `ah.yaml` projects, and a small terminal interface.
 
-**Status: phase P4 done** (tool host with 134 of Academic Harness's 136 tools plus four job tools, the
-writing-engine guard, background jobs and a model route). Packaging (P6) and the terminal UI (P5) are not built yet. The plan is in
-`IMPLEMENTATION_PLAN.md`; the audit of P0 to P4 is `docs/AUDIT-P0-P4.md`; platform answers are in `docs/PLATFORM-NOTES.md`; what P1 to P4
-built and measured is in `docs/P1-RESULTS.md` to `docs/P4-RESULTS.md`.
+**Status: phase P5 done** (tool host with 134 of Academic Harness's 136 tools plus four job tools, the
+writing-engine guard, background jobs and a model route, and now the task commands, `/fold`, a status line and a pane). Packaging
+(P6) is not built yet. The plan is in `IMPLEMENTATION_PLAN.md`; the audit of P0 to P4 is `docs/AUDIT-P0-P4.md`; platform answers are in
+`docs/PLATFORM-NOTES.md`; what P1 to P5 built and measured is in `docs/P1-RESULTS.md` to `docs/P5-RESULTS.md`.
 
 ## What works now
 
 - **Research mode.** `/academic on | off | auto | status`. `auto` (the default) is on in a
   folder that has, or sits under, an `ah.yaml`. While on, a research section (about 4,000
   tokens) is added to the system prompt. The `research_mode` setting changes the default.
+- **Task commands**, the seven task chips of Academic Harness as slash commands, each running the same tool with the same arguments
+  as upstream's `submitAcademicTask` (checked against upstream's own code): `/ah-research`, `/ah-review`, `/ah-papers`,
+  `/ah-references`, `/ah-write`, `/ah-analyze` and `/ah-hypotheses`. Put the effort first (`--effort low|medium|high`), and write
+  ` -- ` where the task takes a second line: `/ah-review --effort high paper.tex -- focus on the statistics`. The command itself
+  makes no model call; a long task goes on as a background job. **`/fold [full|brief|points|outline|gist]`** folds the model's last reply.
+  The `ah-` prefix is there because `/analyze` already belongs to another plugin.
+- **Status line and pane.** One line under the prompt, `research mode on · 1 job running · gate FAIL (5 blocking)`: the mode, this
+  session's running jobs and, in an `ah.yaml` project, the engine's gate (read again after each turn). `/academic` with no word opens a
+  pane with the project's state, this session's jobs, the notebook's last entries and the PaperMemory counts; it is one column when
+  narrow and two when the pane is 96 columns or wider, and it refreshes itself while it is open.
 - **86 core skills**, listed as `academic-harness:<name>`, plus `academic-harness:research-guides`,
   which holds the longer per-area guidance (29 files) and is read on demand.
 - **22 specialist agents** such as `academic-harness:peer-reviewer`. Reviewers cannot edit files.
@@ -93,6 +103,8 @@ node tests/live/p3.mjs                                 # the guard matrix, 15 ne
 node tests/live/p4.mjs                                 # jobs, the model route, compute approval, a deep research run
 node tests/live/p4-tui.mjs                             # tmux: a job ends, the notice appears, the model reports (about 10 cents)
 node tests/live/p3-tui.mjs                             # tmux: the guard and approvals with Claude Code's own dialogs (6 checks)
+node tests/live/p5.mjs                                 # task commands, errors, /fold, one deep research run from /ah-research
+node tests/live/p5-tui.mjs                             # tmux: status line, the pane at three widths, a job from start to notice
 node tests/live/p1.mjs                                 # agents, skills, research mode, PaperMemory
 node tests/live/p2-config.mjs                          # a key saved with `claude plugin configure` reaches an installed copy's server
 ```

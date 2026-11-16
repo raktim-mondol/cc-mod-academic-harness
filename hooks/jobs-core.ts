@@ -1,6 +1,6 @@
 // Completion notices: the pure parts. No `$`, so tests can drive them directly.
 
-export type JobRecord = { id: string; kind?: string; label?: string; status?: string; detail?: string | null; session?: string | null; endedAt?: number | null; delivered?: boolean }
+export type JobRecord = { id: string; kind?: string; label?: string; status?: string; detail?: string | null; session?: string | null; startedAt?: number | null; endedAt?: number | null; progress?: string | null; delivered?: boolean }
 
 export const FINISHED = ['completed', 'failed', 'killed', 'interrupted']
 export const NOTICE_MODES = ['prompt', 'notify', 'off'] as const

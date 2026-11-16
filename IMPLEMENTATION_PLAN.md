@@ -1,6 +1,6 @@
 # cc-mod-academic-harness: implementation plan
 
-Status: **P0, P1, P2, P3 and P4 done** (2026-11-16). P0: the scaffold loads and the eight platform checks are answered in `docs/PLATFORM-NOTES.md`. P1: skills, research mode, PaperMemory and agents, results in `docs/P1-RESULTS.md`. P2: the tool host serves 35 tier-1 tools, results in `docs/P2-RESULTS.md`. P3: the writing engine and its guards; 38 `ah_*` tools (73 served in all), results in `docs/P3-RESULTS.md`. P4: 134 of 136 tools served plus 4 job tools, a jobs service, a model route and compute approvals, results in `docs/P4-RESULTS.md`. Sections below are unchanged from the plan as written, except where a P0 result corrected them (marked "P0 result").
+Status: **P0 to P5 done** (2026-11-16). P0: the scaffold loads and the eight platform checks are answered in `docs/PLATFORM-NOTES.md`. P1: skills, research mode, PaperMemory and agents, results in `docs/P1-RESULTS.md`. P2: the tool host serves 35 tier-1 tools, results in `docs/P2-RESULTS.md`. P3: the writing engine and its guards; 38 `ah_*` tools (73 served in all), results in `docs/P3-RESULTS.md`. P4: 134 of 136 tools served plus 4 job tools, a jobs service, a model route and compute approvals, results in `docs/P4-RESULTS.md`. P5: the seven task commands, `/fold`, the status line and the pane, results in `docs/P5-RESULTS.md`. Sections below are unchanged from the plan as written, except where a P0 result corrected them (marked "P0 result").
 
 | | |
 |---|---|
@@ -325,6 +325,8 @@ Work:
 **Tests:** `claude plugin test` in the pattern of the mod examples. A table test that each task and effort produces the same tool arguments as upstream.
 
 **Exit:** the pane draws at wide and narrow widths. Every task command starts the right tool with the right arguments.
+
+**P5 result (2026-11-16):** done. The commands are `/ah-research`, `/ah-review`, `/ah-papers`, `/ah-references`, `/ah-write`, `/ah-analyze`, `/ah-hypotheses` (S7: `analyze` is taken) and `/fold`; the effort is a leading `--effort`. The status line, the pane and a table test against upstream's own `submitAcademicTask` are in `docs/P5-RESULTS.md`.
 
 ### P6. Remaining surface, packaging, release (M)
 

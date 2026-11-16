@@ -16,7 +16,7 @@ const noticed = atom({ plugin: 'academic-harness', key: 'noticed' } as const, []
 const PERIOD_MS = 4000
 let timer: { cancel: () => void } | null = null
 
-async function records($: EngineInterface, dir: string): Promise<JobRecord[]> {
+export async function records($: EngineInterface, dir: string): Promise<JobRecord[]> {
   let names: { name: string; kind: string }[] = []
   try {
     names = await $.fs.list(dir)

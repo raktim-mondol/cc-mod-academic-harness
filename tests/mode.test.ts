@@ -36,7 +36,7 @@ test('outside an ah.yaml tree, auto mode is off: no section, status says off', a
   await $.session.start({ cwd: '/home/u/notes', surface: 'terminal', isInteractive: true })
 
   expect(seen.status).toEqual(['research mode off'])
-  expect(seen.commands).toEqual(['academic'])
+  expect(seen.commands).toEqual(['academic', 'ah-research', 'ah-review', 'ah-papers', 'ah-references', 'ah-write', 'ah-analyze', 'ah-hypotheses', 'fold'])
   expect(ids(await compose($))).toEqual(['intro'])
 })
 
@@ -93,7 +93,7 @@ test('/academic status and an unknown word change nothing', async ($, on) => {
 
   const bad = await academic($, 'maybe')
   expect(bad.text).toContain('Unknown argument "maybe"')
-  expect(bad.text).toContain('Usage: /academic on | off | auto | status')
+  expect(bad.text).toContain('Usage: /academic [on | off | auto | status | pane]')
   expect(ids(await compose($))).toEqual(['intro'])
 })
 
