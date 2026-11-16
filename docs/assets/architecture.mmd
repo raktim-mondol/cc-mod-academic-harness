@@ -14,3 +14,17 @@ flowchart TB
   UP -.->|"fetched on first start"| GH["github.com/raktim-mondol/academic-harness"]
   ENG --- UP
   PM --> LIB[("PaperMemory library")]
+
+  classDef hooks fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#1e3a8a
+  classDef server fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d
+  classDef content fill:#fef9c3,stroke:#ca8a04,stroke-width:2px,color:#713f12
+  classDef engine fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#4c1d95
+  classDef store fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#7c2d12
+  classDef outside fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#0f172a
+  class H,BIN hooks
+  class AH,PM,JOBS server
+  class SK content
+  class ENG engine
+  class UP,LIB store
+  class CLI,GH outside
+  style CC fill:#f8fafc,stroke:#94a3b8,stroke-width:2px,color:#334155

@@ -10,7 +10,7 @@ It is a Claude Code *mod*: next to its MCP tools, skills and agents it runs code
 
 ![How the plugin is built: the hooks module, the ah and papermemory MCP servers, the pinned Academic Harness snapshot and the writing engine](docs/assets/architecture.svg)
 
-The diagram is `docs/assets/architecture.mmd`, rendered with [Pele](https://github.com/obsidianmd/pele) (`node scripts/render.mjs --static-colors architecture.mmd architecture.svg` in the pele skill). [Architecture](docs/design/architecture.md) explains each part.
+Blue is code that runs inside Claude Code's hooks, green the MCP servers and background jobs, purple the writing engine, orange stored data, yellow skills and agents, and grey what is outside the plugin. The diagram is `docs/assets/architecture.mmd`, rendered with [Pele](https://github.com/obsidianmd/pele) (`node scripts/render.mjs --static-colors architecture.mmd architecture.svg` in the pele skill). [Architecture](docs/design/architecture.md) explains each part.
 
 ## Requirements
 
