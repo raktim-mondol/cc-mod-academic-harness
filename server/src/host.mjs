@@ -17,6 +17,7 @@ import { jobTools } from './jobtools.mjs'
 import { modHome, modRoot } from './paths.mjs'
 import { makeExec, sessionIdFrom } from './exec.mjs'
 import { parseAreas, plan, restoreList } from './manifest.mjs'
+import { seedPacing } from './pacing.mjs'
 import { seenDir } from './compat.mjs'
 import { adapt, blocksToContent, clip, DEFAULT_MAX_CHARS, DEFAULT_OUTPUT_KEEP_DAYS, fixSkillSearch, pruneOutputDir } from './render.mjs'
 import { listedSkills } from './skills-list.mjs'
@@ -64,6 +65,10 @@ export async function createHost({ upstream, areas = 'all', env = process.env, c
   if (unknownRestore.length) logger(`restore_tools names no tool that can come back, ignored: ${unknownRestore.join(', ')}`)
   const { load, missing } = plan(upstream, wanted, { restore })
   if (missing.length) logger(`expected modules not in the snapshot (upstream drift?): ${missing.join(', ')}`)
+
+  // Before any upstream module loads: the first limiter made for a provider is the one every tool shares (pacing.mjs).
+  const paced = await seedPacing(upstream, process.env)
+  if (paced.s2) logger(`Semantic Scholar paced at one request every ${paced.s2} ms across all tools`)
 
   const registry = new Registry()
   const sessionId = sessionIdFrom(env)

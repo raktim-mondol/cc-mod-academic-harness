@@ -33,7 +33,11 @@ for (const f of files) {
 }
 writeFileSync(join(base, 'mkt', '.claude-plugin', 'marketplace.json'), JSON.stringify({ name: 'local', owner: { name: 'config-test' }, plugins: [{ name: 'academic-harness', source: './plugins/academic-harness', description: 'copy for the config test' }] }))
 
-const env = { ...process.env, CLAUDE_CONFIG_DIR: cfg }
+// A key already exported in the shell wins over a saved option (the shell is the person's own setting), so it would hide the value this test saves.
+// Drop every sensitive option's variable (s2_api_key -> S2_API_KEY) from the environment the test hands to `claude`.
+const sensitive = Object.entries(JSON.parse(readFileSync(join(root, '.claude-plugin', 'plugin.json'), 'utf8')).userConfig ?? {}).filter(([, o]) => o.sensitive).map(([k]) => k.toUpperCase())
+const clean = Object.fromEntries(Object.entries(process.env).filter(([k]) => !sensitive.includes(k)))
+const env = { ...clean, CLAUDE_CONFIG_DIR: cfg }
 const claude = (args, input) => spawnSync('claude', args, { env, encoding: 'utf8', input: input ?? '', cwd: base, timeout: 120_000 })
 let all = ''
 const note = r => { all += r.stdout + r.stderr; return r }
