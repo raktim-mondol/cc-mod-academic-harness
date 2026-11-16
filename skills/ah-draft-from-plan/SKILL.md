@@ -6,7 +6,7 @@ license: MIT
 
 # Draft from the approved plan
 
-Academic Harness on DeepSeek Harness. Native `ah_*` tools. Pi is not required.
+Native `ah_*` tools.
 
 Run this only after `ah_plan` `action: show` reports outline status `approved` and the outline carries literature, citation hints, or figures. You cannot approve a plan. If the status is still `draft` or a proposal is pending, stop and send the author to `ah-plan-section`.
 

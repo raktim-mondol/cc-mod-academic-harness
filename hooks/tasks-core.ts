@@ -102,7 +102,7 @@ export function lines(prompt: string): string {
   return prompt.includes('\n') ? prompt : prompt.replace(' -- ', '\n')
 }
 
-// ---- upstream's prompt rules (academic-task.js), ported ----
+// ---- the task prompt rules (from academic-task.js) ----
 
 export function reviewPromptParts(prompt: string): { path: string; focus: string } {
   const text = String(prompt ?? '')

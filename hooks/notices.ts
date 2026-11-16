@@ -7,7 +7,7 @@ import type { JobRecord } from './jobs-core'
 // Completion notices (P4). A long tool (deep_research, deep_review, analysis_run) goes on as a job of the tool host and
 // leaves a record under the mod's home. In an interactive session a timer reads this session's records; when one has ended
 // it raises a notification and, with the job_notices setting `prompt` (the default), queues a one-line prompt so the model
-// reads the result and carries on, as DSH's completion notice does. `notify` only notifies; `off` does neither.
+// reads the result and carries on. `notify` only notifies; `off` does neither.
 // In a non-interactive run (claude -p) nothing is queued: the session ends with the turn, so the model polls with job_wait.
 //
 // Helpers here take `$` as a parameter and call it in full: the engine reads this source statically and refuses an aliased `$`.

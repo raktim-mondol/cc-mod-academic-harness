@@ -23,7 +23,7 @@ import type { TaskId } from './tasks-core'
 //
 //   /ah-research /ah-review /ah-papers /ah-references /ah-write /ah-analyze /ah-hypotheses
 //
-// DSH has a row of task chips in the chat box. Claude Code has slash commands, so each task is one. The command reads the
+// Each research task is a slash command. The command reads the
 // line, checks it the way upstream's submitAcademicTask does (hooks/tasks-core.ts, compared with upstream's own code by
 // tests/scripts/tasks.test.mjs), then runs the same tool with the same arguments through $.tool.call. The tool goes on as a
 // job when it is long (P4), and the completion notice (hooks/notices.ts) tells the model when it ends.

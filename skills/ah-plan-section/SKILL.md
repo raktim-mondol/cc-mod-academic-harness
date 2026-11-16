@@ -5,7 +5,7 @@ description: Propose an outline change for a new section or claim in an Academic
 
 # Plan a section
 
-Academic Harness on DeepSeek Harness. Native `ah_*` tools. Pi is not required.
+Native `ah_*` tools.
 
 The author states what to write and what it must support. You propose an outline. Prose waits until the author approves.
 
@@ -13,7 +13,7 @@ The author states what to write and what it must support. You propose an outline
 2. Draft a complete outline: keep every existing section and claim the author did not ask to drop. Add new `sections` entries with `planned: true` for files that do not exist yet. Add `claims` with `supports: [thesis]` (or a parent claim id) and the units that will carry them. Copy forward any `literature`, `citation_hints`, `figures`, and `section_points` already on the outline unless the author asked to change them. Approving a proposal replaces `outline.yaml`, so a proposal that omits those blocks deletes them.
 3. Call `ah_plan` with `action: propose`, an `id`, plus `thesis`, `sections`, `claims`, and any draft-contract blocks. This writes `plans/<id>.yaml` only.
 4. Call `ah_plan` with `action: diff` and that id so the author can see the change.
-5. Stop. Tell the author they can approve with `ah_author` `action: plan-approve` (DSH will ask them to confirm). You cannot approve. Leave `.tex` files, `\input` lines and briefs for files the outline does not yet name until after that approval. After approval, load skill `ah-draft-from-plan` for the searches and figures.
+5. Stop. Tell the author they can approve with `ah_author` `action: plan-approve` (Claude Code will ask them to confirm). You cannot approve. Leave `.tex` files, `\input` lines and briefs for files the outline does not yet name until after that approval. After approval, load skill `ah-draft-from-plan` for the searches and figures.
 
 ## Draft contract
 

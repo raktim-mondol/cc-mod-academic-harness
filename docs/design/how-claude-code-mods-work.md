@@ -1,6 +1,6 @@
 # How Claude Code mods work
 
-A working guide to the mod system, written for the `cc-mod-academic-harness` port. It condenses the Claude Code mods documentation (v2.1.287 and later) and adds what it means for this project. Statements marked **[checked]** were confirmed against the type declarations of the local build (2.1.325); the rest come from the documentation text.
+A working guide to the mod system, written for `cc-mod-academic-harness`. It condenses the Claude Code mods documentation (v2.1.287 and later) and adds what it means for this project. Statements marked **[checked]** were confirmed against the type declarations of the local build (2.1.325); the rest come from the documentation text.
 
 ## 1. What a mod is
 
@@ -15,7 +15,7 @@ How it differs from the neighbours:
 | Can draw interface (panes, bands, rows) | Yes | No | No | No |
 | Written in | JS or TypeScript, no build step | Any language | Markdown | Any language |
 
-One plugin can hold all four. That is how this port is laid out: a mod for behaviour and interface, an MCP server for the tools, skills for knowledge.
+One plugin can hold all four. That is how this plugin is laid out: a mod for behaviour and interface, an MCP server for the tools, skills for knowledge.
 
 ## 2. Anatomy
 
@@ -255,7 +255,7 @@ The built-in guard (`cc-plugin-sec-default`) keeps a user mod from approving wha
 | `deny` or `drop` reason | 4,096 characters |
 | One `claude plugin test` test | 5 s |
 
-## 17. What this means for the academic-harness port
+## 17. What this means for academic-harness
 
 | Rule above | Effect on the plan in `docs/history/implementation-plan.md` |
 |---|---|

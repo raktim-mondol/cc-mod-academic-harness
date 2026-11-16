@@ -156,7 +156,19 @@ describe('the research-mode text', () => {
     assert.ok(prompt.length < 14_000, String(prompt.length))
     for (const n of ['scientific_result', 'research_template', 'fold_text', 'paper_mcp', 'latex_compile']) assert.match(prompt, new RegExp(n))
     assert.match(prompt, /AskUserQuestion/)
-    assert.doesNotMatch(prompt, /written for another host \(DeepSeek Harness\)/)
+    assert.doesNotMatch(prompt, /DeepSeek|\bDSH\b|another host|written for another/, 'the research-mode text stands on its own')
+  })
+  test('nothing the model reads names the other chat host', () => {
+    const hits = []
+    for (const dir of ['skills', 'agents']) {
+      for (const f of walk(join(root, dir))) {
+        const rel = f.slice(root.length + 1)
+        // a reference table of other models' writing tells names models; it is about writing, not about this plugin
+        if (rel.endsWith('.build-info.json') || rel === 'skills/remove-ai-signs/references/signs.md') continue
+        for (const m of readFileSync(f, 'utf8').matchAll(/DeepSeek|\bDSH\b(?!_HOME)|\bPi is not required/g)) hits.push(`${rel}: ${m[0]}`)
+      }
+    }
+    assert.deepEqual(hits, [])
   })
   test('lists only guides that exist', () => {
     const prompt = JSON.parse(/PROMPT_TEXT = (".*")\n/.exec(text)[1])

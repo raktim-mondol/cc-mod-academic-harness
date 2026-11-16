@@ -1,15 +1,15 @@
 ---
 name: academic-harness
-description: "Write, revise, and verify academic LaTeX (literature reviews, journal/conference papers, grants, theses, rebuttals) with Academic Harness on DeepSeek Harness. Use when the workspace has ah.yaml, or the user asks to start, audit, plan, or fix a paper/grant/thesis in LaTeX. Routes to ah-write-unit, ah-plan-section, ah-fix-findings, ah-audit-section, ah-revise-from-review."
+description: "Write, revise, and verify academic LaTeX (literature reviews, journal/conference papers, grants, theses, rebuttals) with Academic Harness. Use when the workspace has ah.yaml, or the user asks to start, audit, plan, or fix a paper/grant/thesis in LaTeX. Routes to ah-write-unit, ah-plan-section, ah-fix-findings, ah-audit-section, ah-revise-from-review."
 ---
 
-# Academic Harness on DeepSeek Harness
+# Academic Harness
 
-The engine is the substitute oracle for academic writing. DeepSeek Harness is the chat. Pi is not required.
+The engine is the substitute oracle for academic writing. Claude Code is the chat.
 
 Inactive outside a directory tree with `ah.yaml`. To start: `ah_init` (new) or `ah_migrate` (existing LaTeX tree, dry-run first).
 
-## What DSH already does in this session
+## What the plugin already does in this session
 
 - Injects the paper-state card (conventions, facts, terms, scope, thesis, briefs, blockers)
 - Blocks writes to `sources/`, facts, ledger, briefs, claim records, reviews, plans, and the outline
@@ -36,7 +36,7 @@ Outside an `ah.yaml` project, the Supervisor-Skills suite covers the paper lifec
 
 ## Tools
 
-Native `ah_*` tools (not MCP, not Pi). Prefer them over shelling out to `ah`. Do not `pip install academic-harness` and do not install it into DSH; the engine is vendored inside this plugin (`vendor/academic-harness`).
+The `ah_*` tools are served by this plugin's MCP server. Prefer them over shelling out to `ah`. Do not `pip install academic-harness` and do not install it separately; the engine is vendored inside this plugin (`vendor/academic-harness`).
 
 | Need | Tool |
 |---|---|
@@ -54,7 +54,7 @@ Native `ah_*` tools (not MCP, not Pi). Prefer them over shelling out to `ah`. Do
 | Provenance / AI-use | `ah_provenance`, `ah_disclosure` |
 | Profiles / overlay | `ah_profile`, `ah_init`, `ah_migrate`, `ah_config`, `ah_catalogue` |
 
-Author-only (human must have asked this message; DSH confirms): waive, accept/reject a fact or a proposed rule, approve a brief or plan, verify a claim, decline a review item, fill provenance, approve a disclosure. You cannot do those. Call `ah_decision_request` and stop, or `ah_author` after they asked.
+Author-only (human must have asked this message; Claude Code confirms): waive, accept/reject a fact or a proposed rule, approve a brief or plan, verify a claim, decline a review item, fill provenance, approve a disclosure. You cannot do those. Call `ah_decision_request` and stop, or `ah_author` after they asked.
 
 Free reviews (`deep_review`, `peer-reviewer`, `pre-submission-reviewer`) are exploratory and never gating: they raise different points on each run. Fix ledger findings (`ah_check`); treat review comments as candidates for promotion to a rule; never rerun a free review just to check that fixes worked.
 

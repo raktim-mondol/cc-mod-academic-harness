@@ -118,6 +118,28 @@ export const RULES = [
     find: /Connect a generated server with `paper_mcp` only when asked\./,
     to: 'Do not connect a generated server yourself; tell the user how (`claude mcp add`, or an entry in `.mcp.json`) when they ask.',
   },
+  // ---- the other host's name, and what it did that the plugin does now ----
+  { target: '*', why: 'names the other host', find: /Academic Harness on DeepSeek Harness\. Native `ah_\*` tools\. Pi is not required\./g, to: 'Native `ah_*` tools.', optional: true },
+  { target: '*', why: 'names the other host', find: /DeepSeek Harness is the chat\. Pi is not required\./g, to: 'Claude Code is the chat.', optional: true },
+  { target: '*', why: 'names the other host', find: /Academic Harness on DeepSeek Harness/g, to: 'Academic Harness', optional: true },
+  { target: '*', why: 'names the other host', find: /## What DSH already does in this session/g, to: '## What the plugin already does in this session', optional: true },
+  { target: '*', why: 'names the other host', find: /\(DSH will ask them to confirm\)/g, to: '(Claude Code will ask them to confirm)', optional: true },
+  { target: '*', why: 'names the other host', find: /; DSH confirms\)/g, to: '; Claude Code confirms)', optional: true },
+  { target: '*', why: 'the ah_* tools are MCP tools here, and there is no Pi', find: /Native `ah_\*` tools \(not MCP, not Pi\)\./g, to: 'The `ah_*` tools are served by this plugin\'s MCP server.', optional: true },
+  { target: '*', why: 'there is no Pi', find: /Use native `ah_\*` tools\. Do not require Pi\. /g, to: 'Use the `ah_*` tools. ', optional: true },
+  { target: '*', why: 'names the other host', find: /and do not install it into DSH;/g, to: 'and do not install it separately;', optional: true },
+  {
+    target: 'guide:remote-compute',
+    why: 'the Modal SDK install path of the other host (`dsh plugin ... add modal`, a profile, a pnpm workaround)',
+    find: /`modal_run` fetches its SDK into `\$DSH_HOME\/modal-sdk` on first use \(no restart\)[\s\S]*?before editing profile config\./,
+    to: '`modal_run` fetches its SDK into the plugin\'s home on first use (no restart). If it returns `sdk_missing` or `sdk_install_failed`, use `runpod_run` or `vastai_run`, or ask the user to install the Modal SDK themselves.',
+  },
+  {
+    target: 'guide:reading-papers',
+    why: 'names the other host\'s model',
+    find: /never assume DSH's model is available to it/,
+    to: 'never assume the session\'s model is available to it',
+  },
   // ---- DSH's sandbox and tool names ----
   { target: 'agent:*', why: 'DSH\'s sandbox is the project here', find: /\bthe sandbox (?:uv |Python )?environment\b/g, to: 'the project\'s Python environment', optional: true },
   { target: 'agent:*', why: 'DSH\'s sandbox is the project here', find: /\bsandbox Python environment\b/g, to: 'project Python environment', optional: true },

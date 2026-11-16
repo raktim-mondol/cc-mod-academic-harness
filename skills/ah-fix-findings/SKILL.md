@@ -5,7 +5,7 @@ description: Work through findings reported by Academic Harness checks (stale nu
 
 # Fix findings
 
-Academic Harness on DeepSeek Harness. Native `ah_*` tools. Pi is not required.
+Native `ah_*` tools.
 
 1. Run `ah_check` (add `files` to narrow). Work through blockers, then majors, then minors.
 2. For each finding read the unit it names, then fix by cause:

@@ -1,16 +1,16 @@
 # Academic Harness research mode
 
-Research mode is on: this session is for academic work. That means finding and checking literature, analysis that has to be reproducible, and papers, grants and theses. The tools, skills and agents come from Academic Harness (written for another host); these notes say how they work in Claude Code. Where a skill or guide disagrees with these notes, follow the notes.
+Research mode is on: this session is for academic work. That means finding and checking literature, analysis that has to be reproducible, and papers, grants and theses. The tools, skills and agents come from this plugin (`academic-harness`); these notes say how to use them in Claude Code. Where a skill or guide disagrees with these notes, follow the notes.
 
 ## Tools
 
-- The research tools are the `ah` MCP server of this plugin. They are deferred: find one with `ToolSearch` before its first use. Their names are `mcp__plugin_academic-harness_ah__<tool>`; guidance uses the bare name. PaperMemory's 14 tools are `mcp__plugin_academic-harness_papermemory__<tool>` (guidance writes `mcp__papermemory__<tool>`).
+- The research tools are the `ah` MCP server of this plugin. They are deferred: find one with `ToolSearch` before its first use. Their names are `mcp__plugin_academic-harness_ah__<tool>`; skills and guides use the bare name. PaperMemory's 14 tools are `mcp__plugin_academic-harness_papermemory__<tool>` (skills write `mcp__papermemory__<tool>`).
 - Papers: start with `literature_search` (OpenAlex and Semantic Scholar, plus PubMed, arXiv and others by topic; merged and ranked), not with `WebSearch`. Then `paper_get` and `paper_context` for one paper, `paper_download` and `pdf_to_markdown` (with `write_to`) to read it, `paper_fold` to read it cheaply, `integrity_check` before relying on it, `citation` and `reference_library` for bibliographies. `WebSearch` and `WebFetch` are for what is not scholarship; `jina_read` reads JavaScript pages and PDFs they cannot.
 - `deep_research`, `deep_review` and `analysis_run` go on as background jobs when they take more than about 30 seconds. In an interactive session you are told when one ends: read it with `job_status`, then carry on without repeating work. In a non-interactive run call `job_wait` (at most 120 seconds a call), because the job ends with the session. `job_log` shows its steps and `job_kill` stops it. Tools that call a model use headless Claude Code calls under the user's login, capped by the `llm_budget_usd` setting.
 - Paid compute (`modal_run`, `runpod_run`, `vastai_run`) always asks the person first. A refusal is final; do not retry it.
 - In a project with an `ah.yaml` there is no `ah` command in your shell: use the `ah_*` tool of the same name (`ah finding decide` is `ah_decision_request`, `ah facts list` is `ah_fact` with `action=list`). A guard checks every Write, Edit and Bash call there. A denial is final: read its reason, do not look for another way, and hand the question to the author with `ah_decision_request`. The author-only acts (`ah_author`) run only when the person asked for them, and Claude Code asks them to confirm.
-- Not in this build, though the guidance may still name them (it is DeepSeek Harness's): `scientific_result`, `research_template`, `fold_text`, `paper_mcp`, `latex_compile`, `zvec_index`, `ah_rsi`, `consensus_search`, `elicit_search` and the Brave, Tavily, Exa, Perplexity and Parallel search tools. If a tool the guidance names is not in your tool list, say so and use the nearest equivalent. Never describe an action as done that you could not do.
-- Names in the guidance: `ask_user_question` is `AskUserQuestion`, `skill` is `Skill`, `subagent` and `subagent_fork` are `Agent`, `read_image` is `Read` on the image file, `bash` and the file tools are `Bash`, `Read`, `Write`, `Edit`, `todo` is your task list, `subagent_pro` is `Agent` with a stronger `model`.
+- Not provided, though a skill or guide may still name them: `scientific_result`, `research_template`, `fold_text`, `paper_mcp`, `latex_compile`, `zvec_index`, `ah_rsi`, `consensus_search`, `elicit_search` and the Brave, Tavily, Exa, Perplexity and Parallel search tools. If a tool a skill or guide names is not in your tool list, say so and use the nearest equivalent. Never describe an action as done that you could not do.
+- Shorter names in skills and guides: `ask_user_question` is `AskUserQuestion`, `skill` is `Skill`, `subagent` and `subagent_fork` are `Agent`, `read_image` is `Read` on the image file, `bash` and the file tools are `Bash`, `Read`, `Write`, `Edit`, `todo` is your task list, `subagent_pro` is `Agent` with a stronger `model`.
 
 ## Skills and specialists
 
@@ -20,7 +20,7 @@ Research mode is on: this session is for academic work. That means finding and c
 
 ## Where things live
 
-- The notebook and the research ledgers are under `<project>/.dsh/` (shared with DeepSeek Harness); the writing engine's state is under `<project>/.ah/`. The PaperMemory library is `~/.local/share/papermemory/papermemory.db`.
+- The notebook and the research ledgers are under `<project>/.dsh/` (the folder name is fixed by the tools); the writing engine's state is under `<project>/.ah/`. The PaperMemory library is `~/.local/share/papermemory/papermemory.db`.
 - Write outputs (plots, tables, reports, `.tex`) into the project folder.
 - Task commands run the matching tool in one line: `/ah-research`, `/ah-review`, `/ah-papers`, `/ah-references`, `/ah-write`, `/ah-analyze`, `/ah-hypotheses`. `/ah-watch` runs the saved literature searches that are due and prints what is new. `/fold` folds your last reply for the person. `/academic` opens the pane; `/academic doctor` says what is ready.
 

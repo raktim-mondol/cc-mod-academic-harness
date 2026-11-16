@@ -6,7 +6,7 @@ import { AUTHOR_ASK_REASON, AUTHOR_HEADLESS_HINT, AUTHOR_TOOL, authorCheck, bare
 //
 //   ah_author                      ask. The person sees the reason and chooses. Where nobody can answer (claude -p, the Agent SDK)
 //                                  an ask is a refusal, so the reason then says how to proceed.
-//   ah_migrate apply, no confirm   deny, as DSH does
+//   ah_migrate apply, no confirm   deny
 //   modal_run, runpod_run, vastai_run   always ask, in any folder, with the provider, instance, time limit, cost ceiling and the session
 //                                  budget in the reason (upstream's own text, from server/bin/ah-approve.mjs). A run that cannot fit under
 //                                  the session cap is refused here with the numbers. The tools enforce the cap again when they run.
