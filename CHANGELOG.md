@@ -3,6 +3,7 @@
 ## Unreleased
 
 - **One check command.** `npm run check` runs the node suites, the `plugin.json` check and the served-tool-surface check in one place; CI runs the same gate. `npm run typecheck`, `npm run test:plugin`, `npm run build` and `npm run doctor` cover the steps that need the engine's types or a real session.
+- **Pinned CI actions.** Every action in the workflows is pinned to a commit SHA, a repository test fails on a tag, and Dependabot proposes updates in one grouped weekly PR.
 - **Repository hygiene.** `CONTRIBUTING.md`, `SECURITY.md`, `.editorconfig`, issue forms, a pull request template and `CODEOWNERS`; `package.json` carries the scripts, the Node 22 floor and one version number that a test keeps equal to `plugin.json`, the README and this file.
 - Fixed: the task commands' workspace check refused every path when the session folder was the filesystem root, and research mode's project search stopped at a fixed 64 folder levels.
 - Fixed: a missing or corrupt `UPSTREAM.lock.json` made `/academic doctor` throw instead of reporting what to restore.

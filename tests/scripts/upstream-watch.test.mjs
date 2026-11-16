@@ -106,6 +106,6 @@ describe('the command and the workflow', () => {
     assert.match(text, /node scripts\/upstream-watch\.mjs/)
     const runLines = text.split('\n').filter(l => /^\s+(run:|node |if |args)/.test(l))
     assert.ok(runLines.every(l => !l.includes('${{')), 'no expression is interpolated into a shell line')
-    for (const m of text.matchAll(/uses:\s*(\S+)/g)) assert.match(m[1], /@v\d+$/)
+    for (const m of text.matchAll(/uses:\s*(\S+)/g)) assert.match(m[1], /@[0-9a-f]{40}$/)
   })
 })

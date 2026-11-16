@@ -27,6 +27,8 @@ npm run test:plugin  # the hooks module, with the engine stood in for
 
 `npm run check` is the same gate CI runs. A change to the guard, the commands, the pane or the job notices also needs the relevant live script (`p1`, `p3`, `p5`, `p6`, `fit` or `install`); they need a signed-in Claude Code and are run by choice, not by CI.
 
+A workflow change that adds or changes an action must pin it to a 40-character commit SHA (keep the version as a trailing comment); a test fails on a tag. Dependabot sends the updates.
+
 ## Ground rules
 
 - **Never edit generated output:** `upstream/`, `skills/`, `agents/` and `hooks/generated/`. Change the build script and regenerate (`npm run build`), then review the diff.

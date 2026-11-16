@@ -67,11 +67,11 @@ describe('the CI workflow', () => {
     assert.match(out, /^claude=\[.*\]$/)
     assert.deepEqual(JSON.parse(out.slice('claude='.length)), [...TESTED_VERSIONS, 'latest'])
   })
-  test('the workflow file names the jobs the docs describe, and installs nothing from a floating action', async () => {
+  test('the workflow file names the jobs the docs describe, and installs nothing from a floating action tag', async () => {
     const { readFileSync } = await import('node:fs')
     const text = readFileSync(join(import.meta.dirname, '..', '..', '.github', 'workflows', 'ci.yml'), 'utf8')
     for (const job of ['node:', 'versions:', 'claude-code:']) assert.ok(text.includes(`\n  ${job}`), job)
-    for (const m of text.matchAll(/uses:\s*(\S+)/g)) assert.match(m[1], /@v\d+$/, `${m[1]} is pinned to a major version`)
+    for (const m of text.matchAll(/uses:\s*(\S+)/g)) assert.match(m[1], /@[0-9a-f]{40}$/, `${m[1]} is pinned to a commit`)
     assert.match(text, /node scripts\/setup\.mjs --github/)
     assert.match(text, /claude plugin validate \. --strict/)
   })
