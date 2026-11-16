@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { agentFile, EDITORS, specialistNames } from '../../scripts/build-agents.mjs'
+import { DROPPED_AGENTS } from '../../server/src/fit.mjs'
 import { assemble, classify, MAX_ALWAYS_ON_CHARS, SECTIONS, splitSections } from '../../scripts/build-prompt.mjs'
 import { decide, frontmatter } from '../../scripts/build-skills.mjs'
 
@@ -47,7 +48,9 @@ describe('built skills', () => {
   test('every included skill is on disk with its SKILL.md; every excluded one is absent', () => {
     for (const s of info.included) assert.ok(existsSync(join(root, 'skills', s.name, 'SKILL.md')), s.name)
     for (const s of info.excluded) assert.equal(existsSync(join(root, 'skills', s.name)), false, s.name)
-    assert.equal(info.included.length + info.excluded.length, info.coreListed)
+    // the rest were left out on purpose (server/src/fit.mjs): none of them is on disk either
+    for (const l of info.left) assert.equal(existsSync(join(root, 'skills', l.name)), false, l.name)
+    assert.equal(info.included.length + info.excluded.length + info.left.length, info.coreListed)
   })
   test('no skill folder holds a restricted licence', () => {
     for (const s of info.included) {
@@ -78,12 +81,13 @@ describe('prompt build', () => {
   })
   test('every upstream section is accounted for exactly once', () => {
     const r = classify(sections, '')
-    assert.equal(r.always.length - 1 + r.guides.length + r.dropped.length, sections.length)
+    assert.equal(r.own.length - 1 + r.guides.length + r.dropped.length, sections.length)
   })
   test('the always-on text is within the D6 budget and holds the safety rule', () => {
     const r = classify(sections, prompt.RESPONSE_SHAPE)
-    const text = assemble({ hostNotes: readFileSync(join(root, 'scripts', 'host-notes.md'), 'utf8'), always: r.always, guides: r.guides })
+    const text = assemble({ researchMode: readFileSync(join(root, 'scripts', 'research-mode.md'), 'utf8'), guides: r.guides })
     assert.ok(text.length <= MAX_ALWAYS_ON_CHARS, String(text.length))
+    assert.ok(text.length <= 14_000, `the always-on text was cut to about 3,000 tokens; it is ${text.length} characters`)
     assert.match(text, /untrusted-source/)
     assert.match(text, /Do not fabricate experimental results/)
     assert.ok(Object.keys(SECTIONS).length >= 38)
@@ -110,7 +114,7 @@ describe('agents', () => {
       assert.doesNotMatch(t, /DeepSeek Harness delegates/, f)
       assert.match(t, /^---\nname: /, f)
     }
-    assert.equal(readdirSync(join(root, 'agents')).length, names.length)
+    assert.equal(readdirSync(join(root, 'agents')).length, names.length - Object.keys(DROPPED_AGENTS).length)
   })
   test('a brief without the delegation line fails loudly', () => {
     assert.throws(() => agentFile('x', '---\nname: x\ndescription: d\n---\n\nbody only'), /delegation line/)

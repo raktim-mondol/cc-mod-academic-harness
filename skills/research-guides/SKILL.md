@@ -5,7 +5,7 @@ description: "Longer Academic Harness guidance by area: literature search, syste
 
 # Academic Harness guides
 
-Each file under `references/` is one area of Academic Harness guidance, written for another host. Read only the file for the area you are working in.
+Each file under `references/` is one area of Academic Harness guidance, written for another host and adapted. Read only the file for the area you are working in.
 
 | File | Read when |
 |---|---|
@@ -36,7 +36,5 @@ Each file under `references/` is one area of Academic Harness guidance, written 
 | `references/latex-projects.md` | a workspace with ah.yaml, or starting a paper, grant or thesis in LaTeX |
 | `references/latex.md` | compiling or fixing LaTeX |
 | `references/remote-compute.md` | paid GPU or cloud compute (always ask first) |
-| `references/workspace-search.md` | searching a large local corpus |
-| `references/workflow-templates.md` | a ready-made prompt template for a common research task |
 
 Tool-name mapping and what to do when a named tool is missing are in the research mode notes and at the top of each file.

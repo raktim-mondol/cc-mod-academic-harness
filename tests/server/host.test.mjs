@@ -119,15 +119,15 @@ describe('manifest', () => {
 })
 
 describe('render', () => {
-  test('wording: a mounted server\'s tool names carry the plugin prefix, and "restart dsh" says Claude Code', () => {
-    assert.equal(adapt('Tools should appear as mcp__demo__*. If they do not, restart dsh.'), 'Tools should appear as mcp__plugin_academic-harness_ah__mcp__demo__*. If they do not, restart Claude Code.')
+  test('wording: "restart dsh" says Claude Code, and a tool name that already has the plugin prefix is left alone', () => {
+    assert.equal(adapt('If they do not appear, restart dsh.'), 'If they do not appear, restart Claude Code.')
     assert.equal(adapt('mcp__plugin_academic-harness_ah__echo stays'), 'mcp__plugin_academic-harness_ah__echo stays')
   })
   test('skill_search: a listed skill says how to load it, a left-out one says so', () => {
     const t = '- `peer-review` (in the session catalogue): reviews\n- `deep-research` (in the session catalogue): x\n- `other`: y'
     const out = fixSkillSearch(t, new Set(['peer-review']))
     assert.match(out, /`peer-review` \(listed: load it with the Skill tool as academic-harness:peer-review\)/)
-    assert.match(out, /`deep-research` \(a core skill left out of this build/)
+    assert.match(out, /`deep-research` \(not in this plugin's skill list/)
     assert.match(out, /- `other`: y/)
   })
   test('blocks become MCP text content; a bare string and an unknown block survive', () => {

@@ -16,9 +16,11 @@
 // skills/research-guides/ belongs to build-prompt.mjs and is left alone.
 // Never edit skills/ by hand (ground rule 5).
 
-import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { DROPPED_SKILLS, ON_DEMAND_SKILLS } from '../server/src/fit.mjs'
+import { adapt } from './adapt.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 export const GUIDES_DIR = 'research-guides'
@@ -56,6 +58,21 @@ export function decide(rawLicense, { normalize, isNonCommercial }) {
   return { include: false, reason: `unresolved: ${n.unresolved}` }
 }
 
+/** Host wording (scripts/adapt.mjs) over the text files of a copied skill. */
+export function adaptFolder(dir, name, rel = '') {
+  for (const entry of readdirSync(join(dir, rel), { withFileTypes: true })) {
+    const path = rel ? `${rel}/${entry.name}` : entry.name
+    if (entry.isDirectory()) adaptFolder(dir, name, path)
+    else if (entry.isFile() && /\.md$/i.test(entry.name)) {
+      const file = join(dir, path)
+      if (statSync(file).size > 2_000_000) continue
+      const text = readFileSync(file, 'utf8')
+      const next = adapt(`skill:${name}/${path}`, text)
+      if (next !== text) writeFileSync(file, next)
+    }
+  }
+}
+
 export async function build({ upstream = join(root, 'upstream'), out = join(root, 'skills'), includeRestricted = false } = {}) {
   const lic = await import(join(upstream, 'skill-licenses.js'))
   const core = JSON.parse(readFileSync(join(upstream, 'skills-core.json'), 'utf8'))
@@ -69,8 +86,13 @@ export async function build({ upstream = join(root, 'upstream'), out = join(root
 
   const included = []
   const excluded = []
+  const left = []
+  const unknownLeft = [...Object.keys(DROPPED_SKILLS), ...Object.keys(ON_DEMAND_SKILLS)].filter(n => !core.includes(n))
+  if (unknownLeft.length) throw new Error(`server/src/fit.mjs names skills that are not in the core list: ${unknownLeft.join(', ')}`)
   const problems = []
   for (const name of core) {
+    if (DROPPED_SKILLS[name]) { left.push({ name, kind: 'dropped', why: DROPPED_SKILLS[name] }); continue }
+    if (ON_DEMAND_SKILLS[name]) { left.push({ name, kind: 'on demand', why: ON_DEMAND_SKILLS[name] }); continue }
     const dir = join(upstream, 'skills', name)
     const file = join(dir, 'SKILL.md')
     if (!existsSync(file)) { problems.push(`${name}: listed in skills-core.json but ${file} is missing`); continue }
@@ -86,6 +108,7 @@ export async function build({ upstream = join(root, 'upstream'), out = join(root
       continue
     }
     cpSync(dir, join(out, name), { recursive: true, dereference: false, filter: src => !/(^|\/)(__pycache__|\.git)(\/|$)/.test(src) })
+    adaptFolder(join(out, name), name)
     included.push({ name, license: raw ?? null, reason: verdict.reason, description: fm.description.length })
   }
   if (problems.length) throw new Error('skill problems:\n  ' + problems.join('\n  '))
@@ -96,6 +119,7 @@ export async function build({ upstream = join(root, 'upstream'), out = join(root
     coreListed: core.length,
     included: included.map(s => ({ name: s.name, license: s.license })),
     excluded,
+    left,
     descriptionChars: included.reduce((n, s) => n + s.description, 0),
   }
   writeFileSync(join(out, '.build-info.json'), JSON.stringify(info, null, 2) + '\n')
@@ -107,5 +131,6 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const info = await build({ includeRestricted })
   console.log(`skills: ${info.included.length} of ${info.coreListed} core skills copied` + (info.restricted ? ' (RESTRICTED LICENCES INCLUDED: local build only)' : ''))
   for (const e of info.excluded) console.log(`  excluded ${e.name}: ${e.reason}${e.license ? ` (${e.license})` : ''}`)
+  console.log(`  left out of the catalogue: ${info.left.filter(l => l.kind === 'dropped').length} dropped, ${info.left.filter(l => l.kind === 'on demand').length} on demand (server/src/fit.mjs)`)
   console.log(`  description text: ${info.descriptionChars} characters across the pack`)
 }

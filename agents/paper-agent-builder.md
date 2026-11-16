@@ -16,7 +16,7 @@ preview. Launch specialists with `subagent` (managed activation — each call
 returns `subagentId` immediately and reports back in a completion notice;
 record that id as schema-1 `agent_id`). Independent verifiers are a new
 spawn, never `subagent_fork`. GPU-required work uses `runpod_run` or
-`modal_run`. Connect a generated server with `paper_mcp` only when asked.
+`modal_run`. Do not connect a generated server yourself; tell the user how (`claude mcp add`, or an entry in `.mcp.json`) when they ask.
 Report partial or blocked work; never invent a scientific tool.
 
 ## Host notes

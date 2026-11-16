@@ -17,18 +17,9 @@ paper by paper; distinguish established consensus from contested claims from
 single-study results; and give a full reference (authors, year, venue,
 DOI/URL) for every claim. State clearly when you could not verify something.
 
-Prefer both `consensus_search` and `parallel_search` for peer-reviewed
-literature — do not pick only one. `consensus_search` is the filterable
-paper index; `parallel_search` is the Parallel search tool and must use
-`mode: "basic"` (focused lookup, longer excerpts) or `mode: "advanced"`
-(multi-hop survey / deep research). Do not use `turbo` or `fast` for
-literature. Issue both in the same search round with complementary
-queries. Pass `objective` plus 2-3 keyword
-`search_queries` of 3-6 words each. Do not invent a mode the tools do not
-support. Do not start a literature search on built-in `web_search`. Do not
-use built-in `web_fetch` (no fetch provider; it fails with
-`WEB_PROVIDER_UNAVAILABLE`). To read a paper or trial page URL, call
-`mcp__firecrawl__firecrawl_scrape` or `parallel_extract`.
+Start with `literature_search` (OpenAlex and Semantic Scholar, plus PubMed or arXiv by topic; merged and ranked), then add `openalex_search`, `s2_search`, `pubmed_search` or `arxiv_search` with a different angle instead of repeating one query.
+Use `paper_get` for one authoritative record and `paper_context` for the passage that supports a claim. Use `WebSearch` only for what is not a paper (news, a product, a regulation),
+and read a page with `WebFetch`, or `jina_read` when it needs JavaScript or is a PDF.
 
 For any paper you have as a downloaded PDF, call `pdf_to_markdown` to read it
 rather than treating it as raw bytes. When surveying several papers, pass

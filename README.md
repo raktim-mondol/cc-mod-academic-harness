@@ -4,9 +4,9 @@ A Claude Code mod that brings the Academic Harness research tooling into Claude
 Code: literature and citation tools, a research skill pack, the writing-engine
 guards for `ah.yaml` projects, and a small terminal interface.
 
-**Status: phase P5 done** (tool host with 134 of Academic Harness's 136 tools plus four job tools, the
-writing-engine guard, background jobs and a model route, and now the task commands, `/fold`, a status line and a pane). Packaging
-(P6) is not built yet. The plan is in `IMPLEMENTATION_PLAN.md`; the audit of P0 to P4 is `docs/AUDIT-P0-P4.md`; platform answers are in
+**Status: phase P5 done, then a fit review** (tool host serving 121 of Academic Harness's 136 tools plus four job tools, the
+writing-engine guard, background jobs and a model route, the task commands, `/fold`, a status line and a pane). The fit review
+dropped what Claude Code already does and rewrote the guidance for it: `docs/FIT-REVIEW.md`. Packaging (P6) is not built yet. The plan is in `IMPLEMENTATION_PLAN.md`; the audit of P0 to P4 is `docs/AUDIT-P0-P4.md`; platform answers are in
 `docs/PLATFORM-NOTES.md`; what P1 to P5 built and measured is in `docs/P1-RESULTS.md` to `docs/P5-RESULTS.md`.
 
 ## What works now
@@ -24,14 +24,17 @@ writing-engine guard, background jobs and a model route, and now the task comman
   session's running jobs and, in an `ah.yaml` project, the engine's gate (read again after each turn). `/academic` with no word opens a
   pane with the project's state, this session's jobs, the notebook's last entries and the PaperMemory counts; it is one column when
   narrow and two when the pane is 96 columns or wider, and it refreshes itself while it is open.
-- **86 core skills**, listed as `academic-harness:<name>`, plus `academic-harness:research-guides`,
-  which holds the longer per-area guidance (29 files) and is read on demand.
-- **22 specialist agents** such as `academic-harness:peer-reviewer`. Reviewers cannot edit files.
-- **35 research tools** from the `ah` MCP server, named `mcp__plugin_academic-harness_ah__<tool>` and
+- **54 core skills**, listed as `academic-harness:<name>`, plus `academic-harness:research-guides`,
+  which holds the longer per-area guidance (27 files) and is read on demand. About 700 more are bundled and found with
+  `skill_search` (17 of the core ones, such as `openfda` and `scanpy`, are among them to keep the always-loaded list short).
+- **21 specialist agents** such as `academic-harness:peer-reviewer`. Reviewers cannot edit files.
+- **Research tools** from the `ah` MCP server, named `mcp__plugin_academic-harness_ah__<tool>` and
   found with `ToolSearch`: `literature_search`, `openalex_search`, `s2_search`, `pubmed_search`,
-  `arxiv_search`, `crossref_lookup`, the web-search tools, `paper_resolve`, `paper_get`, `paper_context`,
-  `paper_download`, `citation`, `integrity_check`, `reference_library`, `notebook`, `scientific_result`,
+  `arxiv_search`, `crossref_lookup`, `jina_read`, `paper_resolve`, `paper_get`, `paper_context`,
+  `paper_download`, `citation`, `integrity_check`, `reference_library`, `notebook`,
   `skill_search` and `skill_load`, among others. They are Academic Harness's own code, loaded unchanged.
+  Thirteen are left out because Claude Code does the job (general web search and fetch, result cards, reply folding, prompt
+  templates, MCP mounting, a LaTeX wrapper): the list, the reasons and `restore_tools` are in `docs/FIT-REVIEW.md`.
   The notebook goes to `<project>/.dsh/notebook/<session id>.jsonl`. A result over 40,000 characters is
   cut and the whole text saved under `<project>/.dsh/tool-output/`.
 - **Writing engine and guard** for projects with an `ah.yaml`. 38 `ah_*` tools (`ah_state`, `ah_check`,
@@ -53,13 +56,11 @@ writing-engine guard, background jobs and a model route, and now the task comman
   by `llm_budget_usd` ($5 a server run). **Paid compute** (`modal_run`, `runpod_run`, `vastai_run`) always asks
   first, with the cost ceiling and your session budget. `node scripts/install-helpers.mjs` builds the optional
   Python helper environment (about 770 MB) for the data and statistics tools.
-- **PaperMemory's own tools and Paper2MCP.** `paper_backfill` fills the library from the papers in a project;
-  a consolidation pass runs shortly after the server starts (at most hourly); `paper_mcp` registers an MCP
-  server generated from a paper and mounts it after you approve it in a form. Its tools appear as
-  `mcp__plugin_academic-harness_ah__mcp__<serverName>__<tool>`. The server follows `/cd` (it asks the client
-  for the session folder).
+- **PaperMemory's own tools.** `paper_backfill` fills the library from the papers in a project, and a consolidation pass
+  runs shortly after the server starts (at most hourly). The server follows `/cd` (it asks the client for the session
+  folder). An MCP server generated from a paper (Paper2MCP) is added the Claude Code way, `claude mcp add` or `.mcp.json`.
 - **API keys** are the plugin's `userConfig` fields (set them where Claude Code configures plugin options, or in `pluginConfigs`). A variable exported in the
-  shell wins over a setting. `tool_areas` (search, papers, notebook, skills, writing, reviews, tournament, analysis, provenance, study, data, submission, deep, compute, figures, or all) trims the tool set.
+  shell wins over a setting. `tool_areas` (search, papers, notebook, skills, writing, reviews, tournament, analysis, provenance, study, data, submission, deep, compute, figures, memory, or all) trims the tool set, and `restore_tools` brings a left-out tool back by name.
 - **PaperMemory**: its 14 tools, as `mcp__plugin_academic-harness_papermemory__*`. The first
   session installs the CLI into `~/.local/share/cc-mod-academic-harness/home/` (about a second
   with a warm `uv` cache). The library is `~/.local/share/papermemory/papermemory.db`, shared with
@@ -106,6 +107,7 @@ node tests/live/p3-tui.mjs                             # tmux: the guard and app
 node tests/live/p5.mjs                                 # task commands, errors, /fold, one deep research run from /ah-research
 node tests/live/p5-tui.mjs                             # tmux: status line, the pane at three widths, a job from start to notice
 node tests/live/p1.mjs                                 # agents, skills, research mode, PaperMemory
+node tests/live/fit.mjs                                # the catalogue, restore_tools, papers searched with literature_search, an on-demand skill
 node tests/live/p2-config.mjs                          # a key saved with `claude plugin configure` reaches an installed copy's server
 ```
 

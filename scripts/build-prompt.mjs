@@ -9,38 +9,42 @@
 //   hooks/generated/prompt.ts                       the always-on text (host notes + chosen sections + guide index)
 //   skills/research-guides/SKILL.md + references/   one file per guide
 //
-// The upstream text is used verbatim. The build fails if a section named here is missing from
-// prompt.js, which is how upstream drift is caught. A section it does not know is added to the guides
-// and reported, so nothing is dropped silently.
+// The guides are upstream's text, with the passages that are wrong for Claude Code rewritten by scripts/adapt.mjs. The always-on part is
+// written for Claude Code in scripts/research-mode.md (the sections marked `own` below are what it was written from). The build fails if a
+// section named here is missing from prompt.js, which is how upstream drift is caught; it also says when an `own` section's upstream text
+// has changed since it was last reviewed (scripts/prompt-reviewed.json; `--accept-upstream` records the current text as reviewed).
+// A section it does not know is added to the guides and reported, so nothing is dropped silently.
 // Never edit the outputs by hand (ground rule 5).
 
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { pathToFileURL } from 'node:url'
+import { adapt } from './adapt.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 export const GUIDES_SKILL = 'research-guides'
 export const SECTION_ID = 'academic-harness:research'
 export const MAX_ALWAYS_ON_CHARS = 32_000
 
-// where: 'always' | 'guide' | 'drop'. A guide has a file slug and a one-line "load when" hint.
+// where: 'own' (written for Claude Code in research-mode.md) | 'guide' (upstream's text, adapted) | 'drop'. A guide has a file slug and a one-line "load when" hint.
 export const SECTIONS = {
-  'How you work': { where: 'always' },
-  'Research discipline': { where: 'always' },
+  'How you work': { where: 'own' },
+  'Research discipline': { where: 'own' },
   'Local learning (RSI)': { where: 'drop', why: 'ah_rsi is not ported (decision D10, deferred to P6)' },
   'Writing quality': { where: 'guide', slug: 'writing-quality', hint: 'editing a finished draft that reads machine-generated' },
   'Paper lifecycle (Supervisor-Skills)': { where: 'guide', slug: 'paper-lifecycle', hint: 'outside an ah.yaml project: idea evaluation, drafting, pre-submission review' },
-  'Python': { where: 'always' },
-  'Lab notebook': { where: 'always' },
-  'Scientific results': { where: 'always' },
+  'Python': { where: 'own' },
+  'Lab notebook': { where: 'own' },
+  'Scientific results': { where: 'drop', why: 'scientific_result draws a card in DSH\'s chat; here the answer is the reply' },
   'Reproducible analysis': { where: 'guide', slug: 'reproducible-analysis', hint: 'running or rerunning an analysis that will be reported' },
   'Provenance audit': { where: 'guide', slug: 'provenance-audit', hint: 'tracing where a number, figure or claim came from' },
   'Deep research': { where: 'guide', slug: 'deep-research', hint: 'a survey-grade, multi-source investigation' },
   'Specialists': { where: 'guide', slug: 'specialists', hint: 'delegating review, research or design work to a specialist agent' },
   'Literature and the web': { where: 'guide', slug: 'literature-and-the-web', hint: 'finding papers, databases, journals, or web sources' },
   'Reading papers at the right level': { where: 'guide', slug: 'reading-papers', hint: 'reading, downloading or converting papers; clinical evidence; data and journal policy; paper integrity' },
-  'Paper memory': { where: 'always' },
+  'Paper memory': { where: 'own' },
   'Reference library': { where: 'guide', slug: 'reference-library', hint: 'managing a project\'s reference library and BibTeX' },
   'Systematic reviews': { where: 'guide', slug: 'systematic-reviews', hint: 'protocols, screening, extraction, PRISMA' },
   'Meta-analysis': { where: 'guide', slug: 'meta-analysis', hint: 'pooling effect sizes' },
@@ -60,10 +64,10 @@ export const SECTIONS = {
   'Academic Harness (LaTeX papers, grants, theses)': { where: 'guide', slug: 'latex-projects', hint: 'a workspace with ah.yaml, or starting a paper, grant or thesis in LaTeX' },
   'LaTeX': { where: 'guide', slug: 'latex', hint: 'compiling or fixing LaTeX' },
   'Remote compute': { where: 'guide', slug: 'remote-compute', hint: 'paid GPU or cloud compute (always ask first)' },
-  'Workspace search': { where: 'guide', slug: 'workspace-search', hint: 'searching a large local corpus' },
-  'Workflow templates': { where: 'guide', slug: 'workflow-templates', hint: 'a ready-made prompt template for a common research task' },
-  'Files': { where: 'drop', why: 'covered by the host notes' },
-  'Safety': { where: 'always' },
+  'Workspace search': { where: 'drop', why: 'it is about zvec_index, which is not ported yet (P6)' },
+  'Workflow templates': { where: 'drop', why: 'research_template is not served; skills and the task commands do that job' },
+  'Files': { where: 'drop', why: 'covered by research-mode.md' },
+  'Safety': { where: 'own' },
 }
 
 /** Split the evaluated prompt into [{ heading, text }] on top-level `## ` sections; the lead-in is dropped. */
@@ -78,14 +82,14 @@ function slugify(heading) {
   return heading.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 48)
 }
 
-/** @returns {{ always: string[], guides: Array<{heading, slug, hint, text}>, dropped: Array<{heading, why}>, unknown: string[] }} */
+/** @returns {{ own: Array<{heading, text}>, guides: Array<{heading, slug, hint, text}>, dropped: Array<{heading, why}>, unknown: string[] }} */
 export function classify(sections, responseShape) {
   const known = new Set(Object.keys(SECTIONS))
   const present = new Set(sections.map(s => s.heading))
   const missing = [...known].filter(h => !present.has(h))
   if (missing.length) throw new Error(`prompt.js no longer has these sections: ${missing.join('; ')}. Upstream changed: review SECTIONS in scripts/build-prompt.mjs.`)
 
-  const always = []
+  const own = []
   const guides = []
   const dropped = []
   const unknown = []
@@ -94,12 +98,12 @@ export function classify(sections, responseShape) {
     if (!rule) {
       unknown.push(s.heading)
       guides.push({ ...s, slug: slugify(s.heading), hint: s.heading })
-    } else if (rule.where === 'always') always.push(s.text)
+    } else if (rule.where === 'own') own.push(s)
     else if (rule.where === 'guide') guides.push({ ...s, slug: rule.slug, hint: rule.hint })
     else dropped.push({ heading: s.heading, why: rule.why })
   }
-  always.push(String(responseShape).trimEnd())
-  return { always, guides, dropped, unknown }
+  own.push({ heading: 'RESPONSE_SHAPE', text: String(responseShape).trimEnd() })
+  return { own, guides, dropped, unknown }
 }
 
 export function guideIndex(guides) {
@@ -112,17 +116,19 @@ export function guideIndex(guides) {
   ].join('\n')
 }
 
-export function assemble({ hostNotes, always, guides }) {
-  return [hostNotes.trimEnd(), ...always, guideIndex(guides)].join('\n\n') + '\n'
+export function assemble({ researchMode, guides }) {
+  return [researchMode.trimEnd(), guideIndex(guides)].join('\n\n') + '\n'
 }
+
+const sha = text => createHash('sha256').update(String(text)).digest('hex').slice(0, 16)
 
 function guideFile(g) {
   return [
-    `<!-- Generated by scripts/build-prompt.mjs from upstream prompt.js, section "${g.heading}". Do not edit. -->`,
+    `<!-- Generated by scripts/build-prompt.mjs from upstream prompt.js, section "${g.heading}", with scripts/adapt.mjs. Do not edit. -->`,
     '',
-    `Tool names here are Academic Harness's own. In Claude Code, \`subagent\` is \`Agent\`, \`skill\` is \`Skill\`, \`ask_user_question\` is \`AskUserQuestion\`, and \`mcp__papermemory__*\` is \`mcp__plugin_academic-harness_papermemory__*\`. If a tool named below is not in your tool list, say so.`,
+    `Tool names here are Academic Harness's own. In Claude Code, \`subagent\` is \`Agent\`, \`skill\` is \`Skill\`, and \`mcp__papermemory__*\` is \`mcp__plugin_academic-harness_papermemory__*\`. If a tool named below is not in your tool list, say so.`,
     '',
-    g.text,
+    adapt(`guide:${g.slug}`, g.text),
     '',
   ].join('\n')
 }
@@ -137,7 +143,7 @@ function guidesSkill(guides) {
     '',
     '# Academic Harness guides',
     '',
-    'Each file under `references/` is one area of Academic Harness guidance, written for another host. Read only the file for the area you are working in.',
+    'Each file under `references/` is one area of Academic Harness guidance, written for another host and adapted. Read only the file for the area you are working in.',
     '',
     '| File | Read when |',
     '|---|---|',
@@ -148,12 +154,24 @@ function guidesSkill(guides) {
   ].join('\n')
 }
 
-export async function build({ upstream = join(root, 'upstream'), hooksOut = join(root, 'hooks', 'generated'), skillsOut = join(root, 'skills') } = {}) {
+const REVIEWED = join(root, 'scripts', 'prompt-reviewed.json')
+
+/** The `own` sections whose upstream text differs from what research-mode.md was written against. `accept` records the current text. */
+export function reviewUpstream(own, { accept = false, file = REVIEWED } = {}) {
+  const now = Object.fromEntries(own.map(s => [s.heading, sha(s.text)]))
+  const before = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : null
+  const changed = before ? Object.keys(now).filter(h => before[h] !== now[h]) : []
+  if (accept || !before) writeFileSync(file, JSON.stringify(now, null, 2) + '\n')
+  return changed
+}
+
+export async function build({ upstream = join(root, 'upstream'), hooksOut = join(root, 'hooks', 'generated'), skillsOut = join(root, 'skills'), accept = false } = {}) {
   const mod = await import(pathToFileURL(join(upstream, 'prompt.js')).href)
   const sections = splitSections(mod.ACADEMIC_HARNESS_PROMPT)
-  const { always, guides, dropped, unknown } = classify(sections, mod.RESPONSE_SHAPE)
-  const hostNotes = readFileSync(join(root, 'scripts', 'host-notes.md'), 'utf8')
-  const text = assemble({ hostNotes, always, guides })
+  const { own, guides, dropped, unknown } = classify(sections, mod.RESPONSE_SHAPE)
+  const researchMode = readFileSync(join(root, 'scripts', 'research-mode.md'), 'utf8')
+  const text = assemble({ researchMode, guides })
+  const changed = reviewUpstream(own, { accept })
   if (text.length > MAX_ALWAYS_ON_CHARS) {
     throw new Error(`always-on section is ${text.length} characters, over the ${MAX_ALWAYS_ON_CHARS} limit (decision D6). Move a section to the guides in SECTIONS.`)
   }
@@ -174,12 +192,13 @@ export async function build({ upstream = join(root, 'upstream'), hooksOut = join
   writeFileSync(join(dir, 'SKILL.md'), guidesSkill(guides))
   for (const g of guides) writeFileSync(join(dir, 'references', `${g.slug}.md`), guideFile(g))
 
-  return { chars: text.length, tokensEstimate: Math.round(text.length / 4), always: always.length, guides: guides.length, dropped, unknown }
+  return { chars: text.length, tokensEstimate: Math.round(text.length / 4), own: own.length, guides: guides.length, dropped, unknown, changed }
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const r = await build()
-  console.log(`prompt: always-on ${r.chars} characters (about ${r.tokensEstimate} tokens), ${r.always} upstream sections, ${r.guides} guides`)
+  const r = await build({ accept: process.argv.includes('--accept-upstream') })
+  console.log(`prompt: always-on ${r.chars} characters (about ${r.tokensEstimate} tokens), written for Claude Code from ${r.own} upstream sections, ${r.guides} guides`)
+  if (r.changed.length) console.log(`  UPSTREAM CHANGED since scripts/research-mode.md was reviewed: ${r.changed.join('; ')}. Read them, update research-mode.md, then run with --accept-upstream`)
   for (const d of r.dropped) console.log(`  dropped "${d.heading}": ${d.why}`)
   if (r.unknown.length) console.log(`  NEW upstream sections added to the guides, review them: ${r.unknown.join('; ')}`)
 }

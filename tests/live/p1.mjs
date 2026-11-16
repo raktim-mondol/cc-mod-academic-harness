@@ -45,15 +45,15 @@ const scenarios = {
   init() {
     const r = run('init', 'Say hi in one word.', { project: true })
     const i = r.init
-    assert.equal(i.agents.filter(a => a.startsWith('academic-harness:')).length, 22, 'the 22 specialist agents')
-    assert.ok(i.skills.filter(s => s.startsWith('academic-harness:')).length >= 86, 'the core skills')
+    assert.equal(i.agents.filter(a => a.startsWith('academic-harness:')).length, 21, 'the 21 specialist agents')
+    assert.ok(i.skills.filter(s => s.startsWith('academic-harness:')).length >= 54, 'the core skills')
     assert.ok(i.slash_commands.includes('academic'), '/academic')
     for (const n of ['ah', 'papermemory']) assert.equal(i.mcp_servers.find(s => s.name === `plugin:academic-harness:${n}`)?.status, 'connected', `${n} server`)
     const ah = i.tools.filter(t => t.startsWith('mcp__plugin_academic-harness_ah__')).length
     const pm = i.tools.filter(t => t.startsWith('mcp__plugin_academic-harness_papermemory__')).length
-    assert.ok(ah >= 134, `${ah} ah tools`)
+    assert.ok(ah >= 125, `${ah} ah tools`)
     assert.equal(pm, 14, 'the 14 PaperMemory tools')
-    return `22 agents, ${i.skills.filter(s => s.startsWith('academic-harness:')).length} skills, /academic, ${ah} ah tools, ${pm} PaperMemory tools, ${cost(r)}`
+    return `21 agents, ${i.skills.filter(s => s.startsWith('academic-harness:')).length} skills, /academic, ${ah} ah tools, ${pm} PaperMemory tools, ${cost(r)}`
   },
   mode() {
     const out = run('mode_out', ask)

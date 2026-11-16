@@ -38,7 +38,7 @@ One card per kept candidate. Ranked list in this order. Scores are 1–5; novelt
 **Evidence against:** ROCK inhibitors are studied mainly in wet AMD / neovascular disease; in vivo dry-AMD evidence is lacking.
 
 **Novelty:** ROCK inhibition in RPE is known; applying it as a dry-AMD phagocytosis therapy (vs. anti-angiogenic use) is the combinatorial claim.
-**Searched:** consensus_search + parallel_search `advanced` for "RPE phagocytosis ROCK" and "dry AMD ROCK inhibitor"; [VERIFY] any trial not retrieved.
+**Searched:** literature_search for "RPE phagocytosis ROCK" and "dry AMD ROCK inhibitor"; [VERIFY] any trial not retrieved.
 
 **Discriminating test:** Flow-cytometry phagocytosis assay (pHrodo outer segments) in primary or iPSC-RPE ± ROCK inhibitor vs. vehicle.
 **Refuted if:** no increase in phagocytic index at non-cytotoxic doses, or the increase is an assay artifact (bead-only, no outer-segment substrate).

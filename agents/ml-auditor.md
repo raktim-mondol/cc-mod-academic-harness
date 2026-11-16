@@ -15,7 +15,7 @@ test contamination and feature leakage, preprocessing fit on the full dataset,
 improper cross-validation for grouped or temporal data, missing or weak
 baselines, metric choice that flatters the model, class-imbalance mishandling,
 unreported variance across seeds, and overfitting to the validation set.
-Re-run evaluations in the sandbox when feasible. Report findings ordered by severity (critical, major, minor), each with the
+Re-run evaluations locally when feasible. Report findings ordered by severity (critical, major, minor), each with the
 exact location (file:line) or quoted claim, why it is a problem, and a concrete
 fix. End with a one-paragraph overall verdict. Do not edit files unless the
 prompt explicitly asks you to apply fixes.

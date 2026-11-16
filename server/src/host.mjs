@@ -13,10 +13,9 @@ import { createContext, Registry } from './context.mjs'
 import { createJobs, FINISHED } from './jobs.mjs'
 import { createLlm, DEFAULT_BUDGET_USD, DEFAULT_MODEL } from './llm.mjs'
 import { jobTools } from './jobtools.mjs'
-import { mountServer } from './mounts.mjs'
 import { modHome } from './paths.mjs'
 import { makeExec, sessionIdFrom } from './exec.mjs'
-import { parseAreas, plan } from './manifest.mjs'
+import { parseAreas, plan, restoreList } from './manifest.mjs'
 import { adapt, blocksToContent, clip, DEFAULT_MAX_CHARS, fixSkillSearch } from './render.mjs'
 import { listedSkills } from './skills-list.mjs'
 import { toInputSchema } from './schema.mjs'
@@ -52,7 +51,10 @@ export async function createHost({ upstream, areas = 'all', env = process.env, c
   if (problem) throw new Error(problem)
   const { areas: wanted, unknown } = parseAreas(areas)
   if (unknown.length) logger(`unknown tool area(s) ignored: ${unknown.join(', ')}`)
-  const { load, missing } = plan(upstream, wanted)
+  // The shell variable and the plugin setting (AH_RESTORE_TOOLS_SETTING, empty when unset) both count.
+  const { restore, unknown: unknownRestore } = restoreList(`${env.AH_RESTORE_TOOLS ?? ''},${env.AH_RESTORE_TOOLS_SETTING ?? ''}`)
+  if (unknownRestore.length) logger(`restore_tools names no tool that can come back, ignored: ${unknownRestore.join(', ')}`)
+  const { load, missing } = plan(upstream, wanted, { restore })
   if (missing.length) logger(`expected modules not in the snapshot (upstream drift?): ${missing.join(', ')}`)
 
   const registry = new Registry()
@@ -60,31 +62,7 @@ export async function createHost({ upstream, areas = 'all', env = process.env, c
   const jobs = createJobs({ dir: join(modHome(env), 'jobs'), session: sessionId ?? null, cwd })
   const budget = Number(env.AH_LLM_BUDGET_USD)
   const llm = createLlm({ model: env.AH_LLM_MODEL?.trim() || DEFAULT_MODEL, budgetUsd: budget > 0 ? budget : DEFAULT_BUDGET_USD, cwd, env })
-  // What the serve loop can do for a module: ask the person (MCP elicitation) and tell the client the tool list changed.
-  const bridge = { elicit: null }
-  const mounts = []
-  const approval = {
-    /** `paper_mcp`'s question. Anything but an explicit yes is a no: no channel, a cancel (claude -p), a decline, a timeout. */
-    async request({ reason }) {
-      if (!bridge.elicit) return 'denied'
-      try {
-        const r = await bridge.elicit({ message: String(reason ?? 'Approve this action?'), requestedSchema: { type: 'object', properties: { approve: { type: 'boolean', title: 'Approve', description: 'Yes to allow it, no to refuse.' } }, required: ['approve'] } })
-        return r?.action === 'accept' && r?.content?.approve === true ? 'allowed-once' : 'denied'
-      } catch {
-        return 'denied'
-      }
-    },
-  }
-  const services = {
-    jobs,
-    llm,
-    optional: { approval },
-    async mount(spec) {
-      const m = await mountServer(registry, spec, { onChange: () => registry.onChange?.(), log: logger })
-      mounts.push(m)
-      return m
-    },
-  }
+  const services = { jobs, llm }
   const loaded = []
   const failed = []
   for (const entry of load) {
@@ -104,11 +82,11 @@ export async function createHost({ upstream, areas = 'all', env = process.env, c
   let bindParentJob = () => () => {}
   const runner = join(upstream, 'job-runner.js')
   if (existsSync(runner)) ({ bindParentJob } = await import(pathToFileURL(runner).href))
-  return hostOver(registry, { loaded, failed, env, cwd, jobs, llm, bindParentJob, bridge, mounts })
+  return hostOver(registry, { loaded, failed, env, cwd, jobs, llm, bindParentJob })
 }
 
 /** The calling half of the host, over any registry. createHost loads upstream modules into one; tests fill their own. */
-export function hostOver(registry, { loaded = [], failed = [], env = process.env, cwd: startCwd = process.cwd(), jobs = null, llm = null, bindParentJob = () => () => {}, detached = DETACHED_TOOLS, bridge = { elicit: null }, mounts = [] } = {}) {
+export function hostOver(registry, { loaded = [], failed = [], env = process.env, cwd: startCwd = process.cwd(), jobs = null, llm = null, bindParentJob = () => () => {}, detached = DETACHED_TOOLS } = {}) {
   const sessionId = sessionIdFrom(env)
   // The session directory: the server's own at start, then what the client says with roots/list (it changes with /cd).
   let cwd = startCwd
@@ -190,14 +168,13 @@ export function hostOver(registry, { loaded = [], failed = [], env = process.env
         return failure(why ? `${name} ${why}` : String(error?.message ?? error))
       }
     },
-    bridge,
     /** Run the handlers modules registered with `ctx.on(event, ...)`. Upstream's events are DSH's; the host raises the ones that have a meaning here. */
     async fire(event, payload) {
       for (const sub of registry.subscriptions.filter(x => x.event === event)) {
         try { await sub.handler(payload) } catch (error) { process.stderr.write(`[academic-harness] ah: ${sub.module} ${event} handler failed: ${String(error?.message ?? error).split('\n')[0]}\n`) }
       }
     },
-    /** Once the client has said it is initialised and told us where the session is: `session/created` (paper_mcp mounts its servers) and, a little later, a PaperMemory dream pass. */
+    /** Once the client has said it is initialised and told us where the session is: `session/created` and, a little later, a PaperMemory dream pass. */
     start() {
       if (started) return
       started = true
@@ -205,7 +182,6 @@ export function hostOver(registry, { loaded = [], failed = [], env = process.env
       if (env.AH_DREAM_DELAY_MS !== '-1') setTimeout(() => { void this.fire('agent/disposed', {}) }, Number(env.AH_DREAM_DELAY_MS) >= 0 ? Number(env.AH_DREAM_DELAY_MS) : 20_000).unref?.()
     },
     async dispose() {
-      for (const m of mounts.splice(0)) { try { m.close() } catch { /* gone */ } }
       await jobs?.closeAll()
       await registry.dispose()
     },
@@ -251,7 +227,6 @@ export function serve({ host, input = process.stdin, output = process.stdout, pr
     switch (method) {
       case 'initialize':
         clientHasRoots = Boolean(params?.capabilities?.roots)
-        if (host.bridge) host.bridge.elicit = params?.capabilities?.elicitation ? p => ask('elicitation/create', p, 10 * 60_000) : null
         if (registry0(host)) registry0(host).onChange = () => send({ jsonrpc: '2.0', method: 'notifications/tools/list_changed' })
         return reply({ protocolVersion: params?.protocolVersion ?? protocolVersion, capabilities: { tools: { listChanged: true } }, serverInfo: { name: SERVER_NAME, version: SERVER_VERSION } })
       case 'ping':

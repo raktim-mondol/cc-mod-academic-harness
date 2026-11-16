@@ -51,9 +51,7 @@ search explores uncovered ground rather than re-reading the same papers.
 
 ## 3. Evidence digest
 
-Ground generation in what sources actually say. Use `consensus_search` **and**
-`parallel_search` (`advanced` for a survey) with the queries above, then
-`parallel_extract`, or `paper_download` + `pdf_to_markdown` when a claim needs the
+Ground generation in what sources actually say. Use `literature_search` (and `openalex_search` or `s2_search` with another angle) with the queries above, then `WebFetch` or `jina_read`, or `paper_download` + `pdf_to_markdown` when a claim needs the
 full paper. Ask a subagent to bank the evidence:
 
 > RESEARCH GOAL: `<goal>`
@@ -239,7 +237,7 @@ hypothesis when the severity meets it. Report it as withheld, never as deleted.
 
 Do this with a subagent and the tools that ship: `paper_resolve` and
 `crossref_lookup` to confirm a work exists, `integrity_check` for retraction and
-correction status, `consensus_search` / `s2_search` for claim support.
+correction status, `literature_search` / `s2_search` for claim support.
 
 > Check these claims against the literature. For each: search it, find the paper
 > that bears on it, and return

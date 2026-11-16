@@ -14,12 +14,14 @@
 //   later       registers tools that need the jobs service, a model route, or an install (P4 to P6)
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { DROPPED_TOOLS, restoreList } from './fit.mjs'
+export { restoreList }
 
 export const AREAS = ['search', 'papers', 'notebook', 'skills', 'writing', 'reviews', 'tournament', 'analysis', 'provenance', 'study', 'data', 'submission', 'deep', 'compute', 'figures', 'memory']
 
 /** Tier-1 modules by area. The order is the registration order. */
 export const TIER1 = {
-  notebook: ['notebook.js', 'scientific-result.js', 'fold-text.js', 'workflows.js'],
+  notebook: ['notebook.js'],
   skills: ['skill-on-demand.js'],
   // P3: the ah_* tools. They run the writing engine's CLI, so they need scripts/install-engine.mjs; without it each call says so.
   writing: ['academic-harness.js'],
@@ -39,15 +41,13 @@ export const TIER1 = {
   // Rented hardware. Every call asks first (hooks/approvals.ts) and the session spend cap is upstream's own (compute-ledger.js).
   compute: ['modal-run.js', 'runpod-run.js', 'vastai-run.js'],
   figures: ['image-generate.js'],
-  // PaperMemory's own modules: the backfill tool, a consolidation pass shortly after the server starts (upstream runs it when an agent is disposed),
-  // and paper_mcp, which mounts the MCP servers generated from papers (mounts.mjs; each mount asks the person through MCP elicitation).
-  memory: ['papermemory-backfill.js', 'papermemory-dream.js', 'paper-mcp.js'],
-  submission: ['submission-pack.js', 'manuscript-diff.js', 'rebuttal.js', 'presentation-build.js', 'paper-artifacts.js', 'paper-fold.js', 'latex-compile.js', 'mermaid-render.js'],
+  // PaperMemory's own modules: the backfill tool and a consolidation pass shortly after the server starts (upstream runs it when an agent is disposed).
+  memory: ['papermemory-backfill.js', 'papermemory-dream.js'],
+  submission: ['submission-pack.js', 'manuscript-diff.js', 'rebuttal.js', 'presentation-build.js', 'paper-artifacts.js', 'paper-fold.js', 'mermaid-render.js'],
   search: [
     'literature-search.js', 'openalex-search.js', 'semantic-scholar-search.js', 'pubmed-search.js', 'arxiv-search.js',
     'crossref-lookup.js', 'journal-search.js', 'domain-search.js', 'academic-databases.js', 'core-search.js',
-    'consensus-search.js', 'elicit-search.js', 'parallel-search.js', 'parallel-extract.js', 'brave-search.js',
-    'tavily-search.js', 'exa-search.js', 'perplexity-search.js', 'jina-reader.js',
+    'jina-reader.js',
   ],
   papers: [
     'paper-resolve.js', 'paper-get.js', 'paper-context.js', 'paper-download.js', 'openalex-cite.js', 'integrity-check.js',
@@ -114,6 +114,8 @@ export function discover(upstream) {
 export function classify(entry) {
   for (const [area, files] of Object.entries(TIER1)) if (files.includes(entry.file)) return { tier: 1, area }
   if (HOST_ONLY[entry.file]) return { tier: 'host-only', reason: HOST_ONLY[entry.file] }
+  const dropped = Object.entries(DROPPED_TOOLS).find(([, t]) => t.module === entry.file)
+  if (dropped) return { tier: 'dropped', tool: dropped[0], reason: dropped[1].why }
   return { tier: 'later' }
 }
 
@@ -125,13 +127,16 @@ export function parseAreas(value) {
   return { areas: names.filter(n => AREAS.includes(n)), unknown: names.filter(n => !AREAS.includes(n)) }
 }
 
-/** Entries to load, in tier-1 order. */
-export function plan(upstream, areas = AREAS) {
+/** Entries to load, in tier-1 order. `restore` names dropped tools to load anyway (fit.mjs; the `restore_tools` setting), each in its own area. */
+export function plan(upstream, areas = AREAS, { restore = [] } = {}) {
   const all = discover(upstream).map(e => ({ ...e, ...classify(e) }))
   const load = []
-  for (const area of areas) for (const file of TIER1[area] ?? []) {
-    const e = all.find(x => x.file === file)
-    if (e) load.push(e)
+  for (const area of areas) {
+    const back = restore.map(n => DROPPED_TOOLS[n]).filter(t => t && t.area === area).map(t => t.module)
+    for (const file of [...(TIER1[area] ?? []), ...back]) {
+      const e = all.find(x => x.file === file)
+      if (e) load.push(e)
+    }
   }
   const missing = []
   for (const area of areas) for (const file of TIER1[area] ?? []) if (!all.some(x => x.file === file)) missing.push(file)

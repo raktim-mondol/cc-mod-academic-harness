@@ -18,8 +18,11 @@ const HOST_WORDING = [
   [/Academic Harness engine venv is not ready inside this plugin \(vendor\/academic-harness\)\. Set ACADEMIC_HARNESS_CLI or AH_CMD to override\./g,
     'The Academic Harness engine is not installed for this plugin. Run `node scripts/install-engine.mjs` in the academic-harness plugin folder (or set ACADEMIC_HARNESS_CLI or AH_CMD to an existing `ah`).'],
   [/DSH will ask the human to confirm before it runs\./g, 'Claude Code will ask the human to confirm before it runs.'],
-  // paper_mcp: a mounted server's tools are served by this server, so Claude Code names them with its prefix
-  [/(^|[^\w])mcp__(?!plugin_)([A-Za-z0-9][A-Za-z0-9-]*)__\*/g, '$1mcp__plugin_academic-harness_ah__mcp__$2__*'],
+  // tools this build does not serve (server/src/fit.mjs)
+  [/, and consensus_search for study-design filters\./g, '.'],
+  [/built-in web_fetch or Parallel\/Firecrawl fail/g, 'WebFetch fails'],
+  [/\s*Call `scientific_result` separately when a run produced a finding\./g, ''],
+  [/open the forum URL with the agent-browser skill/g, 'open the forum URL in a browser tool'],
   [/\brestart dsh\b/gi, 'restart Claude Code'],
   [/\bthis dsh process\b/g, 'this session'],
 ]
@@ -58,11 +61,11 @@ export function clip(content, { maxChars = DEFAULT_MAX_CHARS, cwd, tool, callId,
 
 /**
  * skill_search marks a skill "(in the session catalogue)" when upstream's core list has it. Here the catalogue is the plugin's skills folder:
- * a core skill that was left out of this build (a licence, decision D5) is not in it, and one that is must be loaded as `academic-harness:<name>`.
+ * a core skill that was left out of it (a licence, decision D5, or server/src/fit.mjs) is not, and is read with skill_load; one that is must be loaded as `academic-harness:<name>`.
  * `listed` is the set of skill names in that folder.
  */
 export function fixSkillSearch(text, listed) {
   return String(text).replace(/`([a-z0-9][a-z0-9._-]*)` \(in the session catalogue\)/g, (_m, name) => (listed.has(name)
     ? `\`${name}\` (listed: load it with the Skill tool as academic-harness:${name})`
-    : `\`${name}\` (a core skill left out of this build; skill_load still reads it from the snapshot)`))
+    : `\`${name}\` (not in this plugin's skill list: read it with skill_load)`))
 }

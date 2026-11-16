@@ -5,15 +5,18 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import { compare } from '../../scripts/measure-surface.mjs'
 import { upstreamDir } from '../../server/src/paths.mjs'
+import { DROPPED_TOOLS } from '../../server/src/fit.mjs'
 
 test('the host serves exactly the tier-1 tools, each identical to what upstream registers', { skip: !existsSync(join(upstreamDir(), 'node_modules', 'ah-dsh-tools')) }, async () => {
   const r = await compare()
   assert.deepEqual(r.notFromManifest, [], 'a module upstream registers that the manifest does not discover')
   assert.deepEqual(r.mismatched, [])
   assert.deepEqual(r.unexplained, [], 'a tier-1 tool that upstream registers but the host does not serve')
-  assert.equal(r.served, 134)
+  // 136 registered upstream, less 2 for later (zvec_index, ah_rsi) and 13 left out on purpose (server/src/fit.mjs)
+  assert.equal(r.served, 136 - 2 - Object.keys(DROPPED_TOOLS).length)
   assert.deepEqual(r.hostServed.sort(), ['job_kill', 'job_log', 'job_status', 'job_wait'])
   assert.equal(r.upstreamTools, 136)
-  assert.ok(r.notServed.every(n => n.tier === 'later' || n.tier === 'host-only'))
+  assert.ok(r.notServed.every(n => n.tier === 'later' || n.tier === 'host-only' || n.tier === 'dropped'))
+  assert.deepEqual(r.notServed.filter(n => n.tier === 'dropped').map(n => n.tool).sort(), Object.keys(DROPPED_TOOLS).sort())
   assert.equal(r.ok, true)
 })

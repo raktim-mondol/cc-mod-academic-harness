@@ -25,6 +25,12 @@
       "description": "Which tool groups the academic-harness server offers: search, papers, notebook, skills, writing, reviews, tournament, analysis, provenance, study, data, submission, deep, compute, figures, memory, or all. Comma separated.",
       "default": "all"
     },
+    "restore_tools": {
+      "type": "string",
+      "title": "Tools to bring back",
+      "description": "Tools this plugin leaves out because Claude Code already does the job (see docs/FIT-REVIEW.md): brave_search, tavily_search, exa_search, perplexity_search, parallel_search, parallel_extract, consensus_search, elicit_search, scientific_result, fold_text, research_template, latex_compile. Comma separated; the tool's API key is then read from its environment variable.",
+      "default": ""
+    },
     "llm_model": {
       "type": "string",
       "title": "Model for tools that call a model",
@@ -83,34 +89,6 @@
       "type": "string",
       "title": "Scite API key",
       "description": "Key or token for Scite. Leave empty to use the SCITE_API_KEY environment variable, or none.",
-      "sensitive": true,
-      "required": false
-    },
-    "brave_api_key": {
-      "type": "string",
-      "title": "Brave API key",
-      "description": "Key or token for Brave. Leave empty to use the BRAVE_API_KEY environment variable, or none.",
-      "sensitive": true,
-      "required": false
-    },
-    "tavily_api_key": {
-      "type": "string",
-      "title": "Tavily API key",
-      "description": "Key or token for Tavily. Leave empty to use the TAVILY_API_KEY environment variable, or none.",
-      "sensitive": true,
-      "required": false
-    },
-    "exa_api_key": {
-      "type": "string",
-      "title": "Exa API key",
-      "description": "Key or token for Exa. Leave empty to use the EXA_API_KEY environment variable, or none.",
-      "sensitive": true,
-      "required": false
-    },
-    "perplexity_api_key": {
-      "type": "string",
-      "title": "Perplexity API key",
-      "description": "Key or token for Perplexity. Leave empty to use the PERPLEXITY_API_KEY environment variable, or none.",
       "sensitive": true,
       "required": false
     },
@@ -216,13 +194,6 @@
       "type": "string",
       "title": "IEEE API key",
       "description": "Key or token for IEEE. Leave empty to use the IEEE_API_KEY environment variable, or none.",
-      "sensitive": true,
-      "required": false
-    },
-    "elicit_api_key": {
-      "type": "string",
-      "title": "Elicit API key",
-      "description": "Key or token for Elicit. Leave empty to use the ELICIT_API_KEY environment variable, or none.",
       "sensitive": true,
       "required": false
     },
@@ -430,16 +401,13 @@
       ],
       "env": {
         "AH_TOOL_AREAS": "${user_config.tool_areas}",
+        "AH_RESTORE_TOOLS_SETTING": "${user_config.restore_tools}",
         "AH_LLM_MODEL": "${user_config.llm_model}",
         "AH_LLM_BUDGET_USD": "${user_config.llm_budget_usd}",
         "AH_KEY_PARALLEL_API_KEY": "${user_config.parallel_api_key}",
         "AH_KEY_FIRECRAWL_API_KEY": "${user_config.firecrawl_api_key}",
         "AH_KEY_CONSENSUS_API_KEY": "${user_config.consensus_api_key}",
         "AH_KEY_SCITE_API_KEY": "${user_config.scite_api_key}",
-        "AH_KEY_BRAVE_API_KEY": "${user_config.brave_api_key}",
-        "AH_KEY_TAVILY_API_KEY": "${user_config.tavily_api_key}",
-        "AH_KEY_EXA_API_KEY": "${user_config.exa_api_key}",
-        "AH_KEY_PERPLEXITY_API_KEY": "${user_config.perplexity_api_key}",
         "AH_KEY_JINA_API_KEY": "${user_config.jina_api_key}",
         "AH_KEY_UNPAYWALL_EMAIL": "${user_config.unpaywall_email}",
         "AH_KEY_OPENALEX_API_KEY": "${user_config.openalex_api_key}",
@@ -455,7 +423,6 @@
         "AH_KEY_WILEY_TDM_TOKEN": "${user_config.wiley_tdm_token}",
         "AH_KEY_SPRINGER_API_KEY": "${user_config.springer_api_key}",
         "AH_KEY_IEEE_API_KEY": "${user_config.ieee_api_key}",
-        "AH_KEY_ELICIT_API_KEY": "${user_config.elicit_api_key}",
         "AH_KEY_FUTUREHOUSE_API_KEY": "${user_config.futurehouse_api_key}",
         "AH_KEY_TYPESAFE_API_KEY": "${user_config.typesafe_api_key}",
         "AH_KEY_COHERE_API_KEY": "${user_config.cohere_api_key}",

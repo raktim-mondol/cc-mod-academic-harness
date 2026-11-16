@@ -7,11 +7,13 @@
 //   node scripts/build-manifest.mjs --check   exit 1 if plugin.json differs from what would be written
 //
 // Why AH_KEY_<NAME> and not <NAME>: an unset userConfig field reaches the server as "" (S4). Passing it as
-// <NAME> would overwrite a variable the person exported in their shell with an empty string. The host copies
+// <NAME> would overwrite a variable the person exported in their shell with an empty string. (The restore_tools setting
+// arrives as AH_RESTORE_TOOLS_SETTING for the same reason; the host reads it together with AH_RESTORE_TOOLS.) The host copies
 // AH_KEY_<NAME> to <NAME> only when <NAME> is empty (server/src/env.mjs).
 import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { DROPPED_KEY_FIELDS } from '../server/src/fit.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const manifestPath = join(root, '.claude-plugin', 'plugin.json')
@@ -32,7 +34,8 @@ const pretty = name => name.replace(/_/g, ' ').toLowerCase().replace(/\b(api|id|
 
 export async function keyFields(upstream = join(root, 'upstream')) {
   const mod = await import(pathToFileURL(join(upstream, 'settings-keys.js')).href)
-  return mod.KEY_FIELDS.filter(f => !NOT_YET.some(re => re.test(f))).map(name => ({ name, secret: mod.SECRET_FIELDS.has(name) }))
+  // A field only a dropped tool reads is not offered (server/src/fit.mjs); a shell variable still reaches a restored tool.
+  return mod.KEY_FIELDS.filter(f => !NOT_YET.some(re => re.test(f)) && !DROPPED_KEY_FIELDS.has(f)).map(name => ({ name, secret: mod.SECRET_FIELDS.has(name) }))
 }
 
 export async function build(manifest) {
@@ -45,6 +48,7 @@ export async function build(manifest) {
   }
   // Re-added below in a fixed place, so the file does not change shape from one run to the next.
   delete userConfig.tool_areas
+  delete userConfig.restore_tools
   delete userConfig.evidence_check
   delete userConfig.llm_model
   delete userConfig.llm_budget_usd
@@ -54,6 +58,12 @@ export async function build(manifest) {
     title: 'Tool areas',
     description: 'Which tool groups the academic-harness server offers: search, papers, notebook, skills, writing, reviews, tournament, analysis, provenance, study, data, submission, deep, compute, figures, memory, or all. Comma separated.',
     default: 'all',
+  }
+  userConfig.restore_tools = {
+    type: 'string',
+    title: 'Tools to bring back',
+    description: 'Tools this plugin leaves out because Claude Code already does the job (see docs/FIT-REVIEW.md): brave_search, tavily_search, exa_search, perplexity_search, parallel_search, parallel_extract, consensus_search, elicit_search, scientific_result, fold_text, research_template, latex_compile. Comma separated; the tool\'s API key is then read from its environment variable.',
+    default: '',
   }
   userConfig.llm_model = {
     type: 'string',
@@ -81,7 +91,7 @@ export async function build(manifest) {
     default: 'skip',
     options: ['skip', 'run'],
   }
-  const env = { AH_TOOL_AREAS: '${user_config.tool_areas}', AH_LLM_MODEL: '${user_config.llm_model}', AH_LLM_BUDGET_USD: '${user_config.llm_budget_usd}' }
+  const env = { AH_TOOL_AREAS: '${user_config.tool_areas}', AH_RESTORE_TOOLS_SETTING: '${user_config.restore_tools}', AH_LLM_MODEL: '${user_config.llm_model}', AH_LLM_BUDGET_USD: '${user_config.llm_budget_usd}' }
   for (const { name, secret } of fields) {
     const key = name.toLowerCase()
     userConfig[key] = {

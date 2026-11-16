@@ -20,7 +20,7 @@ export class Registry {
   subscriptions = []
   disposers = []
 
-  /** Called when a tool is added or removed after start (a mounted server's tools): the host tells the client the list changed. */
+  /** Called when a tool is added or removed after start: the host tells the client the list changed. */
   onChange = null
 
   register(definition) {
@@ -52,15 +52,11 @@ export function createContext(registry, { log = () => {}, module = '', services 
   }
   const own = {
     tools,
-    // Optional services (`approval`, ...), when the host built them; undefined otherwise, as upstream's own lookups expect.
+    // Optional services, when the host built them; undefined otherwise, as upstream's own lookups expect.
     get: name => services.optional?.[name],
-    // `ctx.plugin(McpClient, { transport: 'stdio', ... })` is how paper_mcp mounts a generated server (mounts.mjs). Any other plugin is not ported.
-    plugin(factory, options) {
-      if (options?.transport === 'stdio' && typeof services.mount === 'function') {
-        Promise.resolve(services.mount(options)).catch(error => log(`mount of ${options.serverName} failed: ${error.message}`))
-        return undefined
-      }
-      throw new UnportedServiceError('plugin', `${module || 'a module'} mounts something other than a stdio MCP server`)
+    // `ctx.plugin(...)` mounts a DSH plugin (an MCP client, ...). None is ported: Claude Code adds MCP servers itself.
+    plugin() {
+      throw new UnportedServiceError('plugin', `${module || 'a module'} uses a DSH plugin, which Claude Code does not have`)
     },
     // Subscriptions are recorded, never fired: the events (session/created, agent/disposed) are DSH's.
     on(event, handler) {

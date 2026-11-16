@@ -55,7 +55,7 @@ test('the plugin folder replaces the placeholder in the section text', async ($,
   await $.session.start({ cwd: '/p', surface: 'terminal', isInteractive: true })
 
   const text = (await compose($)).sections.find((s: { id: string }) => s.id === 'academic-harness:research')?.text ?? ''
-  expect(text.length).toBeGreaterThan(10_000)
+  expect(text.length).toBeGreaterThan(8_000)
   expect(text).not.toContain('{{PLUGIN_ROOT}}')
   expect(text).toContain('/upstream/skills/')
 })

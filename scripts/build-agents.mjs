@@ -16,10 +16,12 @@ import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'nod
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { frontmatter } from './build-skills.mjs'
+import { DROPPED_AGENTS } from '../server/src/fit.mjs'
+import { adapt } from './adapt.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
-export const EDITORS = new Set(['manuscript-editor', 'abstract-writer', 'protocol-writer', 'pipeline-engineer', 'data-visualizer', 'paper-agent-builder'])
+export const EDITORS = new Set(['manuscript-editor', 'abstract-writer', 'protocol-writer', 'data-visualizer', 'paper-agent-builder'])
 const READ_ONLY_DENY = 'Edit, Write, NotebookEdit'
 // The sentence upstream puts in every brief to tell DeepSeek Harness how to delegate it.
 const DELEGATION = /When DeepSeek Harness delegates this specialist[\s\S]*?together with the concrete task\.\s*/
@@ -43,7 +45,7 @@ export function agentFile(name, skillText) {
   if (!fm?.description) throw new Error(`${name}: skill has no description`)
   const body = skillText.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '')
   if (!DELEGATION.test(body)) throw new Error(`${name}: the delegation line is not where this build expects it (upstream changed the brief format)`)
-  const brief = body.replace(DELEGATION, '').trim()
+  const brief = adapt(`agent:${name}`, body.replace(DELEGATION, '').trim())
   const head = ['---', `name: ${name}`, `description: ${JSON.stringify(fm.description)}`]
   if (!EDITORS.has(name)) head.push(`disallowedTools: ${READ_ONLY_DENY}`)
   head.push('---')
@@ -67,6 +69,7 @@ export async function build({ upstream = join(root, 'upstream'), out = join(root
   rmSync(out, { recursive: true, force: true })
   mkdirSync(out, { recursive: true })
   for (const name of names) {
+    if (DROPPED_AGENTS[name]) continue
     const text = readFileSync(join(upstream, 'skills', name, 'SKILL.md'), 'utf8')
     writeFileSync(join(out, `${name}.md`), agentFile(name, text))
   }

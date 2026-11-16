@@ -124,7 +124,7 @@ const checks = {
   async task() {
     await session('task')
     await type('/ah-papers --effort low sparse autoencoders interpretability')
-    const s = await until(x => /Literature search: "sparse autoencoders interpretability"/.test(x), { label: 'the search result', timeoutMs: 90_000 })
+    const s = await until(x => /Literature search: "sparse autoencoders interpretability"/.test(x), { label: 'the search result', timeoutMs: 150_000 })
     assert.doesNotMatch(s.slice(s.lastIndexOf('/ah-papers')), /Do you want to proceed|requires confirmation|1\. Yes/i, 'a dialog was shown for the person\'s own command')
     assert.match(s, /Find Papers \(effort low\)/)
     return 'the command printed the search result, no dialog'
