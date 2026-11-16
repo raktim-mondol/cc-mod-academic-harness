@@ -276,13 +276,13 @@ describe('detached calls', { skip: !HAVE_UP }, () => {
   let runAsJob
   before(async () => ({ bindParentJob, runAsJob } = await import(pathToFileURL(join(UP, 'job-runner.js')).href)))
 
-  function hostWith(work, { foreground = 100, dir = 'x' } = {}) {
+  function hostWith(work, { foreground = 100, dir = 'x', validate } = {}) {
     const registry = new Registry()
     const jobs = createJobs({ dir: join(root, 'host', dir), session: 'sess' })
     const ctx = createContext(registry, { services: { jobs } })
     // a tool shaped like deep_research: runs its work through runAsJob, which adopts the host's job
     ctx.tools.register({ name: 'deep_research', description: 'd', parameters: { query: { type: 'string' } }, async execute(args, exec) { return runAsJob(ctx, exec, { kind: 'deep_research', label: 'x', timeoutMs: 10_000, noun: 'deep research' }, work) } })
-    return hostOver(registry, { env: { AH_JOB_FOREGROUND_MS: String(foreground), CLAUDE_CODE_SESSION_ID: 'sess' }, cwd: root, jobs, bindParentJob })
+    return hostOver(registry, { env: { AH_JOB_FOREGROUND_MS: String(foreground), CLAUDE_CODE_SESSION_ID: 'sess', ...(validate ? { AH_VALIDATE_TOOL_ARGS: validate } : {}) }, cwd: root, jobs, bindParentJob })
   }
   const text = r => r.content.map(c => c.text).join('\n')
 
@@ -295,6 +295,22 @@ describe('detached calls', { skip: !HAVE_UP }, () => {
     assert.equal(rec.status, 'completed')
     assert.equal(rec.delivered, true, 'a result given inline needs no notice')
     assert.match(rec.result, /REPORT/)
+  })
+
+  test('a call whose arguments are refused starts no job (enforce), and still runs as a job in warn mode', async () => {
+    let ran = 0
+    const work = async () => { ran++; return { status: 'done', report: 'REPORT' } }
+    const strict = hostWith(work, { foreground: 2000, dir: 'strict', validate: 'enforce' })
+    const refused = await strict.call('deep_research', { query: 42 }, { callId: 'toolu_bad' })
+    assert.equal(refused.isError, true)
+    assert.match(text(refused), /Invalid arguments for deep_research: "query" must be a string/)
+    assert.equal(ran, 0)
+    assert.equal(strict.jobs.list().length, 0, 'no job record for a refused call')
+    const lenient = hostWith(work, { foreground: 2000, dir: 'lenient' })
+    const r = await lenient.call('deep_research', { query: 42 }, { callId: 'toolu_warn' })
+    assert.equal(r.isError, undefined)
+    assert.equal(ran, 1)
+    assert.equal(lenient.jobs.list().length, 1)
   })
 
   test('work that outlives it answers with the job id, goes on, and job_wait returns the result', async () => {

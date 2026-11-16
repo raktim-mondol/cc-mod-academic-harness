@@ -29,6 +29,8 @@ npm run test:plugin  # the hooks module, with the engine stood in for
 
 A workflow change that adds or changes an action must pin it to a 40-character commit SHA (keep the version as a trailing comment); a test fails on a tag. Dependabot sends the updates.
 
+A change to the argument check (`server/src/validate.mjs`) needs a unit test in `tests/server/validate.test.mjs` and a host test in `tests/server/host.test.mjs`; no message may ever hold an argument value.
+
 ## Ground rules
 
 - **Never edit generated output:** `upstream/`, `skills/`, `agents/` and `hooks/generated/`. Change the build script and regenerate (`npm run build`), then review the diff.

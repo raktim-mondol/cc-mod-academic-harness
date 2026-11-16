@@ -17,6 +17,7 @@ import { toInputSchema } from '../../server/src/schema.mjs'
 import { upstreamDir } from '../../server/src/paths.mjs'
 import { hostOver, serve } from '../../server/src/host.mjs'
 import { PassThrough } from 'node:stream'
+import { createUsage } from '../../server/src/usage.mjs'
 
 const BIN = fileURLToPath(new URL('../../server/bin/ah-mcp.mjs', import.meta.url))
 const scratch = join(homedir(), '.cache', 'ah-cc-p2', `test-${process.pid}`)
@@ -472,5 +473,76 @@ describe('protocol loop with fake tools', () => {
     await s.end()
     const reply = s.lines.find(l => l.id === 99)
     assert.equal(reply.result.content[0].text, 'done')
+  })
+})
+
+describe('argument validation at the host', () => {
+  const PARAMS = { type: 'object', properties: { query: { type: 'string' }, limit: { type: 'number' } }, required: ['query'] }
+  function validatingHost(env = {}) {
+    const ran = []
+    const registry = new Registry()
+    registry.register({ name: 'search', description: '', parameters: PARAMS, execute: async args => { ran.push(args); return 'ran' } })
+    const usage = createUsage({ dir: join(scratch, `val-${Math.random().toString(36).slice(2, 8)}`), id: 'srv-v', flushMs: 60_000 })
+    return { host: hostOver(registry, { env: { CLAUDE_CODE_SESSION_ID: 's', ...env }, cwd: scratch, usage }), ran, usage }
+  }
+  /** Run `fn` and return what it wrote to stderr. */
+  async function stderrOf(fn) {
+    const lines = []
+    const write = process.stderr.write
+    process.stderr.write = chunk => { lines.push(String(chunk)); return true }
+    try { await fn() } finally { process.stderr.write = write }
+    return lines.join('')
+  }
+  const txt = r => r.content.map(c => c.text).join('\n')
+
+  test('enforce refuses before the tool runs, names the field, and counts the call as failed and invalid', async () => {
+    const { host, ran, usage } = validatingHost({ AH_VALIDATE_TOOL_ARGS: 'enforce' })
+    const r = await host.call('search', { query: 42, limit: 'SECRET-TEXT' })
+    assert.equal(r.isError, true)
+    assert.match(txt(r), /Invalid arguments for search: "query" must be a string; "limit" must be a number\./)
+    assert.ok(!txt(r).includes('SECRET-TEXT'))
+    assert.deepEqual(ran, [])
+    assert.deepEqual([usage.data.tools.search.calls, usage.data.tools.search.errors, usage.data.tools.search.invalid], [1, 1, 1])
+  })
+  test('warn runs the tool, writes one stderr line with paths only, and counts the call as invalid but not failed', async () => {
+    const { host, ran, usage } = validatingHost()
+    let r
+    const err = await stderrOf(async () => { r = await host.call('search', { query: 'q', limit: 'SECRET-TEXT' }) })
+    assert.equal(r.isError, undefined)
+    assert.deepEqual(ran, [{ query: 'q', limit: 'SECRET-TEXT' }])
+    assert.equal(err.trim().split('\n').length, 1)
+    assert.match(err, /search was called with arguments its schema refuses \(limit\)/)
+    assert.ok(!err.includes('SECRET-TEXT'))
+    assert.deepEqual([usage.data.tools.search.errors, usage.data.tools.search.invalid], [0, 1])
+  })
+  test('a valid call is untouched, is not counted as invalid, and writes nothing', async () => {
+    for (const mode of [undefined, 'warn', 'enforce', 'nonsense']) {
+      const { host, ran, usage } = validatingHost(mode ? { AH_VALIDATE_TOOL_ARGS: mode } : {})
+      let r
+      const err = await stderrOf(async () => { r = await host.call('search', { query: 'q', limit: null }) })
+      assert.equal(r.isError, undefined, mode)
+      assert.equal(err, '', mode)
+      assert.equal(ran.length, 1, mode)
+      assert.equal(usage.data.tools.search.invalid, undefined, mode)
+    }
+  })
+  test('off does not look, and counts nothing as invalid', async () => {
+    const { host, ran, usage } = validatingHost({ AH_VALIDATE_TOOL_ARGS: 'off' })
+    const err = await stderrOf(() => host.call('search', {}))
+    assert.equal(err, '')
+    assert.equal(ran.length, 1)
+    assert.equal(usage.data.tools.search.invalid, undefined)
+  })
+  test('an unknown value is the default, warn', async () => {
+    const { host, ran } = validatingHost({ AH_VALIDATE_TOOL_ARGS: 'strict' })
+    const err = await stderrOf(() => host.call('search', {}))
+    assert.match(err, /refuses/)
+    assert.equal(ran.length, 1)
+  })
+  test('a tool that declares no parameters accepts any arguments', async () => {
+    const registry = new Registry()
+    registry.register({ name: 'bare', execute: async () => 'ok' })
+    const r = await hostOver(registry, { env: { AH_VALIDATE_TOOL_ARGS: 'enforce' } }).call('bare', { anything: 1 })
+    assert.equal(r.isError, undefined)
   })
 })
