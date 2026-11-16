@@ -1,0 +1,42 @@
+treeView-beta
+cc-mod-academic-harness/
+  docs/history/implementation-plan.md
+  README.md
+  UPSTREAM.lock.json ## source commit, version, archive hash
+  .claude-plugin/plugin.json ## name, version, types, userConfig, mcpServers
+  hooks/
+    hooks.json ## { "modules": ["./register.tsx"] }
+    register.tsx ## wires the modules below
+    mode.ts ## research mode, /academic, prompt.compose
+    guard.ts ## ah hook bridge
+    approvals.ts ## tool.check asks
+    tasks.ts ## task commands
+    ui.tsx ## status line, pane, notices
+    generated/ ## prompt text, task constants, fold-core (built)
+  types/index.d.ts ## the $.state contract
+  server/
+    src/host.mjs ## MCP loop
+    src/context.mjs ## the context given to upstream apply()
+    src/exec.mjs ## per-call context (cwd, session id, signal)
+    src/schema.mjs ## DSH parameter DSL → JSON Schema
+    src/manifest.mjs ## which upstream modules load, by area
+    src/jobs.mjs ## jobs service
+    src/llm.mjs ## model route
+    bin/ah-hook.mjs ## runs `ah hook <event>`
+    bin/papermemory-mcp.mjs ## launcher
+    dist/ ## bundle (built, P6)
+  upstream/ ## snapshot of the source at the pinned commit (built)
+  skills/ ## core pack (built)
+  agents/ ## specialist definitions
+  scripts/
+    sync-upstream.mjs
+    build-skills.mjs
+    build-prompt.mjs
+    build-server.mjs
+    measure-surface.mjs
+    check-upstream-clean.mjs
+  tests/
+    *.test.ts ## run by `claude plugin test`
+    server/*.test.mjs ## run by `node --test`
+    live/ ## nested-claude scenarios
+  docs/design/platform-notes.md ## results of the P0 checks

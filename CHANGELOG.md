@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- The README has a colour architecture diagram (`docs/assets/architecture.mmd`, rendered to SVG with Pele), says the repository is public, and the copyright holder is named Academic Harness (formerly ResearchCraft) in `LICENSE`, `NOTICE` and the architecture page. The getting-started page and `CONTRIBUTING.md` no longer say the repository is private.
+- The diagrams in the documentation are Mermaid sources in `docs/assets/` rendered with Pele: the architecture page and the mod-anatomy page use colour diagrams, and the history page's two text diagrams became a colour diagram and a tree. The README has a colour architecture diagram (`docs/assets/architecture.mmd`, rendered to SVG with Pele), says the repository is public, and the copyright holder is named Academic Harness (formerly ResearchCraft) in `LICENSE`, `NOTICE` and the architecture page. The getting-started page and `CONTRIBUTING.md` no longer say the repository is private.
 
 ## 0.4.0 (2026-11-16)
 

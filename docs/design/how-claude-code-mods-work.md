@@ -19,16 +19,9 @@ One plugin can hold all four. That is how this plugin is laid out: a mod for beh
 
 ## 2. Anatomy
 
-```
-my-mod/
-├── .claude-plugin/plugin.json   manifest: name, version, description, optional userConfig, types
-├── hooks/
-│   ├── hooks.json               { "modules": ["./register.ts"] }  ← this key makes the plugin a mod
-│   └── register.ts              exports register(on, options)
-├── types/index.d.ts             optional: contract for $.state values
-├── skills/  agents/  commands/  load as in any plugin
-└── tests/*.test.ts              run by `claude plugin test`
-```
+![A mod's folder: the manifest, the hooks folder with hooks.json and register.ts, optional types, skills, agents and commands, and tests](../assets/mod-layout.svg)
+
+The source is `docs/assets/mod-layout.mmd`.
 
 - `modules` takes exactly one path, relative to `hooks.json`. Files may be `.js .mjs .cjs .jsx .ts .mts .cts .tsx` and are always ES modules.
 - `register(on, options)` runs when the mod loads. `options` holds the values of the manifest's `userConfig` fields.

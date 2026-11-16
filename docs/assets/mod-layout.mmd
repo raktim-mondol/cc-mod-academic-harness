@@ -1,0 +1,22 @@
+flowchart LR
+  ROOT["my-mod/"]
+  ROOT --> MAN[".claude-plugin/plugin.json<br/>manifest: name, version, description,<br/>optional userConfig, types"]
+  ROOT --> HK["hooks/"]
+  HK --> HJ["hooks.json<br/>modules: ./register.ts<br/>this key makes the plugin a mod"]
+  HK --> REG["register.ts<br/>exports register(on, options)"]
+  ROOT --> TY["types/index.d.ts<br/>optional: contract for $.state values"]
+  ROOT --> PL["skills/  agents/  commands/<br/>load as in any plugin"]
+  ROOT --> TS["tests/*.test.ts<br/>run by claude plugin test"]
+
+  classDef root fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#0f172a
+  classDef manifest fill:#fef9c3,stroke:#ca8a04,stroke-width:2px,color:#713f12
+  classDef mod fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#1e3a8a
+  classDef plain fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d
+  classDef test fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#4c1d95
+  classDef optional fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#7c2d12
+  class ROOT root
+  class MAN manifest
+  class HK,HJ,REG mod
+  class PL plain
+  class TS test
+  class TY optional
