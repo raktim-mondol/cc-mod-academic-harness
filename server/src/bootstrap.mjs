@@ -8,8 +8,9 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSyn
 import { readdir, rm, stat, utimes } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import { join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { sync } from '../../scripts/sync-upstream.mjs'
-import { claim, clearState, readState, writeState } from './bootstrap-state.mjs'
+import { claim, clearState, readState, stateFile, writeState } from './bootstrap-state.mjs'
 import { fetchedUpstreamDir, isDevMode, modHome, modRoot, upstreamDir } from './paths.mjs'
 import { checkSnapshot } from './snapshot.mjs'
 
@@ -87,6 +88,48 @@ export async function bootstrap({ env = process.env, root = modRoot(), fetchTarb
     writeState({ pid: process.pid, step, startedAt: Date.now(), error: String(error?.message ?? error).split('\n')[0] }, env)
     throw error
   }
+}
+
+const WORKER = fileURLToPath(new URL('../bin/ah-bootstrap.mjs', import.meta.url))
+
+/**
+ * `bootstrap`, run by a detached process (server/bin/ah-bootstrap.mjs), so that it goes on when this server is ended. A session can be over in
+ * seconds (`claude -p`), which is less than the download takes: a fetch that lives in the server would be cut short by every such session and
+ * never finish. The next server to start finds the worker still going (the state file names its pid), starts one of its own that waits for it,
+ * and gets the snapshot when it is there.
+ *
+ * The state file is written here, in the worker's name, as soon as it is started: the doctor is asked within milliseconds of a first start, before
+ * the worker has run a line, and must already say that the snapshot is being set up. The worker takes the file over as its own.
+ *
+ * When the worker ends, `bootstrap` is run here too: after a success it only confirms the snapshot (nothing is fetched twice); after a failure
+ * it tries once more in this process and so gives the real reason. `worker` and `run` are seams for tests. Resolves what `bootstrap` resolves.
+ */
+export function bootstrapInWorker({ env = process.env, worker = WORKER, run = bootstrap } = {}) {
+  return new Promise((resolve, reject) => {
+    let settled = false
+    // The worker is unref'd so that it never holds this process open by itself; this timer holds it until the worker has ended. Without it a
+    // process with nothing else pending (a test, on Node 22) ends before the promise is settled. The server's own exit is explicit, so it is not delayed.
+    const hold = setInterval(() => {}, 60_000)
+    const finish = () => {
+      if (settled) return
+      settled = true
+      clearInterval(hold)
+      // A worker that ended without a word (it could not start) leaves the file written for it below: clear it, or it reads as a fetch that died.
+      try { const s = JSON.parse(readFileSync(stateFile(env), 'utf8')); if (s.pid === child?.pid && !s.error) clearState(env) } catch { /* no file: nothing to clear */ }
+      Promise.resolve().then(() => run({ env })).then(resolve, reject)
+    }
+    let child
+    try {
+      child = spawn(process.execPath, [worker], { detached: true, stdio: 'ignore', env })
+    } catch {
+      finish()
+      return
+    }
+    child.on('error', finish) // the worker could not be started: do the work here
+    child.on('exit', finish)
+    child.unref()
+    try { if (Number.isInteger(child.pid)) claim({ pid: child.pid, step: 'starting the fetch of the source snapshot', startedAt: Date.now() }, env) } catch { /* the worker writes it itself */ }
+  })
 }
 
 

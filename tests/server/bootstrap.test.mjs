@@ -1,14 +1,15 @@
 // The first start of an installed copy: where the snapshot is looked for, the fetch (with a throw-away repository standing in for GitHub and a stand-in
 // for npm), two servers starting together, the doctor's view of it, and a host that is swapped for the full one while the server is running.
 import assert from 'node:assert/strict'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { PassThrough } from 'node:stream'
 import { after, before, describe, test } from 'node:test'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { sync } from '../../scripts/sync-upstream.mjs'
-import { bootstrap, pruneOldSnapshots } from '../../server/src/bootstrap.mjs'
+import { bootstrap, bootstrapInWorker, pruneOldSnapshots } from '../../server/src/bootstrap.mjs'
 import { claim, clearState, readState, stateFile, writeState } from '../../server/src/bootstrap-state.mjs'
 import { Registry } from '../../server/src/context.mjs'
 import { diagnose } from '../../server/src/doctor.mjs'
@@ -286,5 +287,55 @@ describe('snapshots an update left behind', () => {
     assert.equal(existsSync(oldDir), true)
     assert.deepEqual(await pruneOldSnapshots({ env: envFor('home-never-made'), root: plugin }), [])
     assert.deepEqual(await pruneOldSnapshots({ env: { ...env, AH_SNAPSHOT_KEEP_DAYS: '30' }, root: plugin }), ['dddddddddddd'])
+  })
+})
+
+describe('the fetch in a process of its own', () => {
+  const dir = join(root, 'worker')
+  const until = async (cond, ms = 8000) => { const end = Date.now() + ms; while (!cond() && Date.now() < end) await new Promise(r => setTimeout(r, 50)); return cond() }
+  before(() => mkdirSync(dir, { recursive: true }))
+
+  test('the worker runs first; when it has ended the snapshot is confirmed here, and that result is the answer', async () => {
+    const mark = join(dir, 'ran')
+    const worker = join(dir, 'ok.mjs')
+    writeFileSync(worker, `import { writeFileSync } from 'node:fs'\nwriteFileSync(${JSON.stringify(mark)}, process.env.AH_MOD_HOME)\n`)
+    let sawMark = null
+    const env = { ...process.env, AH_MOD_HOME: join(dir, 'home-ok') }
+    const started = bootstrapInWorker({ env, worker, run: async ({ env }) => { sawMark = existsSync(mark); return { dir: env.AH_MOD_HOME, fetched: false, installed: false } } })
+    const early = readState(env)
+    assert.ok(early && early.pid !== process.pid && /starting/.test(early.step), 'the state names the worker at once, for a doctor asked straight away')
+    const r = await started
+    assert.equal(sawMark, true, 'the worker had finished before the check ran')
+    assert.equal(readFileSync(mark, 'utf8'), env.AH_MOD_HOME, 'the worker gets the server\'s environment')
+    assert.deepEqual(r, { dir: env.AH_MOD_HOME, fetched: false, installed: false })
+    assert.equal(existsSync(stateFile(env)), false, 'a worker that left no word leaves no state behind')
+  })
+  test('a worker that fails, or cannot be started, leaves the work and its error to this process', async () => {
+    const failing = join(dir, 'fail.mjs')
+    writeFileSync(failing, 'process.exit(1)\n')
+    for (const worker of [failing, join(dir, 'no-such-file.mjs')]) {
+      let runs = 0
+      await assert.rejects(bootstrapInWorker({ env: { ...process.env, AH_MOD_HOME: join(dir, 'home-fail') }, worker, run: async () => { runs++; throw new Error('the real reason') } }), /the real reason/)
+      assert.equal(runs, 1)
+    }
+  })
+  test('the worker goes on after the process that started it has ended', async () => {
+    const mark = join(dir, 'outlived')
+    const worker = join(dir, 'slow.mjs')
+    writeFileSync(worker, `import { writeFileSync } from 'node:fs'\nsetTimeout(() => writeFileSync(${JSON.stringify(mark)}, 'done'), 600)\n`)
+    const parent = join(dir, 'parent.mjs')
+    const lib = pathToFileURL(fileURLToPath(new URL('../../server/src/bootstrap.mjs', import.meta.url))).href
+    writeFileSync(parent, `import { bootstrapInWorker } from ${JSON.stringify(lib)}\nvoid bootstrapInWorker({ env: { ...process.env, AH_MOD_HOME: ${JSON.stringify(join(dir, 'home-slow'))} }, worker: ${JSON.stringify(worker)}, run: async () => ({}) })\nsetTimeout(() => process.exit(0), 100)\n`)
+    const r = spawnSync(process.execPath, [parent], { encoding: 'utf8', timeout: 10_000 })
+    assert.equal(r.status, 0, r.stderr)
+    assert.equal(existsSync(mark), false, 'the server was gone before the worker finished')
+    assert.equal(await until(() => existsSync(mark)), true, 'the worker finished without it')
+  })
+  test('the real worker says nothing, exits 1 when the fetch is refused, and leaves nothing behind', () => {
+    const home = join(root, 'worker-home')
+    const r = spawnSync(process.execPath, [fileURLToPath(new URL('../../server/bin/ah-bootstrap.mjs', import.meta.url))], { encoding: 'utf8', timeout: 20_000, env: { ...process.env, AH_MOD_HOME: home, AH_UPSTREAM: join(root, 'a-checkout') } })
+    assert.equal(r.status, 1)
+    assert.equal(r.stdout + r.stderr, '')
+    assert.equal(existsSync(join(home, 'upstream')), false)
   })
 })
