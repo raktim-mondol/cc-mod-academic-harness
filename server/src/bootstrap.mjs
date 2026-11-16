@@ -107,9 +107,13 @@ const WORKER = fileURLToPath(new URL('../bin/ah-bootstrap.mjs', import.meta.url)
 export function bootstrapInWorker({ env = process.env, worker = WORKER, run = bootstrap } = {}) {
   return new Promise((resolve, reject) => {
     let settled = false
+    // The worker is unref'd so that it never holds this process open by itself; this timer holds it until the worker has ended. Without it a
+    // process with nothing else pending (a test, on Node 22) ends before the promise is settled. The server's own exit is explicit, so it is not delayed.
+    const hold = setInterval(() => {}, 60_000)
     const finish = () => {
       if (settled) return
       settled = true
+      clearInterval(hold)
       // A worker that ended without a word (it could not start) leaves the file written for it below: clear it, or it reads as a fetch that died.
       try { const s = JSON.parse(readFileSync(stateFile(env), 'utf8')); if (s.pid === child?.pid && !s.error) clearState(env) } catch { /* no file: nothing to clear */ }
       Promise.resolve().then(() => run({ env })).then(resolve, reject)
