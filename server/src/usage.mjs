@@ -5,6 +5,7 @@
 //   srv-<pid>-<start>.json    the `ah` server: every tool call it answers, and the skills read with skill_load
 //   hook-<session>.json       the hooks module (hooks/usage.ts): the plugin's skills and agents the model starts, and the commands run
 // Each holds { v, id, startedAt, updatedAt, tools, skills, agents, commands }, each of the four being { name: { calls, errors, last } }.
+// A tool whose call arrived with arguments its schema refuses (validate.mjs) also has `invalid`, a count; it is left out while it is zero.
 // `readUsage` adds the files up. A file untouched for a year (AH_USAGE_KEEP_DAYS) is removed when a server starts.
 //
 // Off with the `usage_counts` setting (AH_USAGE_SETTING) or AH_USAGE=0.
@@ -48,7 +49,7 @@ export function createUsage({ dir, id, now = () => Date.now(), flushMs = 5000 })
     } catch { /* not kept this time; the next change tries again */ }
   }
 
-  function record(kind, name, { error = false } = {}) {
+  function record(kind, name, { error = false, invalid = false } = {}) {
     try {
       const key = clean(name)
       if (!KINDS.includes(kind) || !key) return
@@ -57,6 +58,7 @@ export function createUsage({ dir, id, now = () => Date.now(), flushMs = 5000 })
       const entry = (group[key] ??= { calls: 0, errors: 0, last: 0 })
       entry.calls++
       if (error) entry.errors++
+      if (invalid) entry.invalid = (entry.invalid ?? 0) + 1
       entry.last = now()
       data.updatedAt = entry.last
       dirty = true
@@ -86,6 +88,7 @@ export function readUsage(dir) {
         into.calls += Number(e.calls) || 0
         into.errors += Number(e.errors) || 0
         into.last = Math.max(into.last, Number(e.last) || 0)
+        if (Number(e.invalid) > 0) into.invalid = (into.invalid ?? 0) + Number(e.invalid)
       }
     }
   }
@@ -105,6 +108,7 @@ export function summarize(usage, known = {}) {
     out[kind] = {
       calls: counted.reduce((n, e) => n + e.calls, 0),
       errors: counted.reduce((n, e) => n + e.errors, 0),
+      invalid: counted.reduce((n, e) => n + (e.invalid ?? 0), 0),
       used,
       other: have ? counted.filter(e => !have.has(e.name)) : [],
       never: have ? [...have].filter(n => !(usage[kind] ?? {})[n]).sort() : null,
@@ -135,8 +139,8 @@ export function formatReport(usage, known = {}, { all = false } = {}) {
   const lines = [`Usage since ${day(usage.since)} (last ${day(usage.last ?? usage.since)}; ${usage.files} writer file${usage.files === 1 ? '' : 's'}). Names and counts only; nothing leaves this machine. Counting is off with the usage_counts setting or AH_USAGE=0.`]
   const section = (label, kind, noun) => {
     const k = s[kind]
-    lines.push('', `${label}: ${k.calls} ${kind === 'commands' ? 'run' : 'use'}${k.calls === 1 ? '' : 's'}${k.errors ? `, ${k.errors} failed` : ''}${k.known ? `; ${k.used.length} of ${k.known} ${noun} used` : ''}`)
-    if (k.used.length) lines.push(`  most used: ${k.used.slice(0, top).map(e => `${e.name} ${e.calls}${e.errors ? ` (${e.errors} failed)` : ''}`).join(' · ')}${k.used.length > top ? ` · and ${k.used.length - top} more` : ''}`)
+    lines.push('', `${label}: ${k.calls} ${kind === 'commands' ? 'run' : 'use'}${k.calls === 1 ? '' : 's'}${k.errors ? `, ${k.errors} failed` : ''}${k.invalid ? `, ${k.invalid} with arguments the schema refuses` : ''}${k.known ? `; ${k.used.length} of ${k.known} ${noun} used` : ''}`)
+    if (k.used.length) lines.push(`  most used: ${k.used.slice(0, top).map(e => `${e.name} ${e.calls}${e.errors ? ` (${e.errors} failed)` : ''}${e.invalid ? ` (${e.invalid} invalid)` : ''}`).join(' · ')}${k.used.length > top ? ` · and ${k.used.length - top} more` : ''}`)
     if (k.other.length) lines.push(`  counted, not in this build's list: ${list(k.other.map(e => `${e.name} ${e.calls}`), top)}`)
     if (k.never?.length) lines.push(`  never used (${k.never.length}): ${list(k.never, never)}`)
   }

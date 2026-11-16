@@ -19,7 +19,7 @@ What the mod reads, what it writes and where, and what it can spend.
 
 ## Usage counts
 
-So that the next review of what the plugin leaves out can start from what is used and not from guesses, the mod counts, for each tool, skill, agent and command, how many times it was used, how many of those failed and when it was last used. That is all: no argument, path, prompt, query or result is ever kept, and nothing is sent anywhere. The files are in `<home>/usage/`; deleting that folder resets the counts. `/academic usage` shows them, with the names that were never used; `/academic doctor` gives one line.
+So that the next review of what the plugin leaves out can start from what is used and not from guesses, the mod counts, for each tool, skill, agent and command, how many times it was used, how many of those failed, how many were called with arguments the tool's schema refuses (a count, never the arguments), and when it was last used. That is all: no argument, path, prompt, query or result is ever kept, and nothing is sent anywhere. The files are in `<home>/usage/`; deleting that folder resets the counts. `/academic usage` shows them, with the names that were never used; `/academic doctor` gives one line.
 
 The server counts its tools. The hooks module counts this plugin's skills and agents as Claude starts them, and the commands you run. A skill you start yourself by typing its name, and a skill that Claude Code loads without the `Skill` tool, are not seen. Turn it off with the `usage_counts` setting or `AH_USAGE=0`.
 
