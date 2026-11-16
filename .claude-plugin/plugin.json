@@ -64,6 +64,16 @@
         "run"
       ]
     },
+    "usage_counts": {
+      "type": "string",
+      "title": "Count which tools, skills and commands are used",
+      "description": "on keeps a count per tool, skill, agent and command (names and numbers only, never what they were used for) in the plugin's home folder, so /academic usage can show what is used and what never is. Nothing leaves this machine. off counts nothing.",
+      "default": "on",
+      "options": [
+        "on",
+        "off"
+      ]
+    },
     "parallel_api_key": {
       "type": "string",
       "title": "Parallel API key",
@@ -404,6 +414,7 @@
         "AH_RESTORE_TOOLS_SETTING": "${user_config.restore_tools}",
         "AH_LLM_MODEL": "${user_config.llm_model}",
         "AH_LLM_BUDGET_USD": "${user_config.llm_budget_usd}",
+        "AH_USAGE_SETTING": "${user_config.usage_counts}",
         "AH_KEY_PARALLEL_API_KEY": "${user_config.parallel_api_key}",
         "AH_KEY_FIRECRAWL_API_KEY": "${user_config.firecrawl_api_key}",
         "AH_KEY_CONSENSUS_API_KEY": "${user_config.consensus_api_key}",

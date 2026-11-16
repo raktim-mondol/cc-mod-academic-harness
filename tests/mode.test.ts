@@ -93,7 +93,7 @@ test('/academic status and an unknown word change nothing', async ($, on) => {
 
   const bad = await academic($, 'maybe')
   expect(bad.text).toContain('Unknown argument "maybe"')
-  expect(bad.text).toContain('Usage: /academic [on | off | auto | status | pane | doctor]')
+  expect(bad.text).toContain('Usage: /academic [on | off | auto | status | pane | doctor | usage]')
   expect(ids(await compose($))).toEqual(['intro'])
 })
 

@@ -12,9 +12,16 @@ What the mod reads, what it writes and where, and what it can spend.
 | A project's notebook and research ledgers | `<project>/.dsh/` (the folder name is fixed by the tools) |
 | The writing engine's state, and the guard's log | `<project>/.ah/` (`claude-hooks.jsonl`) |
 | A tool result longer than 40,000 characters, in full | `<project>/.dsh/tool-output/`, removed after 30 days (`AH_TOOL_OUTPUT_KEEP_DAYS`) |
+| Usage counts: per tool, skill, agent and command, how often and when last, one small file per server run and per session | `<home>/usage/`, removed after a year (`AH_USAGE_KEEP_DAYS`) |
 | A small record that the hooks module loaded (session id, Claude Code version, time), one per session | `<home>/mod-seen/`, removed after a week |
 | A system prompt over 30,000 characters, while a model call that needs it runs | `<home>/tmp/`, removed when the call ends |
 | The `/academic on\|off` override, the pane's data, which job notices were shown | Claude Code's plugin state for the session; nothing of the mod's on disk |
+
+## Usage counts
+
+So that the next review of what the plugin leaves out can start from what is used and not from guesses, the mod counts, for each tool, skill, agent and command, how many times it was used, how many of those failed and when it was last used. That is all: no argument, path, prompt, query or result is ever kept, and nothing is sent anywhere. The files are in `<home>/usage/`; deleting that folder resets the counts. `/academic usage` shows them, with the names that were never used; `/academic doctor` gives one line.
+
+The server counts its tools. The hooks module counts this plugin's skills and agents as Claude starts them, and the commands you run. A skill you start yourself by typing its name, and a skill that Claude Code loads without the `Skill` tool, are not seen. Turn it off with the `usage_counts` setting or `AH_USAGE=0`.
 
 ## What it reads
 

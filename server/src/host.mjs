@@ -20,6 +20,7 @@ import { parseAreas, plan, restoreList } from './manifest.mjs'
 import { seenDir } from './compat.mjs'
 import { adapt, blocksToContent, clip, DEFAULT_MAX_CHARS, DEFAULT_OUTPUT_KEEP_DAYS, fixSkillSearch, pruneOutputDir } from './render.mjs'
 import { listedSkills } from './skills-list.mjs'
+import { createUsage, DEFAULT_KEEP_DAYS as USAGE_KEEP_DAYS, usageDir, usageEnabled } from './usage.mjs'
 import { toInputSchema } from './schema.mjs'
 
 export const SERVER_NAME = 'ah'
@@ -73,6 +74,13 @@ export async function createHost({ upstream, areas = 'all', env = process.env, c
   } catch { /* housekeeping must not stop the server */ }
   // The records the hooks module leaves, one per session (compat.mjs): a week is longer than any session worth checking.
   pruneOutputDir(seenDir(modHome(env)), { keepDays: 7, ext: '.json' })
+  // Usage counts (usage.mjs): names and numbers, kept for a year (AH_USAGE_KEEP_DAYS; 0 keeps everything).
+  let usage = null
+  if (usageEnabled(env)) {
+    const keepRaw = env.AH_USAGE_KEEP_DAYS?.trim()
+    pruneOutputDir(usageDir(modHome(env)), { keepDays: keepRaw !== undefined && keepRaw !== '' && Number(keepRaw) >= 0 ? Number(keepRaw) : USAGE_KEEP_DAYS, ext: '.json' })
+    usage = createUsage({ dir: usageDir(modHome(env)), id: `srv-${process.pid}-${Date.now().toString(36)}` })
+  }
   const budget = Number(env.AH_LLM_BUDGET_USD)
   const llm = createLlm({ model: env.AH_LLM_MODEL?.trim() || DEFAULT_MODEL, budgetUsd: budget > 0 ? budget : DEFAULT_BUDGET_USD, cwd, env })
   const services = { jobs, llm }
@@ -95,11 +103,11 @@ export async function createHost({ upstream, areas = 'all', env = process.env, c
   let bindParentJob = () => () => {}
   const runner = join(upstream, 'job-runner.js')
   if (existsSync(runner)) ({ bindParentJob } = await import(pathToFileURL(runner).href))
-  return hostOver(registry, { loaded, failed, env, cwd, jobs, llm, bindParentJob })
+  return hostOver(registry, { loaded, failed, env, cwd, jobs, llm, usage, bindParentJob })
 }
 
 /** The calling half of the host, over any registry. createHost loads upstream modules into one; tests fill their own. */
-export function hostOver(registry, { loaded = [], failed = [], env = process.env, cwd: startCwd = process.cwd(), jobs = null, llm = null, bindParentJob = () => () => {}, detached = DETACHED_TOOLS } = {}) {
+export function hostOver(registry, { loaded = [], failed = [], env = process.env, cwd: startCwd = process.cwd(), jobs = null, llm = null, usage = null, bindParentJob = () => () => {}, detached = DETACHED_TOOLS } = {}) {
   const sessionId = sessionIdFrom(env)
   // The session directory: the server's own at start, then what the client says with roots/list (it changes with /cd).
   let cwd = startCwd
@@ -117,7 +125,7 @@ export function hostOver(registry, { loaded = [], failed = [], env = process.env
   }
 
   // The doctor tool is the host's own too: it reports what this server loaded and what its environment holds.
-  if (!registry.tools.has('doctor')) registry.register(doctorTool({ env, loaded, failed }))
+  if (!registry.tools.has('doctor')) registry.register(doctorTool({ env, loaded, failed, served: () => [...registry.tools.keys()], flush: () => usage?.flush() }))
 
   let started = false
   const renderValue = (tool, args, value) => (tool.output?.render ? tool.output.render(args, value) : [{ type: 'text', text: typeof value === 'string' ? value : JSON.stringify(value, null, 2) }])
@@ -159,6 +167,28 @@ export function hostOver(registry, { loaded = [], failed = [], env = process.env
     }
   }
 
+  /** Where a call is run; `call` (below) counts it. */
+  async function invoke(name, args = {}, { signal, callId } = {}) {
+    const tool = registry.tools.get(name)
+    if (!tool) return { isError: true, content: [{ type: 'text', text: `Unknown tool "${name}". Known tools: ${[...registry.tools.keys()].slice(0, 12).join(', ')}${registry.tools.size > 12 ? ', ...' : ''}` }] }
+    if (jobs && detached.has(name)) return callDetached(tool, name, args, { signal, callId })
+    // An explicit timer, cleared when the call ends. `AbortSignal.timeout` would do, but its timer does not keep the event loop alive, so a
+    // process with nothing else pending (a test, on Node 22) is ended before a hung tool's limit is reached.
+    const limit = timeoutFor(tool)
+    const timeout = new AbortController()
+    const timer = setTimeout(() => timeout.abort(new Error(`timed out after ${limit} ms`)), limit)
+    const merged = signal ? AbortSignal.any([signal, timeout.signal]) : timeout.signal
+    const exec = makeExec({ name, args, callId, signal: merged, cwd, sessionId, route })
+    try {
+      return ok(tool, args, await tool.execute(args, exec), exec)
+    } catch (error) {
+      const why = merged.aborted ? (signal?.aborted ? 'was cancelled' : `timed out after ${Math.round(limit / 1000)} s`) : null
+      return failure(why ? `${name} ${why}` : String(error?.message ?? error))
+    } finally {
+      clearTimeout(timer)
+    }
+  }
+
   return {
     registry,
     loaded,
@@ -171,27 +201,16 @@ export function hostOver(registry, { loaded = [], failed = [], env = process.env
     list() {
       return [...registry.tools.values()].map(t => ({ name: t.name, description: adapt(t.description ?? ''), inputSchema: toInputSchema(t) }))
     },
-    /** Run one tool. Resolves to an MCP tool result; never throws for a tool's own failure. */
-    async call(name, args = {}, { signal, callId } = {}) {
-      const tool = registry.tools.get(name)
-      if (!tool) return { isError: true, content: [{ type: 'text', text: `Unknown tool "${name}". Known tools: ${[...registry.tools.keys()].slice(0, 12).join(', ')}${registry.tools.size > 12 ? ', ...' : ''}` }] }
-      if (jobs && detached.has(name)) return callDetached(tool, name, args, { signal, callId })
-      // An explicit timer, cleared when the call ends. `AbortSignal.timeout` would do, but its timer does not keep the event loop alive, so a
-      // process with nothing else pending (a test, on Node 22) is ended before a hung tool's limit is reached.
-      const limit = timeoutFor(tool)
-      const timeout = new AbortController()
-      const timer = setTimeout(() => timeout.abort(new Error(`timed out after ${limit} ms`)), limit)
-      const merged = signal ? AbortSignal.any([signal, timeout.signal]) : timeout.signal
-      const exec = makeExec({ name, args, callId, signal: merged, cwd, sessionId, route })
-      try {
-        return ok(tool, args, await tool.execute(args, exec), exec)
-      } catch (error) {
-        const why = merged.aborted ? (signal?.aborted ? 'was cancelled' : `timed out after ${Math.round(limit / 1000)} s`) : null
-        return failure(why ? `${name} ${why}` : String(error?.message ?? error))
-      } finally {
-        clearTimeout(timer)
+    /** Run one tool. Resolves to an MCP tool result; never throws for a tool's own failure. The use is counted (usage.mjs): the tool's name, whether it failed, never its arguments. */
+    async call(name, args = {}, options = {}) {
+      const result = await invoke(name, args, options)
+      if (usage && registry.tools.has(name)) {
+        usage.record('tools', name, { error: result.isError === true })
+        if (name === 'skill_load' && typeof args?.name === 'string') usage.record('skills', args.name, { error: result.isError === true })
       }
+      return result
     },
+    usage,
     /** Run the handlers modules registered with `ctx.on(event, ...)`. Upstream's events are DSH's; the host raises the ones that have a meaning here. */
     async fire(event, payload) {
       for (const sub of registry.subscriptions.filter(x => x.event === event)) {
@@ -206,6 +225,7 @@ export function hostOver(registry, { loaded = [], failed = [], env = process.env
       if (env.AH_DREAM_DELAY_MS !== '-1') setTimeout(() => { void this.fire('agent/disposed', {}) }, Number(env.AH_DREAM_DELAY_MS) >= 0 ? Number(env.AH_DREAM_DELAY_MS) : 20_000).unref?.()
     },
     async dispose() {
+      usage?.flush()
       await jobs?.closeAll()
       await registry.dispose()
     },

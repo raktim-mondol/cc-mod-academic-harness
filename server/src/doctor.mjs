@@ -6,6 +6,8 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 import { assessVersion, readSeen, TESTED_VERSIONS } from './compat.mjs'
+import { listedAgents, listedSkills } from './skills-list.mjs'
+import { KNOWN_COMMANDS, readUsage, summaryLine, usageDir, usageEnabled } from './usage.mjs'
 import { engineDir, engineStatus } from './engine.mjs'
 import { DROPPED_TOOLS } from './fit.mjs'
 import { installDir, installedStamp, wantStamp } from './papermemory.mjs'
@@ -29,7 +31,7 @@ const tryRun = (command, args) => {
  * @returns {{ checks: Array<{ id: string, state: 'ok'|'warn'|'missing'|'info', label: string, detail: string, fix?: string }>, blocking: number }}
  * `missing` means something the mod cannot work without; `warn` something that makes a feature fail until it is set up; `info` an optional extra.
  */
-export async function diagnose({ env = process.env, online = false, root = modRoot(), upstream = upstreamDir(env), home = modHome(env) } = {}) {
+export async function diagnose({ env = process.env, online = false, root = modRoot(), upstream = upstreamDir(env), home = modHome(env), served } = {}) {
   const checks = []
   const add = (id, state, label, detail, fix) => checks.push({ id, state, label, detail, ...(fix ? { fix } : {}) })
   const lock = existsSync(join(root, 'UPSTREAM.lock.json')) ? JSON.parse(readFileSync(join(root, 'UPSTREAM.lock.json'), 'utf8')) : null
@@ -116,6 +118,10 @@ export async function diagnose({ env = process.env, online = false, root = modRo
     const records = readdirSync(jobsDir).filter(n => n.endsWith('.json'))
     add('jobs', 'info', 'Background jobs', `${records.length} record${records.length === 1 ? '' : 's'} in ${jobsDir}`)
   }
+
+  // Usage counts (usage.mjs): names and numbers only. The full report is /academic usage.
+  if (!usageEnabled(env)) add('usage', 'info', 'Usage counts', 'off (the usage_counts setting, or AH_USAGE=0): nothing is counted')
+  else add('usage', 'info', 'Usage counts', summaryLine(readUsage(usageDir(home)), { ...(served ? { tools: served } : {}), skills: [...listedSkills()], agents: [...listedAgents()], commands: KNOWN_COMMANDS }))
 
   const dropped = Object.keys(DROPPED_TOOLS)
   const restored = `${env.AH_RESTORE_TOOLS ?? ''},${env.AH_RESTORE_TOOLS_SETTING ?? ''}`.split(/[\s,]+/).filter(n => dropped.includes(n))

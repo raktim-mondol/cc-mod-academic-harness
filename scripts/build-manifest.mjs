@@ -47,6 +47,7 @@ export async function build(manifest) {
   delete userConfig.llm_model
   delete userConfig.llm_budget_usd
   delete userConfig.job_notices
+  delete userConfig.usage_counts
   userConfig.tool_areas = {
     type: 'string',
     title: 'Tool areas',
@@ -85,7 +86,14 @@ export async function build(manifest) {
     default: 'skip',
     options: ['skip', 'run'],
   }
-  const env = { AH_TOOL_AREAS: '${user_config.tool_areas}', AH_RESTORE_TOOLS_SETTING: '${user_config.restore_tools}', AH_LLM_MODEL: '${user_config.llm_model}', AH_LLM_BUDGET_USD: '${user_config.llm_budget_usd}' }
+  userConfig.usage_counts = {
+    type: 'string',
+    title: 'Count which tools, skills and commands are used',
+    description: 'on keeps a count per tool, skill, agent and command (names and numbers only, never what they were used for) in the plugin\'s home folder, so /academic usage can show what is used and what never is. Nothing leaves this machine. off counts nothing.',
+    default: 'on',
+    options: ['on', 'off'],
+  }
+  const env = { AH_TOOL_AREAS: '${user_config.tool_areas}', AH_RESTORE_TOOLS_SETTING: '${user_config.restore_tools}', AH_LLM_MODEL: '${user_config.llm_model}', AH_LLM_BUDGET_USD: '${user_config.llm_budget_usd}', AH_USAGE_SETTING: '${user_config.usage_counts}' }
   for (const { name, secret } of fields) {
     const key = name.toLowerCase()
     userConfig[key] = {

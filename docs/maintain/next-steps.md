@@ -53,7 +53,7 @@ These need your keys or accounts, so no script can:
 
 ## Then use it
 
-Use it for a few days on real work, for example `/ah-papers`, then `/ah-review` on a draft, then a real `deep_research`. Notice: does Claude reach for `literature_search` rather than the web; is the pane worth opening; is `/ah-research` holding the prompt too long (`AH_JOB_FOREGROUND_MS`); which skills never load (candidates for on-demand) and which tools it never finds. Write what annoys you in the changelog under a new heading. That is the input for the next round, and it is worth more than another test.
+Use it for a few days on real work, for example `/ah-papers`, then `/ah-review` on a draft, then a real `deep_research`. Notice: does Claude reach for `literature_search` rather than the web; is the pane worth opening; is `/ah-research` holding the prompt too long (`AH_JOB_FOREGROUND_MS`); which skills never load (candidates for on-demand) and which tools it never finds. `/academic usage` answers the last two from counts instead of memory (after a few weeks, it is the input for the next review in [the fit review](../design/fit-review.md)). The hooks module's part of it, the skills and agents, has been seen working only against a stand-in: in a live session, start a skill and an agent and check that `/academic usage` lists them. Write what annoys you in the changelog under a new heading. That is the input for the next round, and it is worth more than another test.
 
 ## When it is green
 

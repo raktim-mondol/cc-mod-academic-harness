@@ -76,6 +76,10 @@ The keys only these read (`BRAVE_API_KEY`, `TAVILY_API_KEY`, `EXA_API_KEY`, `PER
 | `claude plugin test .`, `validate`, `tsc` | Pass |
 | Live (`tests/live/fit.mjs`) | `catalogue`: 55 skills, 21 agents, 126 `ah` tools, none of the 15 left out; `restore`: the setting serves exactly the named tool; `search_route`: asked for papers, the model calls `literature_search` and not `WebSearch`; `on_demand`: `skill_search` finds `openfda` and `skill_load` reads it |
 
+## The next review
+
+`/academic usage` lists, from counts kept on this machine (names and numbers only), which tools, skills, agents and commands were used and which never were. A name that was never used over a few weeks of real work is a candidate for the left-out lists or for on demand; one that is used a lot and sits on a list is a candidate to bring back. It is evidence for a decision, not the decision: some tools are for rare jobs.
+
 ## Decided, not built
 
 - **An `academic-harness:pro` agent and a vision agent.** A Claude Code agent takes a `model` of its own, and the session model reads images with `Read`.

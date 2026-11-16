@@ -43,6 +43,7 @@ Adding a Claude Code version: run the live scripts on it ([What to do next](next
 | `tasks.test.ts` | The task commands, `/ah-watch` and `/fold`: tools and arguments, file checks, refusals |
 | `ui.test.tsx` | The status line, and the pane at 40 and 120 columns |
 | `doctor.test.ts` | `/academic doctor`, with the server, without it, and with nothing |
+| `usage.test.ts` | Which of the plugin's skills and agents are observed and which are not, that commands are counted, that nothing is written with the setting off and a failed write never fails a call, and `/academic usage` |
 | `seen.test.ts` | The record the module leaves at session start: its name and content, and that a failure to write it never fails the start |
 
 ### The node suites
@@ -55,6 +56,7 @@ Adding a Claude Code version: run the live scripts on it ([What to do next](next
 | `tests/scripts/fit.test.mjs` | What is left out, the restore setting, the wording rules, that nothing built names a tool that is not served |
 | `tests/scripts/sync.test.mjs` | The snapshot digest, and fetching without a checkout (a throw-away repository stands in for GitHub) |
 | `tests/scripts/doctor.test.mjs` | The doctor's report, including the hooks module and the Claude Code version, and that it never prints a key |
+| `tests/scripts/usage.test.mjs` | The recorder, the files added up, the report, that arguments are never kept, the host that counts its calls, the doctor's line, and that the hooks module and the server agree on the files and the command list |
 | `tests/scripts/compat.test.mjs` | Which versions are ok, warned about or only said; that the hooks module and the server name the record the same way; the CI matrix |
 | `tests/scripts/update.test.mjs` | The update report's comparison |
 | `tests/scripts/docs.test.mjs` | Every markdown link and path resolves, and every page is reachable from the indexes |

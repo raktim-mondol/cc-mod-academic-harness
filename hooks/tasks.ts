@@ -1,4 +1,4 @@
-import type { EngineInterface, On } from 'claude-code'
+import type { EngineInterface, On, PluginOptions } from 'claude-code'
 
 import { foldReply, LEVELS, worthFolding } from './generated/fold-core'
 import {
@@ -18,6 +18,7 @@ import {
   withRunId,
 } from './tasks-core'
 import type { TaskId } from './tasks-core'
+import { count } from './usage'
 
 // The task commands (P5) and /fold.
 //
@@ -178,10 +179,19 @@ export async function registerTaskCommands($: EngineInterface): Promise<void> {
  * permission rule of its own: only a deny rule, a hook's ask or an organization's ask refuse such a call (shown live, tests/live/p5.mjs),
  * so none is added here and none is overridden.
  */
-export function registerTasks(on: On): void {
+export function registerTasks(on: On, options: PluginOptions): void {
   for (const task of TASK_IDS) {
-    on('command.run', { command: TASK_COMMANDS[task] }, async ($, e) => ({ text: await runTask($, task, e.args) }))
+    on('command.run', { command: TASK_COMMANDS[task] }, async ($, e) => {
+      await count($, options, 'commands', TASK_COMMANDS[task])
+      return { text: await runTask($, task, e.args) }
+    })
   }
-  on('command.run', { command: WATCH_COMMAND }, async ($, e) => ({ text: await runWatch($, e.args) }))
-  on('command.run', { command: 'fold' }, async ($, e) => ({ text: await runFold($, e.args) }))
+  on('command.run', { command: WATCH_COMMAND }, async ($, e) => {
+    await count($, options, 'commands', WATCH_COMMAND)
+    return { text: await runWatch($, e.args) }
+  })
+  on('command.run', { command: 'fold' }, async ($, e) => {
+    await count($, options, 'commands', 'fold')
+    return { text: await runFold($, e.args) }
+  })
 }

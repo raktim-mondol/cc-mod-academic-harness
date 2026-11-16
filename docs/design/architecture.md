@@ -43,6 +43,7 @@ The research tool modules register tools against a `ctx` object. The server give
 | `engine*.mjs` | Where the writing engine's environment is, whether it is ready, how it is built |
 | `bootstrap*.mjs`, `late-host.mjs`, `snapshot.mjs` | The first start without the engine code: answer at once, fetch, swap the tool list |
 | `doctor.mjs`, `doctortool.mjs` | What is ready, as a report and as a tool |
+| `usage.mjs` | Usage counts: a recorder per writer, the files added up, the report. Names and numbers only |
 | `compat.mjs` | The Claude Code versions the mod was seen working on; reads the record the hooks module leaves at session start, so the doctor can say whether that module loaded and on which version |
 | `panel.mjs` | Project state and library counts for the pane |
 | `env.mjs`, `paths.mjs`, `fit.mjs` | The environment the modules see, where things are, what is left out |
@@ -62,6 +63,7 @@ The modules are loaded in-process from the engine code, unchanged. The plugin do
 | `ui.tsx`, `ui-core.ts` | The pane and the status line's parts |
 | `doctor.ts` | `/academic doctor` |
 | `seen.ts` | The record that the module loaded, for the doctor |
+| `usage.ts` | Counts the plugin's skills and agents as Claude starts them (a `classic.PreToolUse` hook that changes nothing) and the commands run |
 | `generated/` | The research-mode text, the task catalogue and the fold |
 
 The `-core.ts` files are pure (no `$`, no Node), so node tests import them as they are.
