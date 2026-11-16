@@ -18,6 +18,6 @@ Start with `/academic doctor` (outside a session: `node server/bin/ah-doctor.mjs
 | `/ah-papers` and the other commands say a file is not found | Paths are relative to the session folder and must stay inside it |
 | A tool the guidance names is not found | It is one of the 15 left out ([fit review](../design/fit-review.md)); `restore_tools` brings back most of them |
 | The doctor says the snapshot "is not what the lock says" | It was edited or came from another commit. `node scripts/setup.mjs` restores the locked one |
-| A skill's text mentions a DeepSeek Harness tool | The guides and briefs are adapted, but a skill loaded on demand is upstream's text. The research-mode text maps the names; if a tool is missing Claude says so |
+| A skill names a tool you do not have | Skills loaded on demand are written generally and may name a tool this plugin leaves out. Claude says so and uses the nearest one |
 
 Still stuck: `claude --debug` shows plugin and hook problems; the server's own messages go to its stderr, prefixed `[academic-harness]`; the guard logs each decision to `<project>/.ah/claude-hooks.jsonl`.

@@ -1,7 +1,7 @@
 {
   "name": "academic-harness",
   "version": "0.4.0",
-  "description": "Academic Harness research tools, skills and writing guards, as a Claude Code mod.",
+  "description": "Academic research toolkit for Claude Code: literature search, citation checks, deep research and review, hypothesis tournaments, study design, and guarded LaTeX paper writing.",
   "author": {
     "name": "Raktim Mondol"
   },

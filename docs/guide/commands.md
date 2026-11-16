@@ -11,7 +11,7 @@
 
 ## Task commands
 
-The seven task chips of Academic Harness, as slash commands. Each runs the same tool with the same arguments as upstream's task code (checked against it by tests), in one line, with no model call of its own.
+Seven research tasks as slash commands. Each starts the tool the task needs, with the arguments its effort level implies, in one line and with no model call of its own.
 
 | Command | Tool it starts | Takes |
 |---|---|---|

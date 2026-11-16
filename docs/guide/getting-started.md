@@ -15,7 +15,7 @@ claude --plugin-dir "$PWD"
 
 `setup.mjs` does five things, each skipped when it is already done:
 
-1. **The snapshot.** Academic Harness's source at the commit in `UPSTREAM.lock.json`, into `upstream/` (gitignored, about 56 MB). It is read from the checkout at `~/academic-harness` (or `AH_SOURCE`) when that has the commit, with `git archive`, and never written. Otherwise it is downloaded from GitHub (the repository is public) and checked against the digest in the lock: a download that is not the locked bytes is refused. `--github` forces the download.
+1. **The engine code.** The tools, skills and writing engine the plugin runs, at the exact version `UPSTREAM.lock.json` names, into `upstream/` (gitignored, about 56 MB). If a local checkout of Academic Harness at `~/academic-harness` (or `AH_SOURCE`) has that version, it is read from there and never written; otherwise it is downloaded from GitHub and checked against the digest in the lock, and a download that is not the locked bytes is refused. `--github` forces the download.
 2. **Dependencies.** `npm ci` inside `upstream/` (about 115 MB).
 3. **The writing engine.** A Python environment inside `upstream/vendor/academic-harness`, for the `ah_*` tools and the guard. `--no-engine` leaves it to the server, which builds it in the background on first start.
 4. **The Python helpers**, only with `--helpers` (about 800 MB): the data, statistics and science toolkits fall back to `python3` without them.
@@ -35,7 +35,7 @@ The repository is private, so this works for you and for people you invite on Gi
 
 ## First start without a snapshot
 
-When the server starts and finds no snapshot, it does not wait: it answers `initialize` at once with one tool, `doctor`, and fetches the snapshot in the background, into `~/.local/share/cc-mod-academic-harness/home/upstream/<commit>` (outside the plugin folder, which an update replaces). When the fetch and `npm ci` are done it sends `tools/list_changed` and the whole tool list appears, with no restart. `/academic doctor` says how far it has got:
+When the server starts and finds no engine code, it does not wait: it answers `initialize` at once with one tool, `doctor`, and fetches the snapshot in the background, into `~/.local/share/cc-mod-academic-harness/home/upstream/<commit>` (outside the plugin folder, which an update replaces). When the fetch and `npm ci` are done it sends `tools/list_changed` and the whole tool list appears, with no restart. `/academic doctor` says how far it has got:
 
 ```
 ! Source snapshot: being set up by the server (started 12 s ago): installing the tool dependencies (npm ci). The other tools appear when it is done

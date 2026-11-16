@@ -1,6 +1,6 @@
 # Architecture
 
-The mod ports Academic Harness (written for DeepSeek Harness, "DSH") into Claude Code without changing it. A Claude Code mod's hooks module has no Node and no DOM and reaches the outside only through the engine interface `$`, so the mod has two halves that talk through processes and MCP.
+The plugin runs the Academic Harness research code (its tools, skills and a writing engine) inside Claude Code, unchanged. A Claude Code mod's hooks module has no Node and no DOM and reaches the outside only through the engine interface `$`, so the plugin has two halves that talk through processes and MCP.
 
 ```
 Claude Code session
@@ -75,7 +75,7 @@ The `-core.ts` files are pure (no `$`, no Node), so node tests import them as th
 
 ## What the mod adds to Academic Harness, and what it leaves out
 
-The mod adds what only Claude Code has (commands, a pane, the guard on Claude's own tools, approvals through Claude Code's dialogs, the model route under your login). It leaves out what Claude Code already does ([the fit review](fit-review.md)), and rewrites guidance written for another host ([`scripts/adapt.mjs`](../maintain/building.md)).
+The mod adds what only Claude Code has (commands, a pane, the guard on Claude's own tools, approvals through Claude Code's dialogs, the model route under your login). It leaves out what Claude Code already does ([the fit review](fit-review.md)), and rewrites guidance that assumed a different host ([`scripts/adapt.mjs`](../maintain/building.md)).
 
 ## Licences
 

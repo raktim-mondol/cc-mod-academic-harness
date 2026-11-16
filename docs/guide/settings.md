@@ -38,8 +38,8 @@ The others unlock one source or tool each: Consensus, Scite and Firecrawl as sou
 | `AH_BOOTSTRAP=0` | Do not fetch the source snapshot on first start; the server exits and says what to run |
 | `AH_JOB_FOREGROUND_MS` | How long a long tool holds the call before going on as a job. A headless `claude -p "/ah-research ..."` ends the session when the command returns, so set it high there |
 | `AH_LLM_MODEL`, `AH_LLM_BUDGET_USD` | The model route, from the shell |
-| `AH_SOURCE` | The checkout `setup` and `update-upstream` read (default `~/academic-harness`) |
-| `AH_UPSTREAM` | Development mode: read a checkout as the snapshot, read-only, with every installer off |
+| `AH_SOURCE` | A local Academic Harness checkout that `setup` and `update-upstream` read before going to GitHub (default `~/academic-harness`) |
+| `AH_UPSTREAM` | Development mode: run from a checkout of the engine code, read-only, with every installer off |
 | `AH_KEYS_REPORT=<file>` | Diagnostic: write the name, length and a short hash of each key the server received. Never a value |
 
 Next: [State and privacy](state-and-privacy.md).

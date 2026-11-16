@@ -2,7 +2,7 @@
 
 ## Tools
 
-The `ah` MCP server serves 121 of Academic Harness's 136 tools plus its own `job_status`, `job_wait`, `job_log`, `job_kill` and `doctor`. They are named `mcp__plugin_academic-harness_ah__<tool>` and are deferred: Claude finds one with `ToolSearch` before its first use. The `tool_areas` setting trims the set; the number is the tools in each area.
+The `ah` MCP server serves 121 research tools plus its own `job_status`, `job_wait`, `job_log`, `job_kill` and `doctor`. They are named `mcp__plugin_academic-harness_ah__<tool>` and are deferred: Claude finds one with `ToolSearch` before its first use. The `tool_areas` setting trims the set; the number is the tools in each area.
 
 | Area | Tools | What they are for |
 |---|---|---|
@@ -23,7 +23,7 @@ The `ah` MCP server serves 121 of Academic Harness's 136 tools plus its own `job
 | `figures` | 1 | `image_generate` |
 | `memory` | 1 | `paper_backfill` (and the consolidation pass that runs shortly after the server starts) |
 
-**Left out on purpose (15):** general web search and fetch wrappers, vendor search APIs, DSH's result cards and prompt templates, MCP mounting, a LaTeX wrapper, the zvec daemon and the self-improvement loop. Each has a reason in [the fit review](../design/fit-review.md); most come back by name with the `restore_tools` setting ([Settings](settings.md)).
+**Left out on purpose (15):** general web search and fetch wrappers, vendor search APIs, result cards, reply folding and prompt templates for a chat box, MCP mounting, a LaTeX wrapper, a workspace-indexing daemon and a self-improvement loop. Each has a reason in [the fit review](../design/fit-review.md); most come back by name with the `restore_tools` setting ([Settings](settings.md)).
 
 **Long tools.** `deep_research`, `deep_review` and `analysis_run` answer after about 30 seconds with a job id and go on in the background. `job_status`, `job_wait`, `job_log` and `job_kill` follow them. In an interactive session you are told when one ends and the model reads the result on its own; in a non-interactive run the job ends with the session.
 
