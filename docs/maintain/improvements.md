@@ -17,7 +17,7 @@ Done together, each with a test. The rows stay as a record of what was changed a
 
 ## Worth adding
 
-Items 7 and 8 are done. The CI's `claude-code` job has not been seen on GitHub yet and is allowed to fail until it has.
+Items 7 and 8 are done, and the first CI runs were green on Node 22 and 24 and on Claude Code 2.1.325 and `latest`.
 
 | # | Done | What | Why |
 |---|---|---|---|

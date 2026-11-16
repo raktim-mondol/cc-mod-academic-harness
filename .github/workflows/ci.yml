@@ -64,8 +64,9 @@ jobs:
     needs: versions
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    # Not seen running on GitHub yet: a failure here is shown but does not fail the workflow. Remove this line once it has been green.
-    continue-on-error: true
+    # A tested version must pass. `latest` only reports: a failure there means a newer Claude Code changed something, which is worth knowing
+    # but is not a fault of this commit.
+    continue-on-error: ${{ matrix.claude == 'latest' }}
     strategy:
       fail-fast: false
       matrix:

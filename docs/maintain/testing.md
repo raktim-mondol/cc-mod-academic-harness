@@ -27,7 +27,7 @@ Every run of either kind ends with `node scripts/check-upstream-clean.mjs`, afte
 | `versions` | `scripts/ci-matrix.mjs` | Reads `TESTED_VERSIONS` (`server/src/compat.mjs`) and hands the versions to the next job |
 | `claude-code` (each tested version, then `latest`) | Installs that Claude Code, `claude plugin validate . --strict`, `claude plugin test .` | The manifests and the hooks module as the engine reads them, on the versions the mod was seen on and on the newest |
 
-`claude-code` is set `continue-on-error` because it has not yet been seen on GitHub: a failure shows but does not fail the workflow. Remove that line from the workflow once it has been green. Actions are pinned to major versions, not to commits. The live scripts are not run in CI.
+On `claude-code`, a tested version must pass; a failure on `latest` is shown but does not fail the workflow, because it means a newer Claude Code changed something, not that the commit is wrong. Actions are pinned to major versions, not to commits. The live scripts are not run in CI.
 
 Adding a Claude Code version: run the live scripts on it ([What to do next](next-steps.md)), then add it to `TESTED_VERSIONS`. The doctor then calls it a version the mod was seen on, and CI tests it. The tests under `tests/server` and `tests/scripts` that touch the snapshot are skipped when it is absent.
 
