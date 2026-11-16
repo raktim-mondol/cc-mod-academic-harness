@@ -2,6 +2,7 @@
 
 ## 0.4.0 (not tagged)
 
+- **A weekly watch on Academic Harness** (`.github/workflows/upstream-watch.yml`): when its newest commit is past the one the plugin holds, one issue is opened with the report of what it changes; nothing is applied.
 - **CI on GitHub** (`.github/workflows/ci.yml`): the node suites on Node 22 and 24 after a fresh `setup.mjs --github` (no source checkout), the manifest and tool-parity checks, and `claude plugin validate --strict` and `claude plugin test` on each Claude Code version the mod was seen on (which must pass) and on `latest` (which only reports).
 - **The doctor checks the hooks module and the Claude Code version.** The module leaves a small record at session start; the doctor says whether it loaded in this session, which Claude Code is running, and warns when that is older than the oldest version the mod was seen working on (2.1.325) or when the module never reported.
 - Fixed, found by the first CI run: a tool call's time limit used a timer that does not keep the process alive, so on Node 22 a process with nothing else pending was ended before a hung tool's limit. The limit is now an ordinary timer, cleared when the call ends.

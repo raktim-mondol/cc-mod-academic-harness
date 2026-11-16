@@ -8,6 +8,7 @@ Node scripts for setting the mod up, keeping it in step with Academic Harness, b
 | `sync-upstream.mjs` | Takes the snapshot at the commit in `UPSTREAM.lock.json` (or `--commit`): from the checkout with `git archive`, else from GitHub, verified |
 | `update-upstream.mjs`, `update-lib.mjs` | Reports what a newer Academic Harness commit changes for the mod; `--apply` takes it |
 | `install-deps.mjs`, `install-engine.mjs`, `install-helpers.mjs` | `npm ci` in the snapshot; the writing engine's environment; the optional Python helpers |
+| `upstream-watch.mjs` | Opens, updates or closes the one GitHub issue that says Academic Harness has moved (run weekly by a workflow); `--dry-run` prints it |
 | `ci-matrix.mjs` | The Claude Code versions the CI workflow tests on: the tested ones, then `latest` |
 | `make-icon.py` | Draws `.claude-plugin/icon.png` (Python, Pillow); the picture is committed, this only exists to change it |
 | `build-all.mjs` | Runs `build-skills`, `build-prompt`, `build-agents`, `build-ui` |

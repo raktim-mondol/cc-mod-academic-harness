@@ -1,0 +1,47 @@
+# Tells the owner when Academic Harness has moved past the commit this plugin holds: one issue, labelled upstream-update, with the report of what the
+# newer commit changes for the plugin. Nothing is applied. How it decides and what the issue holds: scripts/upstream-watch.mjs.
+# Run it by hand with "Run workflow": a commit to compare against instead of the newest, and a dry run that prints the issue and opens nothing.
+name: Upstream watch
+
+on:
+  schedule:
+    - cron: '23 5 * * 1'
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: 'Compare with this full commit sha instead of the newest'
+        required: false
+        default: ''
+      dry_run:
+        description: 'Print the issue and open nothing'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: upstream-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    name: Compare with Academic Harness
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Compare, and open, update or close the issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMIT: ${{ inputs.commit }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          args=()
+          if [ -n "$COMMIT" ]; then args+=(--commit "$COMMIT"); fi
+          if [ "$DRY_RUN" = "true" ]; then args+=(--dry-run); fi
+          node scripts/upstream-watch.mjs "${args[@]}"

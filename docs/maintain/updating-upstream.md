@@ -2,6 +2,14 @@
 
 Academic Harness is released often; the mod holds one commit of it (`UPSTREAM.lock.json`). `node scripts/update-upstream.mjs` says what a newer commit changes for the mod and takes it when you say so.
 
+## Being told
+
+`.github/workflows/upstream-watch.yml` runs every Monday (and by hand: Actions, "Upstream watch", "Run workflow"). It asks GitHub for Academic Harness's newest commit and compares it with `UPSTREAM.lock.json`. When the plugin is behind, it takes the snapshot, runs the report below and opens one issue, labelled `upstream-update`, that holds the report and the two commands to read it again and to take it. Nothing is applied.
+
+- An issue that already names the newest commit is left alone, so there is no mail every week. If Academic Harness moves again, the open issue is updated; when the plugin holds the newest commit again, it is closed.
+- By hand, two inputs: a full commit sha to compare against instead of the newest, and a dry run that prints the issue in the log and opens nothing.
+- The workflow can write issues and nothing else. `node scripts/upstream-watch.mjs --dry-run` does the same from a clone, calling nothing on GitHub.
+
 ## The report
 
 ```

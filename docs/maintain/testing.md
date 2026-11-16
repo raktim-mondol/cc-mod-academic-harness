@@ -29,6 +29,8 @@ Every run of either kind ends with `node scripts/check-upstream-clean.mjs`, afte
 
 On `claude-code`, a tested version must pass; a failure on `latest` is shown but does not fail the workflow, because it means a newer Claude Code changed something, not that the commit is wrong. Actions are pinned to major versions, not to commits. The live scripts are not run in CI.
 
+`.github/workflows/upstream-watch.yml` is a second, weekly workflow: it opens an issue when Academic Harness moves ([Updating](updating-upstream.md)). It is not a check of this repository; `tests/scripts/upstream-watch.test.mjs` tests its decisions and calls with a stand-in for `gh`.
+
 Adding a Claude Code version: run the live scripts on it ([What to do next](next-steps.md)), then add it to `TESTED_VERSIONS`. The doctor then calls it a version the mod was seen on, and CI tests it. The tests under `tests/server` and `tests/scripts` that touch the snapshot are skipped when it is absent.
 
 ### The plugin tests (`tests/*.test.ts`, `*.test.tsx`)
