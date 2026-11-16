@@ -122,7 +122,7 @@ export async function diagnose({ env = process.env, online = false, root = modRo
   const shell = WORTH_SETTING.map(([name]) => name).filter(n => env[n]?.trim())
   const set = [...new Set([...named, ...shell])]
   const unset = WORTH_SETTING.filter(([n]) => !set.includes(n))
-  add('keys', unset.length ? 'info' : 'ok', 'Keys and addresses', `${set.length} set${set.length ? ` (${set.sort().join(', ')})` : ''}. Names only, never values.${unset.length ? ` Worth setting: ${unset.map(([n, why]) => `${n} (${why})`).join('; ')}` : ''}`, unset.length ? 'set them where Claude Code configures plugin options, or export them in the shell' : undefined)
+  add('keys', unset.length ? 'info' : 'ok', 'Keys and addresses', `${set.length} set${set.length ? ` (${set.sort().join(', ')})` : ''}. Names only, never values.${unset.length ? ` Worth setting: ${unset.map(([n, why]) => `${n} (${why})`).join('; ')}` : ''}`, unset.length ? 'claude plugin configure academic-harness@academic-harness-mod saves them in Claude Code\'s secure store (docs/guide/keys.md), or export them in the shell' : undefined)
 
   const jobsDir = join(home, 'jobs')
   if (existsSync(jobsDir)) {
