@@ -11,7 +11,7 @@ import { engineDir, engineHash, engineStatus, STAMP_FILE, venvBin } from '../../
 import { upstreamDir } from '../../server/src/paths.mjs'
 import { sync } from '../../scripts/sync-upstream.mjs'
 
-const root = join(homedir(), '.cache', 'ah-cc-p3', 'unit')
+const root = join(homedir(), '.cache', 'ah-cc-p3', `unit-${process.pid}`)
 const HOOK = join(import.meta.dirname, '..', '..', 'server', 'bin', 'ah-hook.mjs')
 const UP = upstreamDir()
 const REAL = engineStatus({}, engineDir(UP), { verify: false }).ok

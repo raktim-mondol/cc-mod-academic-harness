@@ -11,7 +11,7 @@ import { createJobs } from '../../server/src/jobs.mjs'
 import { createLlm, parseResult, promptFrom } from '../../server/src/llm.mjs'
 import { upstreamDir } from '../../server/src/paths.mjs'
 
-const root = join(homedir(), '.cache', 'ah-cc-p4', 'unit')
+const root = join(homedir(), '.cache', 'ah-cc-p4', `unit-${process.pid}`)
 const UP = upstreamDir()
 const HAVE_UP = existsSync(join(UP, 'job-runner.js'))
 const sleep = ms => new Promise(r => setTimeout(r, ms))
@@ -56,6 +56,16 @@ describe('jobs service', () => {
     assert.equal(jobs.get(job.id).status, 'stopping')
     jobs.settle(job.id, { status: 'killed', detail: 'because' })
     assert.equal(jobs.get(job.id).status, 'killed')
+  })
+
+  test('a job folder that disappears does not stop the job or throw from settle', () => {
+    const dir = join(root, 'gone')
+    const jobs = createJobs({ dir })
+    const job = jobs.create({ kind: 'k' })
+    rmSync(dir, { recursive: true, force: true })
+    assert.doesNotThrow(() => jobs.settle(job.id, { status: 'completed', result: 'still here' }))
+    assert.equal(jobs.get(job.id).status, 'completed')
+    assert.equal(jobs.view(jobs.get(job.id)).detail, null)
   })
 
   test("upstream's start(): run returns { done, cancel }; a thrown run and a rejected done both fail the job", async () => {

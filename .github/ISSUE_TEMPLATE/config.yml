@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/raktim-mondol/cc-mod-academic-harness/security/advisories/new
+    about: Use the private advisory, not an issue. What is in scope is in SECURITY.md.
+  - name: How the mod works, and what to try first
+    url: https://github.com/raktim-mondol/cc-mod-academic-harness/blob/main/docs/guide/troubleshooting.md
+    about: The troubleshooting guide, including what `/academic doctor` reports.

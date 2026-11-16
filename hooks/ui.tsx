@@ -81,8 +81,9 @@ async function refreshStatus($: EngineInterface, options: PluginOptions, running
 export async function refreshPanel($: EngineInterface, options: PluginOptions, withBridge: boolean): Promise<PanelState> {
   const files = await readFiles($)
   const now = await $.clock.now()
-  let project = (await read($, panel)).project
-  let library = (await read($, panel)).library
+  const stored = await read($, panel)
+  let project = stored.project
+  let library = stored.library
   if (withBridge) {
     const got = await bridge($, 'panel', files.cwd)
     if (got && !('error' in got)) {
@@ -186,13 +187,13 @@ export function registerUi(on: On): void {
       tone === 'dim' ? { dimColor: true } : tone === 'warn' ? { color: 'yellow' } : tone === 'ok' ? { color: 'green' } : tone === 'bad' ? { color: 'red' } : {}
     return (
       <Box flexDirection="row" gap={3}>
-        {columns.map(col => (
-          <Box flexDirection="column" width={layout.width} flexShrink={0}>
-            {col.map(section => (
-              <Box flexDirection="column" marginBottom={gap}>
+        {columns.map((col, columnIndex) => (
+          <Box key={`column-${columnIndex}`} flexDirection="column" width={layout.width} flexShrink={0}>
+            {col.map((section, sectionIndex) => (
+              <Box key={`section-${sectionIndex}`} flexDirection="column" marginBottom={gap}>
                 <Text bold>{section.title}</Text>
-                {section.lines.map(line => (
-                  <Text wrap="truncate-end" {...color(line.tone)}>
+                {section.lines.map((line, lineIndex) => (
+                  <Text key={`${section.title}-${lineIndex}`} wrap="truncate-end" {...color(line.tone)}>
                     {line.text}
                   </Text>
                 ))}

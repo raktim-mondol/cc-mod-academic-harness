@@ -1,0 +1,66 @@
+name: Bug report
+description: Something in the mod does not work as its documentation says.
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include an API key, a token or a private manuscript. The doctor reports key names, never values.
+        A security problem goes through the private advisory described in SECURITY.md, not here.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+      placeholder: I ran /ah-papers ... and the command answered ...
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: "/academic doctor"
+      description: Paste the output of `/academic doctor`, or `node server/bin/ah-doctor.mjs` outside a session.
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The mod's version, then the Claude Code and Node.js versions.
+      placeholder: "0.4.0 · Claude Code 2.1.325 · Node 22.18"
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where it happens
+      options:
+        - Research mode or the system prompt
+        - A slash command (/ah-*, /fold, /academic)
+        - The status line or the pane
+        - The guard or an approval
+        - A background job or a completion notice
+        - A tool call on the ah server
+        - Setup, an update or the doctor
+        - A skill or an agent
+        - Documentation or a check
+        - Somewhere else
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: The project layout (does it have an ah.yaml?), a minimal reproduction, and anything you already tried.
+      render: text
+    validations:
+      required: false
+  - type: checkboxes
+    id: no-secrets
+    attributes:
+      label: Before sending
+      options:
+        - label: I removed every API key, token and private file from this report.
+          required: true

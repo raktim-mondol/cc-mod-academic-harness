@@ -13,7 +13,7 @@ import { upstreamDir } from '../../server/src/paths.mjs'
 const UP = upstreamDir()
 const HAVE_UP = existsSync(join(UP, 'node_modules', 'ah-dsh-tools'))
 const core = await import('../../hooks/tasks-core.ts')
-const root = join(homedir(), '.cache', 'ah-cc-p5', 'unit')
+const root = join(homedir(), '.cache', 'ah-cc-p5', `unit-${process.pid}`)
 
 before(() => {
   rmSync(root, { recursive: true, force: true })
@@ -59,6 +59,11 @@ describe('pure helpers', () => {
     assert.equal(core.insideWorkspace('/p', '../q.tex').ok, false)
     assert.equal(core.insideWorkspace('/p', '/etc/passwd').ok, false)
     assert.equal(core.insideWorkspace('/p', '/pp/a.tex').ok, false, '/pp is not under /p')
+  })
+  test('the filesystem root is a workspace that holds every absolute path', () => {
+    assert.deepEqual(core.insideWorkspace('/', 'tmp/a.tex'), { ok: true, abs: '/tmp/a.tex' })
+    assert.deepEqual(core.insideWorkspace('/', '/etc/passwd'), { ok: true, abs: '/etc/passwd' })
+    assert.deepEqual(core.insideWorkspace('//', '/a/../b.tex'), { ok: true, abs: '/b.tex' })
   })
   test('an empty prompt names what to enter, per task', () => {
     assert.deepEqual(core.planTask('deep_review', '  ', 'auto'), { error: 'enter a manuscript path first' })

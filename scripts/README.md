@@ -17,6 +17,7 @@ Node scripts for setting the mod up, keeping it in step with Academic Harness, b
 | `adapt.mjs` | The rewrites of upstream's text for Claude Code, used by the builds |
 | `research-mode.md`, `prompt-reviewed.json` | Hand-written: the research-mode text, and the upstream text it was written against |
 | `measure-surface.mjs` | The host's tools against what upstream registers |
+| `check.mjs` | The gates CI runs, in one command: `npm run check` (add `-- --types` for the hooks module's type check) |
 | `check-upstream-clean.mjs` | Proves the Academic Harness checkout and `~/.dsh` were not changed (`--record` before a run) |
 | `test-upstream.mjs`, `test-engine.mjs` | Upstream's own tests, and the writing engine's own suite, against the snapshot |
 | `probe-run.mjs`, `probe-report.py` | The platform probes behind the [platform notes](../docs/design/platform-notes.md) |

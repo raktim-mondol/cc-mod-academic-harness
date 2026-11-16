@@ -29,12 +29,13 @@ export function settingFrom(options: PluginOptions): Setting {
 /** The nearest folder at or above `cwd` that holds an ah.yaml, or null. */
 export async function findProject($: EngineInterface, cwd: string): Promise<string | null> {
   let dir = cwd.replace(/\/+$/, '') || '/'
-  for (let i = 0; i < 64; i++) {
+  for (;;) {
     if (await $.fs.exists(`${dir === '/' ? '' : dir}/ah.yaml`)) return dir
     if (dir === '/' || dir === '') return null
-    dir = dir.slice(0, dir.lastIndexOf('/')) || '/'
+    const parent = dir.slice(0, dir.lastIndexOf('/')) || '/'
+    if (parent === dir) return null
+    dir = parent
   }
-  return null
 }
 
 export async function verdict($: EngineInterface, options: PluginOptions): Promise<Verdict> {

@@ -39,9 +39,14 @@ export function createJobs({ dir, session = null, cwd = null, pid = process.pid,
   const logPath = id => join(dir, `${id}.log`)
 
   function save(record) {
-    const tmp = `${recordPath(record.id)}.${process.pid}.tmp`
-    writeFileSync(tmp, JSON.stringify(record, null, 2))
-    renameSync(tmp, recordPath(record.id))
+    try {
+      const tmp = `${recordPath(record.id)}.${process.pid}.tmp`
+      writeFileSync(tmp, JSON.stringify(record, null, 2))
+      renameSync(tmp, recordPath(record.id))
+    } catch {
+      // A record that cannot be written must not stop the work it describes. The next read sees the old state (or, for a live job, its
+      // in-memory state) and the job still ends in this process; a server restart marks an unfinished record interrupted.
+    }
     try { onChange?.(record) } catch { /* a listener must not break a job */ }
   }
 

@@ -33,8 +33,8 @@ const IS_WIN = process.platform === 'win32'
 
 export const say = msg => process.stderr.write(`${LOG}: ${msg}\n`)
 
-export { modRoot, modHome, upstreamDir, isDevMode } from './paths.mjs'
-import { isDevMode, modHome, upstreamDir } from './paths.mjs'
+import { isDevMode, modHome, modRoot, upstreamDir } from './paths.mjs'
+export { modRoot, modHome, upstreamDir, isDevMode }
 export function installDir(env = process.env) { return join(modHome(env), 'papermemory') }
 export function vendorDir(env = process.env) { return join(upstreamDir(env), 'vendor', 'papermemory') }
 

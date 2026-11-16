@@ -111,6 +111,16 @@ describe('the pane', () => {
       for (const s of ui.sections(state, width)) for (const l of s.lines) assert.ok(l.text.length <= width, `${width}: ${l.text}`)
     }
   })
+  test('a failed job says why in a dim line; a completed one does not repeat its label', () => {
+    const jobs = ui.jobRows([
+      { id: 'j-ok', status: 'completed', session: 's', label: 'done', endedAt: 900 },
+      { id: 'j-bad', status: 'failed', session: 's', label: 'review', detail: 'review model call failed: 429', endedAt: 950 },
+    ], 's')
+    const lines = ui.sections({ ...ui.EMPTY_PANEL, at: 1000, cwd: '/p', jobs }, 60)[1].lines
+    assert.ok(lines.some(l => l.text.includes('429') && l.tone === 'dim'), lines.map(l => l.text).join('\n'))
+    assert.equal(lines.filter(l => l.text.includes('review')).length, 2, 'the row and its detail')
+    assert.equal(lines.filter(l => l.text.includes('done')).length, 1, 'no detail line for a completed job')
+  })
   test('empty parts say so instead of showing nothing', () => {
     const text = ui.summaryText({ ...ui.EMPTY_PANEL, cwd: '/p' }, 80)
     assert.match(text, /Not in an ah\.yaml project/)

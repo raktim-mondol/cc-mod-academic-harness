@@ -162,7 +162,7 @@ export function sections(state: PanelState, width: number, compact = false): Sec
   else if ('lines' in p && Array.isArray(p.lines) && p.lines.length) {
     if (!compact) project.lines.push(dim(clip(`root ${p.root}`, width)))
     for (const l of compact ? compactProject(p.lines) : p.lines) {
-      const tone: Tone = /^Gate now: FAIL/.test(l) ? 'bad' : /^Gate now: PASS/.test(l) ? 'ok' : /^# /.test(l) ? 'plain' : 'plain'
+      const tone: Tone = /^Gate now: FAIL/.test(l) ? 'bad' : /^Gate now: PASS/.test(l) ? 'ok' : 'plain'
       project.lines.push({ text: clip(l.replace(/^# /, ''), width), tone })
     }
     if (p.error) project.lines.push({ text: clip(p.error, width), tone: 'warn' })
@@ -176,7 +176,8 @@ export function sections(state: PanelState, width: number, compact = false): Sec
     const head = `${JOB_MARK[j.status] ?? '·'} ${j.id} `
     const room = Math.max(8, width - head.length - since.length)
     jobs.lines.push({ text: clip(`${head}${clip(j.label, room)}${since}`, width), tone })
-    if (RUNNING.includes(j.status) && j.detail) jobs.lines.push(dim(clip(`  ${j.detail}`, width)))
+    // A running job's progress and a failed job's reason are the two details a person needs; a completed one says it in its label.
+    if (j.detail && (RUNNING.includes(j.status) || j.status !== 'completed')) jobs.lines.push(dim(clip(`  ${j.detail}`, width)))
   }
 
   const notes: Section = { title: 'Notebook', lines: [] }

@@ -1,0 +1,49 @@
+name: Feature request
+description: A research task the mod should make easier, or a rough edge worth smoothing.
+title: "[feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The task
+      description: What are you trying to do, and where does the mod get in the way today?
+      placeholder: When I ..., I have to ... instead of ...
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would help
+      description: A command, a tool, a pane change, a skill or a setting. A rough idea is enough.
+    validations:
+      required: false
+  - type: textarea
+    id: alternative
+    attributes:
+      label: What you do instead
+      description: The workaround, another plugin, or the manual step, and why it is not enough.
+    validations:
+      required: false
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where it belongs
+      options:
+        - Research mode or the system prompt
+        - A slash command
+        - The status line or the pane
+        - The guard or an approval
+        - A background job or a notice
+        - A tool on the ah server
+        - Setup, update or doctor
+        - A skill or an agent
+        - Documentation or a check
+        - Not sure
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: |
+        The mod is a port of Academic Harness. A request that belongs upstream (a research tool's behaviour, a skill's content) is
+        better raised there; say so if you are not sure, and the owner can move it.

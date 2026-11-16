@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- **One check command.** `npm run check` runs the node suites, the `plugin.json` check and the served-tool-surface check in one place; CI runs the same gate. `npm run typecheck`, `npm run test:plugin`, `npm run build` and `npm run doctor` cover the steps that need the engine's types or a real session.
+- **Repository hygiene.** `CONTRIBUTING.md`, `SECURITY.md`, `.editorconfig`, issue forms, a pull request template and `CODEOWNERS`; `package.json` carries the scripts, the Node 22 floor and one version number that a test keeps equal to `plugin.json`, the README and this file.
+- Fixed: the task commands' workspace check refused every path when the session folder was the filesystem root, and research mode's project search stopped at a fixed 64 folder levels.
+- Fixed: a missing or corrupt `UPSTREAM.lock.json` made `/academic doctor` throw instead of reporting what to restore.
+- Fixed: the guard reads its reply through warning or log lines, skips a JSON log line that is not a reply, and accepts both the wrapped and plain settings-hook forms.
+- The pane shows why a failed, killed or interrupted job ended, reads its stored state once per refresh, and gives its rows stable keys.
+- A job record that cannot be written no longer throws: the job still runs, and a restart marks an unfinished record interrupted. A cancellation that arrives after the job ended is ignored rather than thrown from an abort listener.
+- The unit suites keep their scratch files in a folder named for the process, so two runs on one machine no longer overwrite each other's fixtures.
+- The scripts no longer import the same module twice, and the host says why it checks `process.env` rather than the config object for a safe `DSH_HOME`.
+- Documentation: the release page no longer says CI runs no checks; the testing page and the scripts index name the new gate.
+
 ## 0.4.0 (not tagged)
 
 - **Usage counts, and `/academic usage`.** The mod keeps a count per tool, skill, agent and command (names and numbers only, on this machine; the `usage_counts` setting turns it off) and shows what is used and what never is, as input for the next review of what to leave out. `/academic doctor` gives one line.

@@ -299,7 +299,9 @@ export function insideWorkspace(cwd: string, path: string): { ok: true; abs: str
     else out.push(part)
   }
   const abs = `/${out.join('/')}`
-  if (abs !== base && !abs.startsWith(`${base}/`)) return { ok: false, error: `path escapes the workspace: ${path}` }
+  // The filesystem root is its own workspace: every absolute path is inside it. (A plain `${base}/` test would look for `//` here.)
+  const inside = base === '/' || abs === base || abs.startsWith(`${base}/`)
+  if (!inside) return { ok: false, error: `path escapes the workspace: ${path}` }
   return { ok: true, abs }
 }
 

@@ -31,6 +31,8 @@ A GitHub release for the tag is optional: `gh release create v0.4.0 --notes-file
 
 The installed copy has no snapshot; its first start fetches the one in `UPSTREAM.lock.json` ([Getting started](../guide/getting-started.md)). Changing what the repository ships means changing the lock too, which `sync-upstream` and `update-upstream` do.
 
-## Not done, on purpose
+## What CI does not run
 
-No GitHub Action runs the tests: the live ones need a login, and the rest are seconds on a laptop. If the repository ever goes public, the licences of what it ships need the review noted in [the architecture page](../design/architecture.md) first.
+`.github/workflows/ci.yml` runs the fast gate (`npm run check`) and the plugin tests on each tested Claude Code version; [Testing](testing.md) lists them. The **live scripts** are not run there: they need a signed-in Claude Code and cost money, so they stay step 3 above. The type check stays local too: its types exist only after a real session has loaded the mod.
+
+If the repository ever goes public, the licences of what it ships need the review noted in [the architecture page](../design/architecture.md) first.

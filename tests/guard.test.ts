@@ -66,6 +66,14 @@ test('the engine denies a protected write: the call is refused with its reason, 
   expect(run.env?.AH_MODEL).toBe('claude-haiku-5-5')
 })
 
+test('a warning line, a JSON log line and a trailing line around the reply do not hide a denial', async ($, on) => {
+  const reply = deny('still protected').stdout
+  world(on, { reply: { exitCode: 0, stdout: `warning: profile not found\n{"level":"info","msg":"starting"}\n${reply}\n[trace] done\n` } })
+  const r = await write($)
+  expect(r.isError).toBe(true)
+  expect(JSON.stringify(r)).toContain('still protected')
+})
+
 test('an allowed edit goes on to the tool', async ($, on) => {
   const w = world(on, { reply: { exitCode: 0, stdout: '' } })
   const r = await $.tool.call({ tool: 'Edit', file_path: '/p/sections/a.tex', old_string: 'a', new_string: 'b' })
