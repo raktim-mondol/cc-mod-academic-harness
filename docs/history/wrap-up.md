@@ -11,6 +11,8 @@ What was done after the last phase, so nothing of the plan stays open apart from
 | `CHANGELOG.md` | Added |
 | Version | 0.4.0, not tagged |
 
+The order to run them in, with what to expect, is [What to do next](../maintain/next-steps.md).
+
 ## Written but not run
 
 The live scripts for the new work are written and have not been run, as agreed; run them before tagging ([Releasing](../maintain/releasing.md)):

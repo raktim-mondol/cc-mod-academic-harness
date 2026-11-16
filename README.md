@@ -1,6 +1,6 @@
 # cc-mod-academic-harness
 
-A Claude Code mod that brings the [Academic Harness](https://github.com/raktim-mondol/academic-harness) research tooling into Claude Code: literature search across the scholarly APIs, citation and integrity checks, deep research and deep review as background jobs, a PaperMemory library, 54 research skills and 21 specialist agents, hypothesis tournaments, study design and reproducibility ledgers, and a guard for writing papers in LaTeX projects (`ah.yaml`). It is a port, not a fork: Academic Harness is read at a pinned commit and never modified, and what Claude Code already does is left out.
+A Claude Code mod (a plugin whose hooks module runs inside Claude Code, together with MCP servers, skills and agents; [what that means](docs/maintain/next-steps.md#plugin-or-mod-both-and-it-works)) that brings the [Academic Harness](https://github.com/raktim-mondol/academic-harness) research tooling into Claude Code: literature search across the scholarly APIs, citation and integrity checks, deep research and deep review as background jobs, a PaperMemory library, 54 research skills and 21 specialist agents, hypothesis tournaments, study design and reproducibility ledgers, and a guard for writing papers in LaTeX projects (`ah.yaml`). It is a port, not a fork: Academic Harness is read at a pinned commit and never modified, and what Claude Code already does is left out.
 
 **Version 0.4.0.** Linux only. Private repository.
 
@@ -41,7 +41,7 @@ Every folder has its own index; start from [the documentation index](docs/README
 |---|---|
 | **Using it** | [User guide](docs/guide/README.md): [getting started](docs/guide/getting-started.md), [commands](docs/guide/commands.md), [tools, skills and agents](docs/guide/tools-skills-agents.md), [settings](docs/guide/settings.md), [state and privacy](docs/guide/state-and-privacy.md), [troubleshooting](docs/guide/troubleshooting.md) |
 | **Understanding it** | [Design](docs/design/README.md): [architecture](docs/design/architecture.md), [decisions](docs/design/decisions.md), [what was left out and why](docs/design/fit-review.md) |
-| **Changing it** | [Maintenance](docs/maintain/README.md): [building](docs/maintain/building.md), [updating Academic Harness](docs/maintain/updating-upstream.md), [testing](docs/maintain/testing.md), [releasing](docs/maintain/releasing.md) |
+| **Changing it** | [Maintenance](docs/maintain/README.md): [building](docs/maintain/building.md), [updating Academic Harness](docs/maintain/updating-upstream.md), [testing](docs/maintain/testing.md), [releasing](docs/maintain/releasing.md), [what to do next](docs/maintain/next-steps.md) |
 | **How it was built** | [History](docs/history/README.md), and the [changelog](CHANGELOG.md) |
 
 ## The repository
