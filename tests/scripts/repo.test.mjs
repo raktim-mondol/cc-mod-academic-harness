@@ -1,7 +1,7 @@
 // Repository metadata that must agree with itself: the release number in four places, the npm scripts CI runs, and the commands in the
 // workflow. A mismatch here is how a release ships with one number in the manifest and another in the README.
 import assert from 'node:assert/strict'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
@@ -40,5 +40,23 @@ describe('the developer commands', () => {
     assert.equal(pkg.scripts.check, 'node scripts/check.mjs')
     assert.match(ci, /node scripts\/setup\.mjs --github/)
     assert.match(ci, /npm run check/)
+  })
+})
+
+describe('the workflows', () => {
+  const files = readdirSync(join(root, '.github', 'workflows')).filter(f => /\.ya?ml$/.test(f))
+  test('there are workflows to check', () => {
+    assert.ok(files.length > 0)
+  })
+  test('every action is pinned to a commit, not a tag that can move', () => {
+    for (const file of files) {
+      for (const m of read(`.github/workflows/${file}`).matchAll(/^\s*-?\s*uses:\s*(\S+)/gm)) {
+        if (m[1].startsWith('./')) continue
+        assert.match(m[1], /^[^@\s]+@[0-9a-f]{40}$/, `${file}: "${m[1]}" is not pinned to a 40-character commit`)
+      }
+    }
+  })
+  test('Dependabot keeps the pinned actions current', () => {
+    assert.match(read('.github/dependabot.yml'), /package-ecosystem:\s*github-actions/)
   })
 })
