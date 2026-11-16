@@ -4,7 +4,13 @@ A Claude Code plugin for academic research and writing. It adds literature searc
 
 It is a Claude Code *mod*: next to its MCP tools, skills and agents it runs code inside Claude Code, which is what gives it slash commands, a status line, a pane and the guard ([what that means](docs/maintain/next-steps.md#plugin-or-mod-both-and-it-works)).
 
-**Version 0.4.0.** Linux only. Private repository.
+**Version 0.4.0.** Linux only. MIT licence.
+
+## How it fits together
+
+![How the plugin is built: the hooks module, the ah and papermemory MCP servers, the pinned Academic Harness snapshot and the writing engine](docs/assets/architecture.svg)
+
+The diagram is `docs/assets/architecture.mmd`, rendered with [Pele](https://github.com/obsidianmd/pele) (`node scripts/render.mjs --static-colors architecture.mmd architecture.svg` in the pele skill). [Architecture](docs/design/architecture.md) explains each part.
 
 ## Requirements
 

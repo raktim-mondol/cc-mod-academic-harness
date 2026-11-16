@@ -31,7 +31,7 @@ To have the mod in every session, export `CLAUDE_CODE_PLUGIN_DIRS=/path/to/cc-mo
 /plugin install academic-harness --marketplace raktim-mondol/cc-mod-academic-harness
 ```
 
-The repository is private, so this works for you and for people you invite on GitHub who have GitHub set up on their computer. The installed copy has no snapshot (it is not part of the repository), so the first session sets itself up; see "First start" below. The same marketplace file can be added from a folder: `claude plugin marketplace add <folder>`.
+The repository is public, so this works for anyone with Claude Code. The installed copy has no snapshot (it is not part of the repository), so the first session sets itself up; see "First start" below. The same marketplace file can be added from a folder: `claude plugin marketplace add <folder>`.
 
 ## First start without a snapshot
 

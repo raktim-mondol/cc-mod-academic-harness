@@ -1,6 +1,6 @@
 # Contributing
 
-This repository is private and reviewed by its owner. The notes below are the short version; the detailed rules live with the code.
+This repository is public and every change is reviewed by its owner. The notes below are the short version; the detailed rules live with the code.
 
 ## Read first
 
