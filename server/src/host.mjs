@@ -119,8 +119,8 @@ export function hostOver(registry, { loaded = [], failed = [], env = process.env
   const route = llm ? { provider: 'claude-code', model: llm.model } : null
   const raw = env.AH_JOB_FOREGROUND_MS
   const foregroundMs = raw !== undefined && raw !== '' && Number(raw) >= 0 ? Number(raw) : DEFAULT_FOREGROUND_MS
-  // AH_VALIDATE_TOOL_ARGS: `warn` (default) counts and notes a call whose arguments the tool's schema refuses and runs it anyway; `enforce` refuses
-  // it before anything runs (no job is started); `off` does not look. See validate.mjs.
+  // AH_VALIDATE_TOOL_ARGS: `enforce` (default) refuses a call whose arguments the tool's schema refuses, before anything runs (no job is started);
+  // `warn` counts and notes it and runs it anyway; `off` does not look. See validate.mjs.
   const validate = validationMode(env.AH_VALIDATE_TOOL_ARGS)
   const schemas = new Map()
   const schemaOf = tool => { let s = schemas.get(tool.name); if (!s) { s = toInputSchema(tool); schemas.set(tool.name, s) } return s }
