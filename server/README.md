@@ -7,6 +7,7 @@ Node code the plugin runs as processes. Two MCP servers, and the helpers the hoo
 | Process | What it is |
 |---|---|
 | `ah-mcp.mjs` | **The `ah` MCP server**: loads Academic Harness's tool modules from the snapshot and serves them over stdio. On a first start with no snapshot it answers with `doctor` alone, fetches it, and swaps in the full list |
+| `ah-bootstrap.mjs` | The first-start fetch itself, started detached by `ah-mcp.mjs` so that it finishes even when the session that started it has ended. Silent; its progress is in `<home>/bootstrap.json` |
 | `papermemory-mcp.mjs` | **The PaperMemory server**: a launcher that installs the CLI into the mod's home if needed and runs `papermemory mcp` |
 | `ah-hook.mjs` | The guard bridge: runs the engine's `ah hook <event>` for the hooks module, exit 3 when there is no engine, 124 on a time-out |
 | `ah-approve.mjs` | The approval text for a paid-compute call (provider, instance, ceiling, session cap) |
