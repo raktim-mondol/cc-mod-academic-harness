@@ -17,7 +17,7 @@
 import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { bootstrap, pruneOldSnapshots } from '../src/bootstrap.mjs'
+import { bootstrapInWorker, pruneOldSnapshots } from '../src/bootstrap.mjs'
 import { Registry } from '../src/context.mjs'
 import { prepareEnv } from '../src/env.mjs'
 import { createHost, hostOver, missingDependencies, serve } from '../src/host.mjs'
@@ -77,9 +77,10 @@ if (needsFetch) {
   const placeholder = hostOver(new Registry(), { env: process.env, cwd: process.cwd() })
   const late = lateHost(placeholder)
   host = late
-  bootstrap()
-    .then(async done => {
-      say(`snapshot ready${done.fetched ? ' (downloaded)' : ''}${done.installed ? ', dependencies installed' : ''}`)
+  // In a process of its own, so that a session that ends before the download does (a headless run) does not end the download with it.
+  bootstrapInWorker()
+    .then(async () => {
+      say('snapshot ready')
       late.swap(await open())
       await buildEngineInBackground()
     })

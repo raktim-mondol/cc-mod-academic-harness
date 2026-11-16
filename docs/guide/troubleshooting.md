@@ -4,7 +4,7 @@ Start with `/academic doctor` (outside a session: `node server/bin/ah-doctor.mjs
 
 | Symptom | Cause and fix |
 |---|---|
-| Only the `doctor` tool is there, and it says the snapshot is "being set up" | The first start is fetching the source and installing dependencies (a minute). The rest appears by itself |
+| Only the `doctor` tool is there, and it says the snapshot is "being set up" | The first start is fetching the source and installing dependencies (a minute). The rest appears by itself. The fetch runs in a process of its own, so it finishes even if you close the session; the next session has the tools |
 | The doctor says the first-start fetch failed | It shows the step and the error (no network, GitHub or npm down, a disk problem). `node scripts/setup.mjs` shows the whole error; the next start tries again |
 | The `ah` server shows as failed in `/mcp` | With `AH_BOOTSTRAP=0` or `AH_UPSTREAM` set and no snapshot or dependencies: `node scripts/setup.mjs` |
 | `ah_*` tools say the engine is "being installed" or "missing" | The engine's environment builds in the background on first start (about a minute). `node scripts/install-engine.mjs` builds it now |

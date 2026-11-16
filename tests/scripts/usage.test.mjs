@@ -276,3 +276,27 @@ describe('old counts', () => {
     }
   })
 })
+
+describe('invalid calls', () => {
+  test('a tool with arguments its schema refuses carries a count, stored only when it is not zero, added across files and shown in the report', () => {
+    const dir = join(root, 'inv')
+    const a = createUsage({ dir, id: 'srv-a', flushMs: 60_000 })
+    a.record('tools', 'literature_search', {})
+    a.record('tools', 'literature_search', { invalid: true })
+    a.record('tools', 'literature_search', { error: true, invalid: true })
+    a.record('tools', 'fine', {})
+    a.flush()
+    const b = createUsage({ dir, id: 'srv-b', flushMs: 60_000 })
+    b.record('tools', 'literature_search', { invalid: true })
+    b.flush()
+    assert.equal(a.data.tools.fine.invalid, undefined)
+    const u = readUsage(dir)
+    assert.deepEqual(u.tools.literature_search, { calls: 4, errors: 1, last: u.tools.literature_search.last, invalid: 3 })
+    assert.equal(u.tools.fine.invalid, undefined)
+    assert.equal(summarize(u, { tools: ['literature_search', 'fine'] }).tools.invalid, 3)
+    const report = formatReport(u, { tools: ['literature_search', 'fine'] })
+    assert.match(report, /3 with arguments the schema refuses/)
+    assert.match(report, /literature_search 4 \(1 failed\) \(3 invalid\)/)
+    assert.ok(!/invalid|refuses/.test(formatReport(readUsage(join(root, 'a')), {})), 'a report with none says nothing of it')
+  })
+})

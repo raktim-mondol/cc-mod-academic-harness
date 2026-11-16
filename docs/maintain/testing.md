@@ -57,11 +57,12 @@ Adding a Claude Code version: run the live scripts on it ([What to do next](next
 | `tests/scripts/fit.test.mjs` | What is left out, the restore setting, the wording rules, that nothing built names a tool that is not served |
 | `tests/scripts/sync.test.mjs` | The snapshot digest, and fetching without a checkout (a throw-away repository stands in for GitHub) |
 | `tests/scripts/doctor.test.mjs` | The doctor's report, including the hooks module and the Claude Code version, and that it never prints a key |
-| `tests/scripts/usage.test.mjs` | The recorder, the files added up, the report, that arguments are never kept, the host that counts its calls, the doctor's line, and that the hooks module and the server agree on the files and the command list |
+| `tests/scripts/usage.test.mjs` | The recorder, the invalid-call count, the files added up, the report, that arguments are never kept, the host that counts its calls, the doctor's line, and that the hooks module and the server agree on the files and the command list |
 | `tests/scripts/compat.test.mjs` | Which versions are ok, warned about or only said; that the hooks module and the server name the record the same way; the CI matrix |
 | `tests/scripts/update.test.mjs` | The update report's comparison |
 | `tests/scripts/docs.test.mjs` | Every markdown link and path resolves, and every page is reachable from the indexes |
-| `tests/server/host.test.mjs` | The protocol, the registry, schemas, the context, rendering, the server over stdio |
+| `tests/server/host.test.mjs` | The protocol, the registry, schemas, the context, rendering, the server over stdio, and the three modes of argument validation at the host |
+| `tests/server/validate.test.mjs` | The argument check's rules, that no message holds a value, and every served tool's schema against it |
 | `tests/server/parity.test.mjs` | The served surface against upstream's |
 | `tests/server/guard.test.mjs` | The guard bridge (with a stand-in engine and the real one), engine status, the sync keep rule |
 | `tests/server/jobs.test.mjs` | The jobs service, upstream's `runAsJob` over it, the model route against a stand-in `claude` |

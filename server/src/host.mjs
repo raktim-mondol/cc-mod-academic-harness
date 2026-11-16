@@ -22,6 +22,7 @@ import { adapt, blocksToContent, clip, DEFAULT_MAX_CHARS, DEFAULT_OUTPUT_KEEP_DA
 import { listedSkills } from './skills-list.mjs'
 import { createUsage, DEFAULT_KEEP_DAYS as USAGE_KEEP_DAYS, usageDir, usageEnabled } from './usage.mjs'
 import { toInputSchema } from './schema.mjs'
+import { describeIssues, issuePaths, validateArgs, validationMode } from './validate.mjs'
 
 export const SERVER_NAME = 'ah'
 /** The plugin's version, read from its manifest so the two cannot drift apart. */
@@ -118,6 +119,11 @@ export function hostOver(registry, { loaded = [], failed = [], env = process.env
   const route = llm ? { provider: 'claude-code', model: llm.model } : null
   const raw = env.AH_JOB_FOREGROUND_MS
   const foregroundMs = raw !== undefined && raw !== '' && Number(raw) >= 0 ? Number(raw) : DEFAULT_FOREGROUND_MS
+  // AH_VALIDATE_TOOL_ARGS: `enforce` (default) refuses a call whose arguments the tool's schema refuses, before anything runs (no job is started);
+  // `warn` counts and notes it and runs it anyway; `off` does not look. See validate.mjs.
+  const validate = validationMode(env.AH_VALIDATE_TOOL_ARGS)
+  const schemas = new Map()
+  const schemaOf = tool => { let s = schemas.get(tool.name); if (!s) { s = toInputSchema(tool); schemas.set(tool.name, s) } return s }
   const timeoutFor = tool => (Number.isFinite(tool.timeoutMs) && tool.timeoutMs > 0 ? tool.timeoutMs : SLOW_TOOLS.get(tool.name) ?? (Number(env.AH_TOOL_TIMEOUT_MS) > 0 ? Number(env.AH_TOOL_TIMEOUT_MS) : DEFAULT_TIMEOUT_MS))
 
   // The job tools exist when a long tool does.
@@ -170,9 +176,18 @@ export function hostOver(registry, { loaded = [], failed = [], env = process.env
   }
 
   /** Where a call is run; `call` (below) counts it. */
-  async function invoke(name, args = {}, { signal, callId } = {}) {
+  async function invoke(name, args = {}, { signal, callId, onInvalid } = {}) {
     const tool = registry.tools.get(name)
     if (!tool) return { isError: true, content: [{ type: 'text', text: `Unknown tool "${name}". Known tools: ${[...registry.tools.keys()].slice(0, 12).join(', ')}${registry.tools.size > 12 ? ', ...' : ''}` }] }
+    if (validate !== 'off') {
+      const checked = validateArgs(schemaOf(tool), args)
+      if (!checked.ok) {
+        onInvalid?.()
+        if (validate === 'enforce') return failure(describeIssues(name, checked.issues))
+        // Field paths only, never a value.
+        process.stderr.write(`[academic-harness] ah: ${name} was called with arguments its schema refuses (${issuePaths(checked.issues)}); running it anyway (AH_VALIDATE_TOOL_ARGS=enforce refuses)\n`)
+      }
+    }
     if (jobs && detached.has(name)) return callDetached(tool, name, args, { signal, callId })
     // An explicit timer, cleared when the call ends. `AbortSignal.timeout` would do, but its timer does not keep the event loop alive, so a
     // process with nothing else pending (a test, on Node 22) is ended before a hung tool's limit is reached.
@@ -205,9 +220,10 @@ export function hostOver(registry, { loaded = [], failed = [], env = process.env
     },
     /** Run one tool. Resolves to an MCP tool result; never throws for a tool's own failure. The use is counted (usage.mjs): the tool's name, whether it failed, never its arguments. */
     async call(name, args = {}, options = {}) {
-      const result = await invoke(name, args, options)
+      let invalid = false
+      const result = await invoke(name, args, { ...options, onInvalid: () => { invalid = true } })
       if (usage && registry.tools.has(name)) {
-        usage.record('tools', name, { error: result.isError === true })
+        usage.record('tools', name, { error: result.isError === true, invalid })
         if (name === 'skill_load' && typeof args?.name === 'string') usage.record('skills', args.name, { error: result.isError === true })
       }
       return result

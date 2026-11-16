@@ -41,6 +41,7 @@ The others unlock one source or tool each: Consensus, Scite and Firecrawl as sou
 | `AH_JOBS_KEEP_DAYS` | How long the record and log of a job that has ended are kept (default 30 days; `0` keeps them all). Old ones are removed when a server starts |
 | `AH_TOOL_OUTPUT_KEEP_DAYS` | How long the full text of a clipped tool result stays in `<project>/.dsh/tool-output/` (default 30 days; `0` keeps it all). Older files are removed when a new one is written |
 | `AH_SNAPSHOT_KEEP_DAYS` | How long a source snapshot that an update left in the mod's home is kept after its last use (default 7 days; `0` keeps them all). The locked commit's is never removed |
+| `AH_VALIDATE_TOOL_ARGS` | What the server does with a tool call whose arguments the tool's schema refuses: `enforce` (default) refuses it with an error naming the fields (never the values), and starts no job for it; `warn` runs it anyway, notes it on standard error and counts it as invalid in `/academic usage`; `off` does not check. Either way the refused call is counted as invalid |
 | `AH_USAGE=0` | Count no usage, whatever the `usage_counts` setting says |
 | `AH_USAGE_KEEP_DAYS` | How long a usage file is kept after it was last written (default 365 days; `0` keeps them all). Removed when a server starts |
 | `AH_NO_ENFORCE=1` | Work in an `ah.yaml` project without the guard: edits and shell commands are not checked. Set it in the shell before starting Claude Code. It also holds when the engine cannot run |

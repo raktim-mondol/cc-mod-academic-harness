@@ -7,7 +7,7 @@
 | `/academic` | Opens the pane (below). With no word it also says the research mode |
 | `/academic on`, `off`, `auto` | Research mode for this session. `auto` (the default) is on in a folder that has, or sits under, an `ah.yaml`. While on, a research section (about 2,900 tokens) is added to the system prompt. The setting `research_mode` changes the default |
 | `/academic status` | The mode, and why |
-| `/academic usage [--all]` | Which tools, skills, agents and commands have been used, how often, and which never have (names and numbers only). `--all` lists every name instead of the most used and the first of the never used. Turn counting off with the `usage_counts` setting |
+| `/academic usage [--all]` | Which tools, skills, agents and commands have been used, how often, and which never have, and the tools that were called with arguments their schema refuses (names and numbers only). `--all` lists every name instead of the most used and the first of the never used. Turn counting off with the `usage_counts` setting |
 | `/academic doctor` | What is ready and what is not, including whether the hooks module loaded in this session and whether the Claude Code running it is a version the mod was seen working on. `--online` also asks GitHub whether Academic Harness has moved past the commit the plugin holds |
 
 ## Task commands
