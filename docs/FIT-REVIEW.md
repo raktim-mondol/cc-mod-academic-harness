@@ -8,7 +8,7 @@ The decisions are in one file, `server/src/fit.mjs` (what is left out, with a re
 
 | | Before | After |
 |---|---|---|
-| Tools served (`ah` server) | 138 (134 of upstream's 136, plus 4 job tools) | 125 (121 of 136, plus 4) |
+| Tools served (`ah` server) | 138 (134 of upstream's 136, plus 4 job tools) | 126 (121 of 136, plus 4 job tools and `doctor`) |
 | Tool descriptions and schemas, characters | 292,000 | 269,000 (deferred behind `ToolSearch`, so little of this is in context at once) |
 | Skills in the always-loaded list | 86 (30,118 characters of descriptions) | 54 (20,314), plus `research-guides` |
 | Agents | 22 | 21 |
@@ -17,7 +17,7 @@ The decisions are in one file, `server/src/fit.mjs` (what is left out, with a re
 
 The skill list is the part that costs context every turn, so it is where the cut matters: about 10,000 characters (2,500 tokens) less, and the research-mode text another 1,800 tokens.
 
-## Tools left out (13)
+## Tools left out (15)
 
 | Tool | Why |
 |---|---|
@@ -29,6 +29,8 @@ The skill list is the part that costs context every turn, so it is where the cut
 | `research_template` | A catalogue of one-click prompts for DSH's chat boxes. Skills and the task commands do that job |
 | `paper_mcp` | Mounts generated MCP servers mid-session (with `mounts.mjs`, an MCP client of its own, and an elicitation form). Claude Code adds servers itself (`claude mcp add`, `.mcp.json`) with its own approval, so the machinery went too (138 lines, plus a 164-line test) |
 | `latex_compile` | A `latexmk` wrapper: Bash does it, and `ah_build` covers Academic Harness projects |
+| `zvec_index` | Semantic search over a workspace through a background daemon (an HTTP MCP server with its own lifecycle, an embedding provider and a first-run package install). Claude Code searches with Grep and Glob and PaperMemory indexes the papers; the daemon is more to run than the folders a researcher keeps warrant. Its guide (`workspace-search`) went with it. *Decided in P6* |
+| `ah_rsi` | A loop that records turns, writes its own lessons and injects them into later turns without asking (decision D10). Claude Code has memory and `CLAUDE.md`, which the person controls, and PaperMemory keeps writing lessons on request (`papermemory_lesson`). *Decided in P6* |
 
 The keys only these read (`BRAVE_API_KEY`, `TAVILY_API_KEY`, `EXA_API_KEY`, `PERPLEXITY_API_KEY`, `ELICIT_API_KEY`) are no longer offered as settings.
 
@@ -72,12 +74,17 @@ The keys only these read (`BRAVE_API_KEY`, `TAVILY_API_KEY`, `EXA_API_KEY`, `PER
 | Check | Result |
 |---|---|
 | `node --test` (scripts and server) | 194 pass; 17 new in `fit.test.mjs`: every left-out module is a real upstream module and classed as dropped, the plan loads none of them and loads a restored one, the host serves a restored tool and not a dropped one (by the shell variable and by the setting), no left-out skill or agent is built, the on-demand ones are still bundled, every rewrite has its target built, a rule whose text is gone throws, no built skill, guide or brief names a tool that is not served, the catalogue stays under 22,000 characters of descriptions |
-| Surface parity (`measure-surface.mjs`) | ok: 136 registered, 121 served, 13 dropped, 2 later (`zvec_index`, `ah_rsi`) |
+| Surface parity (`measure-surface.mjs`) | ok: 136 registered, 121 served, 15 dropped (13 here, `zvec_index` and `ah_rsi` in P6) |
 | `claude plugin test .`, `validate`, `tsc` | 68 pass; pass; pass |
-| Live (`tests/live/fit.mjs`) | `catalogue`: 55 skills, 21 agents, 125 `ah` tools, none of the 13, ten of the dropped skills absent, `literature_search` present. `restore`: `AH_RESTORE_TOOLS=brave_search,paper_mcp,nonsense` serves `brave_search` and nothing else. `search_route`: asked for papers, Haiku called `literature_search` and no `WebSearch` (the new text works). `on_demand`: `skill_search` found `openfda`, `skill_load` read it |
+| Live (`tests/live/fit.mjs`) | `catalogue`: 55 skills, 21 agents, 126 `ah` tools, none of the 15 left out, ten of the dropped skills absent, `literature_search` present. `restore`: `AH_RESTORE_TOOLS=brave_search,paper_mcp,nonsense` serves `brave_search` and nothing else. `search_route`: asked for papers, Haiku called `literature_search` and no `WebSearch` (the new text works). `on_demand`: `skill_search` found `openfda`, `skill_load` read it |
+
+## Decided in P6, not built
+
+- **An `academic-harness:pro` agent and a vision agent.** A Claude Code agent takes a `model` of its own, and the session model reads images with `Read`.
+- **An esbuild bundle of the server.** The server answers `initialize` at once and lists its tools in under a second after start; what a bundle would save is not worth a build step that has to follow dynamic imports of 100 modules and native dependencies.
+- **A marketplace entry.** Sharing is left until you ask for it (`docs/USER-GUIDE.md` says so).
 
 ## Not decided here
 
 - **Merging `coscientist`, `coscientist_rank` and `coscientist_verify`.** They are three tools because of DSH's schema limits. Merging means editing upstream's modules, which breaks "loaded unchanged".
 - **`literature_watch` on `/loop`.** A watch could run on a schedule instead of by hand. Worth doing once someone uses watches.
-- **`zvec_index` and `ah_rsi`** stay in P6.

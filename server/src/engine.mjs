@@ -10,6 +10,8 @@ import { join, relative } from 'node:path'
 import { isDevMode, upstreamDir } from './paths.mjs'
 
 export const STAMP_FILE = '.ah-tree-sha256'
+/** Holds the pid of a running build (engine-install.mjs). Not part of the engine, so not part of its hash. */
+export const INSTALLING_FILE = '.ah-installing'
 const SKIP_DIRS = new Set(['.venv', '__pycache__', 'build', 'dist', '.pytest_cache', '.mypy_cache', '.ruff_cache'])
 
 export function engineDir(upstream = upstreamDir()) {
@@ -18,7 +20,7 @@ export function engineDir(upstream = upstreamDir()) {
 
 function* walk(dir) {
   for (const name of readdirSync(dir).sort()) {
-    if (SKIP_DIRS.has(name) || name.endsWith('.egg-info') || name === STAMP_FILE || name === 'installed-version') continue
+    if (SKIP_DIRS.has(name) || name.endsWith('.egg-info') || name === STAMP_FILE || name === INSTALLING_FILE || name === 'installed-version') continue
     const p = join(dir, name)
     const s = statSync(p)
     if (s.isDirectory()) yield* walk(p)

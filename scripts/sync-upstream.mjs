@@ -5,23 +5,29 @@
 //
 // The source checkout is only read, with `git archive` and `git ls-tree` against
 // the object database: no working-tree file is opened and nothing is written in
-// it (ground rule 1 of IMPLEMENTATION_PLAN.md). Output:
+// it (ground rule 1 of IMPLEMENTATION_PLAN.md). With no checkout (a fresh clone of this
+// repository on another machine), or with --github, the same commit is downloaded from
+// GitHub (the repository is public), cut down to the same allow-list, and checked
+// against the digest in the lock. Output:
 //   upstream/            the allow-listed files at that commit (gitignored)
-//   UPSTREAM.lock.json   commit, package version, allow-list, and the SHA-256 of
-//                        the archive, so a later run can prove it got the same bytes
+//   UPSTREAM.lock.json   commit, package version, allow-list, the SHA-256 of the
+//                        archive, and a digest of the snapshot's files (treeSha256), so a
+//                        later run, or another machine, can prove it got the same bytes
 //
 // The default commit is the one in UPSTREAM.lock.json, else PINNED below.
 // Environment: AH_SOURCE (default ~/academic-harness).
 
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
-import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { engineDir, engineHash, STAMP_FILE } from '../server/src/engine.mjs'
+import { treeDigest } from '../server/src/snapshot.mjs'
 
 export const PINNED = 'a3f17eb8ae15221adeaa45cd19918c1f82f82973'
+export const SOURCE_REPO = 'raktim-mondol/academic-harness'
 
 // Paths taken from the source. Each phase adds what it needs; a path that does not
 // exist at the commit is reported and skipped, never silently ignored.
@@ -71,26 +77,68 @@ export function git(source, args, opts = {}) {
   return execFileSync('git', ['-C', source, ...args], { maxBuffer: 1 << 30, ...opts })
 }
 
-export function sync({ source, commit, outDir = join(root, 'upstream'), lockFile = join(root, 'UPSTREAM.lock.json'), allow = ALLOW } = {}) {
-  const sha = git(source, ['rev-parse', '--verify', `${commit}^{commit}`], { encoding: 'utf8' }).trim()
-  const present = []
-  const missing = []
-  const rootFiles = git(source, ['ls-tree', '--name-only', sha], { encoding: 'utf8' }).split('\n').filter(Boolean)
-  for (const p of allow) {
-    // `*.js` is expanded against the root listing; git pathspecs would match nested files too.
-    const found = p === '*.js' ? rootFiles.filter(f => f.endsWith('.js')) : git(source, ['ls-tree', '--name-only', sha, '--', p], { encoding: 'utf8' }).split('\n').filter(Boolean)
-    if (found.length) present.push(...(p === '*.js' ? found : [p]))
-    else missing.push(p)
+/**
+ * The allow-listed files of `commit`, downloaded from GitHub into `staging` (no checkout needed). `fetchTarball(url, file)` is a seam for tests.
+ * Returns what `sync` needs from a source: the paths present and missing, and no archive digest (the tarball is not `git archive`'s bytes).
+ */
+export async function obtainFromGithub({ commit, staging, allow = ALLOW, repo = SOURCE_REPO, fetchTarball = download }) {
+  if (!/^[0-9a-f]{40}$/.test(commit)) throw new Error('a download needs the full 40-character commit, not a branch or a short sha')
+  const scratch = mkdtempSync(join(homedir(), '.cache', 'ah-sync-'))
+  try {
+    const file = join(scratch, 'source.tar.gz')
+    await fetchTarball(`https://codeload.github.com/${repo}/tar.gz/${commit}`, file)
+    const tree = join(scratch, 'tree')
+    mkdirSync(tree)
+    execFileSync('tar', ['-xzf', file, '-C', tree, '--strip-components=1'], { maxBuffer: 1 << 30 })
+    const rootFiles = readdirSync(tree)
+    const present = []
+    const missing = []
+    for (const p of allow) {
+      const found = p === '*.js' ? rootFiles.filter(f => f.endsWith('.js') && existsSync(join(tree, f))) : existsSync(join(tree, p)) ? [p] : []
+      if (found.length) present.push(...found)
+      else missing.push(p)
+    }
+    if (present.length === 0) throw new Error('none of the allow-listed paths exist in the download')
+    for (const p of present) {
+      mkdirSync(dirname(join(staging, p)), { recursive: true })
+      cpSync(join(tree, p), join(staging, p), { recursive: true, dereference: false })
+    }
+    return { present, missing }
+  } finally {
+    rmSync(scratch, { recursive: true, force: true })
   }
-  if (present.length === 0) throw new Error('none of the allow-listed paths exist at ' + sha)
+}
 
-  const tar = git(source, ['archive', '--format=tar', sha, '--', ...present])
-  const archiveSha256 = createHash('sha256').update(tar).digest('hex')
+async function download(url, file) {
+  const res = await fetch(url, { redirect: 'follow' })
+  if (!res.ok) throw new Error(`download of ${url} failed: HTTP ${res.status}`)
+  writeFileSync(file, Buffer.from(await res.arrayBuffer()))
+}
 
+export async function sync({ source, commit, github = false, outDir = join(root, 'upstream'), lockFile = join(root, 'UPSTREAM.lock.json'), allow = ALLOW, fetchTarball } = {}) {
   const staging = outDir + '.staging'
   rmSync(staging, { recursive: true, force: true })
   mkdirSync(staging, { recursive: true })
-  execFileSync('tar', ['-x', '-C', staging], { input: tar, maxBuffer: 1 << 30 })
+  let sha, present, missing, archiveSha256 = null
+  if (github) {
+    sha = commit
+    ;({ present, missing } = await obtainFromGithub({ commit, staging, allow, fetchTarball }))
+  } else {
+    sha = git(source, ['rev-parse', '--verify', `${commit}^{commit}`], { encoding: 'utf8' }).trim()
+    present = []
+    missing = []
+    const rootFiles = git(source, ['ls-tree', '--name-only', sha], { encoding: 'utf8' }).split('\n').filter(Boolean)
+    for (const p of allow) {
+      // `*.js` is expanded against the root listing; git pathspecs would match nested files too.
+      const found = p === '*.js' ? rootFiles.filter(f => f.endsWith('.js')) : git(source, ['ls-tree', '--name-only', sha, '--', p], { encoding: 'utf8' }).split('\n').filter(Boolean)
+      if (found.length) present.push(...(p === '*.js' ? found : [p]))
+      else missing.push(p)
+    }
+    if (present.length === 0) throw new Error('none of the allow-listed paths exist at ' + sha)
+    const tar = git(source, ['archive', '--format=tar', sha, '--', ...present])
+    archiveSha256 = createHash('sha256').update(tar).digest('hex')
+    execFileSync('tar', ['-x', '-C', staging], { input: tar, maxBuffer: 1 << 30 })
+  }
 
   const pkg = JSON.parse(readFileSync(join(staging, 'package.json'), 'utf8'))
   // Installed dependencies are expensive. Keep them across a sync when the lockfile did not change.
@@ -115,28 +163,42 @@ export function sync({ source, commit, outDir = join(root, 'upstream'), lockFile
   rmSync(outDir, { recursive: true, force: true })
   renameSync(staging, outDir)
 
+  const digest = treeDigest(outDir)
+  const before = existsSync(lockFile) ? JSON.parse(readFileSync(lockFile, 'utf8')) : null
   const lock = {
     source: 'github.com/raktim-mondol/academic-harness',
     commit: sha,
     version: pkg.version,
-    archiveSha256,
+    // `git archive`'s bytes; a download is not those bytes, so a download of the locked commit keeps the one recorded
+    archiveSha256: archiveSha256 ?? (before?.commit === sha ? before.archiveSha256 ?? null : null),
+    treeSha256: digest.sha256,
+    fileCount: digest.fileCount,
     paths: present,
     missing,
+  }
+  // A download of the locked commit must hold the bytes the lock describes: otherwise the commit changed under us, or the download is wrong.
+  if (github && before?.commit === sha && before.treeSha256 && before.treeSha256 !== digest.sha256) {
+    throw new Error(`the download of ${sha.slice(0, 7)} does not match the lock (${digest.fileCount} files, digest ${digest.sha256.slice(0, 12)}, expected ${before.fileCount} files, ${before.treeSha256.slice(0, 12)}). The snapshot in ${outDir} is the new one; the lock is unchanged.`)
   }
   writeFileSync(lockFile, JSON.stringify(lock, null, 2) + '\n')
   return lock
 }
 
-function main() {
+async function main() {
   const args = process.argv.slice(2)
   const opt = name => (args.includes(name) ? args[args.indexOf(name) + 1] : undefined)
   const lockFile = join(root, 'UPSTREAM.lock.json')
   const locked = existsSync(lockFile) ? JSON.parse(readFileSync(lockFile, 'utf8')).commit : undefined
   const source = opt('--source') ?? process.env.AH_SOURCE ?? join(homedir(), 'academic-harness')
   const commit = opt('--commit') ?? locked ?? PINNED
-  const lock = sync({ source, commit })
-  console.log(`synced ${lock.paths.length} paths at ${lock.commit.slice(0, 7)} (version ${lock.version}), archive sha256 ${lock.archiveSha256.slice(0, 12)}`)
+  // Use the checkout when there is one that has the commit; otherwise (or with --github) download it.
+  const haveCheckout = existsSync(join(source, '.git')) && (() => { try { git(source, ['cat-file', '-e', `${commit}^{commit}`], { stdio: 'ignore' }); return true } catch { return false } })()
+  const github = args.includes('--github') || !haveCheckout
+  if (github && !/^[0-9a-f]{40}$/.test(commit)) throw new Error(`no checkout has ${commit}, and a download needs the full commit sha`)
+  if (github) console.log(`downloading ${SOURCE_REPO} at ${commit.slice(0, 7)} (${haveCheckout || args.includes('--github') ? 'asked for' : `no checkout at ${source}`})`)
+  const lock = await sync({ source, commit, github })
+  console.log(`synced ${lock.paths.length} paths at ${lock.commit.slice(0, 7)} (version ${lock.version}), ${lock.fileCount} files, digest ${lock.treeSha256.slice(0, 12)}${lock.archiveSha256 ? `, archive sha256 ${lock.archiveSha256.slice(0, 12)}` : ''}`)
   if (lock.missing.length) console.log(`not present at that commit: ${lock.missing.join(', ')}`)
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main()
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main().catch(error => { console.error(error.message); process.exit(1) })

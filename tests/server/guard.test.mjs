@@ -173,6 +173,8 @@ describe('engine status', () => {
     mkdirSync(join(dir, 'ah', '__pycache__'), { recursive: true })
     writeFileSync(join(dir, 'ah', '__pycache__', 'a.pyc'), 'x')
     writeFileSync(join(dir, 'installed-version'), '1')
+    // the marker a running build leaves is there when the stamp is written (found by a fresh-clone setup: the stamp never matched)
+    writeFileSync(join(dir, '.ah-installing'), '123\n')
     assert.equal(engineHash(dir), before)
     writeFileSync(join(dir, 'ah', '__init__.py'), '# changed')
     assert.notEqual(engineHash(dir), before)
@@ -198,19 +200,19 @@ describe('sync keeps the engine venv when the engine is unchanged', () => {
     git('commit', '-qm', 'one')
   })
 
-  test('same engine: the venv and its stamps survive; changed engine: they go', () => {
-    run()
+  test('same engine: the venv and its stamps survive; changed engine: they go', async () => {
+    await run()
     const dir = engineDir(out)
     mkdirSync(join(dir, '.venv', 'bin'), { recursive: true })
     writeFileSync(join(dir, '.venv', 'bin', 'ah'), 'venv')
     writeFileSync(join(dir, STAMP_FILE), `${engineHash(dir)}\n`)
-    run()
+    await run()
     assert.equal(readFileSync(join(dir, '.venv', 'bin', 'ah'), 'utf8'), 'venv', 'kept')
     assert.equal(engineStatus({}, dir).ok, true)
 
     writeFileSync(join(src, 'vendor', 'academic-harness', 'ah', '__init__.py'), '# v2')
     git('commit', '-qam', 'two')
-    run()
+    await run()
     assert.equal(existsSync(join(dir, '.venv')), false, 'a changed engine gets no stale venv')
   })
 })

@@ -12,6 +12,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { createContext, Registry } from './context.mjs'
 import { createJobs, FINISHED } from './jobs.mjs'
 import { createLlm, DEFAULT_BUDGET_USD, DEFAULT_MODEL } from './llm.mjs'
+import { doctorTool } from './doctortool.mjs'
 import { jobTools } from './jobtools.mjs'
 import { modHome } from './paths.mjs'
 import { makeExec, sessionIdFrom } from './exec.mjs'
@@ -100,6 +101,9 @@ export function hostOver(registry, { loaded = [], failed = [], env = process.env
   if (jobs && [...registry.tools.keys()].some(n => detached.has(n))) {
     for (const t of jobTools({ jobs, sessionId, cwd: () => cwd, maxChars })) if (!registry.tools.has(t.name)) registry.register(t)
   }
+
+  // The doctor tool is the host's own too: it reports what this server loaded and what its environment holds.
+  if (!registry.tools.has('doctor')) registry.register(doctorTool({ env, loaded, failed }))
 
   let started = false
   const renderValue = (tool, args, value) => (tool.output?.render ? tool.output.render(args, value) : [{ type: 'text', text: typeof value === 'string' ? value : JSON.stringify(value, null, 2) }])

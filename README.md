@@ -4,9 +4,9 @@ A Claude Code mod that brings the Academic Harness research tooling into Claude
 Code: literature and citation tools, a research skill pack, the writing-engine
 guards for `ah.yaml` projects, and a small terminal interface.
 
-**Status: phase P5 done, then a fit review** (tool host serving 121 of Academic Harness's 136 tools plus four job tools, the
+**Status: phases P0 to P6 done, with a fit review** (tool host serving 121 of Academic Harness's 136 tools plus the host's own,  the
 writing-engine guard, background jobs and a model route, the task commands, `/fold`, a status line and a pane). The fit review
-dropped what Claude Code already does and rewrote the guidance for it: `docs/FIT-REVIEW.md`. Packaging (P6) is not built yet. The plan is in `IMPLEMENTATION_PLAN.md`; the audit of P0 to P4 is `docs/AUDIT-P0-P4.md`; platform answers are in
+dropped what Claude Code already does and rewrote the guidance for it: `docs/FIT-REVIEW.md`. P6 made a fresh clone work with no source checkout (`node scripts/setup.mjs`), added `/academic doctor` and an update procedure (`docs/P6-RESULTS.md`, `docs/USER-GUIDE.md`). The plan is in `IMPLEMENTATION_PLAN.md`; the audit of P0 to P4 is `docs/AUDIT-P0-P4.md`; platform answers are in
 `docs/PLATFORM-NOTES.md`; what P1 to P5 built and measured is in `docs/P1-RESULTS.md` to `docs/P5-RESULTS.md`.
 
 ## What works now
@@ -68,26 +68,20 @@ dropped what Claude Code already does and rewrote the guidance for it: `docs/FIT
 
 ## Set up from a clone
 
-The generated parts (`upstream/`) come from a local checkout of the Academic Harness source,
-read with `git archive` at a pinned commit and never written:
-
 ```
-node scripts/sync-upstream.mjs        # needs ~/academic-harness (or AH_SOURCE=<path>)
-node scripts/install-deps.mjs         # npm ci inside upstream/ (the tool modules' dependencies)
-node scripts/install-engine.mjs       # the writing engine's venv, inside upstream/vendor/academic-harness
-node scripts/install-helpers.mjs      # optional: the Python helpers' venv (data, statistics, chemistry tools)
-node scripts/build-all.mjs            # skills/, hooks/generated/, agents/
-node scripts/build-manifest.mjs       # the ah server entry and key settings in plugin.json
-claude --plugin-dir ~/cc-mod-academic-harness
+node scripts/setup.mjs                # the snapshot, dependencies, the writing engine, a check
+claude --plugin-dir "$PWD"
 ```
 
-`skills/`, `agents/` and `hooks/generated/` are committed, so the skills and agents load without
-the sync. `upstream/` (with its `node_modules`) is not committed; the `ah` server, the PaperMemory
-install and the on-demand skills need it until the packaging phase (P6). Without it the `ah` server
-exits with a message that says what to run.
+No source checkout is needed: `setup` downloads Academic Harness's source at the pinned commit from GitHub (the repository is public)
+and checks it against the digest in `UPSTREAM.lock.json`; when `~/academic-harness` has the commit, it reads that instead, with `git
+archive`, and never writes in it. `--helpers` adds the optional Python helper environment (about 800 MB). `docs/USER-GUIDE.md` covers the
+settings, where things live and troubleshooting; `/academic doctor` says what is ready. `node scripts/update-upstream.mjs` reports what a
+newer upstream commit changes, and `--apply` takes it.
 
-Skills with non-commercial, GPL or unknown licences are left out (decision D5). A local build can
-keep them with `node scripts/build-all.mjs --include-restricted`; do not commit or share that build.
+`skills/`, `agents/` and `hooks/generated/` are committed, so they load without the snapshot; the `ah` server, the PaperMemory install and
+the on-demand skills need it. Skills with non-commercial, GPL or unknown licences are left out (decision D5). A local build can keep them
+with `node scripts/build-all.mjs --include-restricted`; do not commit or share that build.
 
 ## Tests
 
@@ -97,6 +91,8 @@ npx --yes -p typescript@5.6.3 tsc -p . --noEmit
 claude plugin test .                                   # hooks: research mode, the guard, approvals
 node --test "tests/scripts/*.test.mjs" "tests/server/*.test.mjs"   # builds, launcher, tool host, parity
 node scripts/measure-surface.mjs                       # host tools against what upstream registers
+node server/bin/ah-doctor.mjs                          # what is ready and what is not (also /academic doctor)
+node scripts/update-upstream.mjs                       # what a newer upstream commit changes for the mod
 node scripts/test-upstream.mjs [--all]                  # upstream's own tests (--all: every one but six about DSH itself)
 node scripts/test-engine.mjs [--all]                   # the engine's own pytest suite, in a venv under ~/.cache
 node tests/live/p2.mjs                                 # nested claude -p runs, about 4 cents
@@ -105,6 +101,7 @@ node tests/live/p4.mjs                                 # jobs, the model route, 
 node tests/live/p4-tui.mjs                             # tmux: a job ends, the notice appears, the model reports (about 10 cents)
 node tests/live/p3-tui.mjs                             # tmux: the guard and approvals with Claude Code's own dialogs (6 checks)
 node tests/live/p5.mjs                                 # task commands, errors, /fold, one deep research run from /ah-research
+node tests/live/p6.mjs                                 # the doctor in a session, a fresh clone with no checkout (network), the update procedure
 node tests/live/p5-tui.mjs                             # tmux: status line, the pane at three widths, a job from start to notice
 node tests/live/p1.mjs                                 # agents, skills, research mode, PaperMemory
 node tests/live/fit.mjs                                # the catalogue, restore_tools, papers searched with literature_search, an on-demand skill

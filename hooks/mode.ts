@@ -64,7 +64,7 @@ export async function addSection($: EngineInterface, options: PluginOptions, sec
   return [...sections.filter(s => s.id !== SECTION_ID), { id: SECTION_ID, text, scope: 'session' }]
 }
 
-export const USAGE = 'Usage: /academic [on | off | auto | status | pane]  (bare /academic opens the pane)'
+export const USAGE = 'Usage: /academic [on | off | auto | status | pane | doctor]  (bare /academic opens the pane)'
 
 /** The /academic command. Returns the text to show. */
 export async function run($: EngineInterface, options: PluginOptions, args: string): Promise<string> {

@@ -4,7 +4,7 @@ import { isDevMode, modHome } from './paths.mjs'
 
 export const KEY_ENV_PREFIX = 'AH_KEY_'
 
-/** Installers that stay off: the engine's (the mod builds it itself, engine-install.mjs), PaperMemory's (its launcher installs it) and zvec-grep's (P6). */
+/** Installers that stay off: the engine's (the mod builds it itself, engine-install.mjs), PaperMemory's (its launcher installs it) and zvec-grep's (dropped: server/src/fit.mjs). */
 const ALWAYS_SKIP = ['ACADEMIC_HARNESS_SKIP_INSTALL', 'PAPERMEMORY_SKIP_INSTALL', 'ZVEC_GREP_SKIP_INSTALL']
 /**
  * Installers that run in the background, into the mod's home, when a module that needs them is loaded (plan P2 step 6):

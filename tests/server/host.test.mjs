@@ -103,7 +103,8 @@ describe('manifest', () => {
   test('classification: tier 1 by area, host-only with a reason, everything else later', () => {
     assert.deepEqual(classify({ file: 'notebook.js' }), { tier: 1, area: 'notebook' })
     assert.equal(classify({ file: 'zvec-grep.js' }).tier, 'host-only')
-    assert.equal(classify({ file: 'rsi.js' }).tier, 'later')
+    assert.deepEqual(classify({ file: 'rsi.js' }), { tier: 'dropped', tool: 'ah_rsi', reason: classify({ file: 'rsi.js' }).reason })
+    assert.equal(classify({ file: 'a-module-nobody-classified.js' }).tier, 'later')
   })
   test('every tier-1 module exists in the snapshot and no module is in two groups', { skip: !existsSync(UP) }, () => {
     const found = discover(UP).map(e => e.file)
@@ -218,8 +219,13 @@ describe('exec', () => {
 })
 
 /** Spawn the server and talk to it. */
+// A test that fails before it closes its server must not leave the server running: `node --test` would wait for it for ever.
+const spawned = new Set()
+after(() => { for (const child of spawned) child.kill() })
+
 function client(env = {}, cwd = scratch) {
   const child = spawn(process.execPath, [BIN], { cwd, env: { ...process.env, AH_MOD_HOME: join(scratch, 'home'), AH_MANAGED_INSTALLS: '0', AH_AUTO_INSTALL: '0', CLAUDE_CODE_SESSION_ID: 'test-session', ...env }, stdio: ['pipe', 'pipe', 'pipe'] })
+  spawned.add(child)
   let buf = ''
   let err = ''
   const waiting = new Map()
@@ -341,7 +347,7 @@ describe('stdio server', { skip: !existsSync(join(UP, 'node_modules', 'ah-dsh-to
     const c = client({ AH_TOOL_AREAS: 'skills' })
     await c.rpc('initialize', {})
     const names = (await c.rpc('tools/list')).result.tools.map(t => t.name).sort()
-    assert.deepEqual(names, ['skill_load', 'skill_search'])
+    assert.deepEqual(names, ['doctor', 'skill_load', 'skill_search'], 'the areas, and the host\'s own doctor')
     await c.close()
   })
 

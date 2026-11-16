@@ -8,10 +8,10 @@
 import { spawn } from 'node:child_process'
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { delimiter, join } from 'node:path'
-import { engineDir, engineHash, engineStatus, STAMP_FILE, venvBin, venvPython } from './engine.mjs'
+import { engineDir, engineHash, engineStatus, INSTALLING_FILE, STAMP_FILE, venvBin, venvPython } from './engine.mjs'
 import { isDevMode, upstreamDir } from './paths.mjs'
 
-export const INSTALLING_FILE = '.ah-installing'
+export { INSTALLING_FILE }
 
 const which = (names, env = process.env) => {
   for (const name of names) for (const dir of (env.PATH || '').split(delimiter)) if (dir && existsSync(join(dir, name))) return join(dir, name)

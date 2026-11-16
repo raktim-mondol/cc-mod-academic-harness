@@ -3,6 +3,8 @@
   "commit": "a3f17eb8ae15221adeaa45cd19918c1f82f82973",
   "version": "0.54.1",
   "archiveSha256": "43e76005e39c6a3fbc35e0a3c75e7f46e9c68854af0495d83dbf6801b38b2ce5",
+  "treeSha256": "8513eb5ffac5f23dc75cc81f4d07085bc1ae20a4d121d0d0f05d372f1aad7aec",
+  "fileCount": 3276,
   "paths": [
     "package.json",
     "LICENSE",

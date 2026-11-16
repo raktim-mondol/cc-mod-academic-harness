@@ -3,6 +3,7 @@ import type { Register } from 'claude-code'
 import { registerApprovals } from './approvals'
 import { registerGuard } from './guard'
 import { startNotices } from './notices'
+import { doctorText } from './doctor'
 import { addSection, run, showStatus } from './mode'
 import { registerTaskCommands, registerTasks } from './tasks'
 import { openPane, registerUi, startUi } from './ui'
@@ -15,7 +16,7 @@ export const register: Register = (on, options) => {
     await showStatus($, options)
     await startNotices($, options, e.isInteractive === true)
     try {
-      await $.command.register({ name: 'academic', description: 'Research mode and the pane: on, off, auto, status; bare opens the pane' })
+      await $.command.register({ name: 'academic', description: 'Research mode and the pane: on, off, auto, status, doctor; bare opens the pane' })
     } catch {
       // A built-in or another plugin already has the name: carry on without the command.
     }
@@ -26,6 +27,7 @@ export const register: Register = (on, options) => {
 
   on('command.run', { command: 'academic' }, async ($, e) => {
     const word = (e.args ?? '').trim().toLowerCase()
+    if (word === 'doctor' || word === 'doctor --online') return { text: await doctorText($, word) }
     const text = await run($, options, e.args)
     return { text: word === '' || word === 'pane' ? `${text}\n${await openPane($, options)}` : text }
   })

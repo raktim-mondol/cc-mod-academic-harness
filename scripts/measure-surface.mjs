@@ -88,7 +88,7 @@ export async function compare({ upstream = upstreamDir() } = {}) {
   }
   const cleanup = () => rmSync(scratch, { recursive: true, force: true })
   // The host's own tools (jobtools.mjs) are not upstream's; they are checked by their own tests.
-  const hostTools = new Set(['job_status', 'job_wait', 'job_log', 'job_kill'])
+  const hostTools = new Set(['job_status', 'job_wait', 'job_log', 'job_kill', 'doctor'])
   const served = host.list().filter(t => !hostTools.has(t.name))
   const hostServed = host.list().filter(t => hostTools.has(t.name)).map(t => t.name)
   const mismatched = []

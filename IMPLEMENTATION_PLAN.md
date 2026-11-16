@@ -1,6 +1,6 @@
 # cc-mod-academic-harness: implementation plan
 
-Status: **P0 to P5 done, and a fit review** (2026-11-16). The fit review (`docs/FIT-REVIEW.md`) dropped 13 tools, 15 skills and 1 agent that Claude Code already covers, moved 17 skills to on-demand, and rewrote the research-mode text and the passages of the guides that were wrong for this host; where the plan below says otherwise (tool counts, `paper_mcp`, the skill count), the review is later. P0: the scaffold loads and the eight platform checks are answered in `docs/PLATFORM-NOTES.md`. P1: skills, research mode, PaperMemory and agents, results in `docs/P1-RESULTS.md`. P2: the tool host serves 35 tier-1 tools, results in `docs/P2-RESULTS.md`. P3: the writing engine and its guards; 38 `ah_*` tools (73 served in all), results in `docs/P3-RESULTS.md`. P4: 134 of 136 tools served plus 4 job tools, a jobs service, a model route and compute approvals, results in `docs/P4-RESULTS.md`. P5: the seven task commands, `/fold`, the status line and the pane, results in `docs/P5-RESULTS.md`. Sections below are unchanged from the plan as written, except where a P0 result corrected them (marked "P0 result").
+Status: **P0 to P6 done, and a fit review** (2026-11-16). P6 (`docs/P6-RESULTS.md`): zvec and `ah_rsi` dropped, a fresh clone works with no source checkout (`scripts/setup.mjs`), `/academic doctor`, an update procedure; the bundle, the extra agents and the marketplace were not built. The fit review (`docs/FIT-REVIEW.md`) dropped 13 tools, 15 skills and 1 agent that Claude Code already covers, moved 17 skills to on-demand, and rewrote the research-mode text and the passages of the guides that were wrong for this host; where the plan below says otherwise (tool counts, `paper_mcp`, the skill count), the review is later. P0: the scaffold loads and the eight platform checks are answered in `docs/PLATFORM-NOTES.md`. P1: skills, research mode, PaperMemory and agents, results in `docs/P1-RESULTS.md`. P2: the tool host serves 35 tier-1 tools, results in `docs/P2-RESULTS.md`. P3: the writing engine and its guards; 38 `ah_*` tools (73 served in all), results in `docs/P3-RESULTS.md`. P4: 134 of 136 tools served plus 4 job tools, a jobs service, a model route and compute approvals, results in `docs/P4-RESULTS.md`. P5: the seven task commands, `/fold`, the status line and the pane, results in `docs/P5-RESULTS.md`. Sections below are unchanged from the plan as written, except where a P0 result corrected them (marked "P0 result").
 
 | | |
 |---|---|
@@ -342,6 +342,8 @@ Work:
 8. Sharing, only when asked for: marketplace file and a secret scan first.
 
 **Exit:** a fresh clone works with `claude --plugin-dir` and no source checkout present. The update procedure has been run once against a newer upstream commit.
+
+**P6 result (2026-11-16):** met, with items 1 to 3 and 4's bundle decided against (`docs/P6-RESULTS.md`): both exit lines are `tests/live/p6.mjs` scenarios (`fresh`, `update`).
 
 ## 8. Verification summary
 

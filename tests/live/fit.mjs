@@ -5,7 +5,7 @@
 //   node tests/live/fit.mjs search_route    one or more by name
 //
 // catalogue     what Claude Code lists from the mod: 55 skills (the 15 duplicates of agents, of Anthropic's own skills and of provider docs are
-//               gone, the 17 niche ones are on demand), 21 agents, none of the 13 dropped tools, and the unified literature_search
+//               gone, the 17 niche ones are on demand), 21 agents, none of the 15 dropped tools, and the unified literature_search
 // restore       AH_RESTORE_TOOLS=brave_search brings that one tool back, and only that one
 // search_route  asked for papers, the model reaches for an academic search tool through ToolSearch, not for WebSearch (the guidance says which)
 // on_demand     a skill that is not in the catalogue is found with skill_search and read with skill_load
@@ -47,9 +47,9 @@ const scenarios = {
     assert.equal(agents.length, 21)
     assert.ok(agents.includes('academic-harness:peer-reviewer') && !agents.includes('academic-harness:pipeline-engineer'))
     const tools = i.tools.filter(t => t.startsWith(PREFIX)).map(t => t.slice(PREFIX.length))
-    for (const gone of ['brave_search', 'tavily_search', 'exa_search', 'perplexity_search', 'parallel_search', 'parallel_extract', 'consensus_search', 'elicit_search', 'scientific_result', 'fold_text', 'research_template', 'paper_mcp', 'latex_compile']) assert.ok(!tools.includes(gone), gone)
+    for (const gone of ['brave_search', 'tavily_search', 'exa_search', 'perplexity_search', 'parallel_search', 'parallel_extract', 'consensus_search', 'elicit_search', 'scientific_result', 'fold_text', 'research_template', 'paper_mcp', 'latex_compile', 'zvec_index', 'ah_rsi']) assert.ok(!tools.includes(gone), gone)
     for (const kept of ['literature_search', 'paper_get', 'jina_read', 'notebook', 'deep_research', 'ah_state', 'job_wait']) assert.ok(tools.includes(kept), kept)
-    return `${skills.length} skills, ${agents.length} agents, ${tools.length} ah tools; none of the 13 dropped tools, the unified search stays, ${cost(r)}`
+    return `${skills.length} skills, ${agents.length} agents, ${tools.length} ah tools; none of the 15 dropped tools, the unified search stays, ${cost(r)}`
   },
   restore() {
     const r = run('restore', 'Say hi in one word.', { env: { AH_RESTORE_TOOLS: 'brave_search,paper_mcp,nonsense' } })

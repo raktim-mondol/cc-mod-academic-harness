@@ -24,8 +24,13 @@ export const DROPPED_TOOLS = {
   fold_text: { module: 'fold-text.js', area: 'notebook', why: 'Folding a reply is `/fold` here; a model has no use for folding text it can summarise.' },
   research_template: { module: 'workflows.js', area: 'notebook', why: 'A catalogue of one-click prompts for DSH\'s chat boxes. Here the skills and the task commands do that job.' },
   paper_mcp: { module: 'paper-mcp.js', area: 'memory', restorable: false, why: 'Mounts MCP servers mid-session. Claude Code adds MCP servers itself (`claude mcp add`, `.mcp.json`) with its own approval.' },
+  zvec_index: { module: 'zvec-index.js', area: 'search', restorable: false, why: 'Semantic search over a workspace through a background daemon (an HTTP MCP server with its own lifecycle, an embedding provider and a first-run package install). Claude Code searches with Grep and Glob, PaperMemory indexes the papers, and the daemon is more to run than the corpora a researcher keeps in a folder warrant.' },
+  ah_rsi: { module: 'rsi.js', area: 'writing', restorable: false, why: 'A loop that records turns, writes its own lessons and injects them into later turns without asking. Claude Code has memory and CLAUDE.md, which the person controls, and PaperMemory keeps writing lessons on request (`papermemory_lesson`).' },
   latex_compile: { module: 'latex-compile.js', area: 'submission', why: 'A latexmk wrapper: Bash does it, and `ah_build` covers Academic Harness projects.' },
 }
+
+/** Settings fields no served tool reads: the zvec daemon and DSH's custom subagent routes (a Claude Code subagent takes a `model` instead). */
+export const NOT_OFFERED_KEY_FIELDS = [/^SUBAGENT_/, /^ZVEC_/]
 
 /** Skills not built into the plugin and not offered on demand either. */
 export const DROPPED_SKILLS = {

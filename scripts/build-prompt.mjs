@@ -120,7 +120,8 @@ export function assemble({ researchMode, guides }) {
   return [researchMode.trimEnd(), guideIndex(guides)].join('\n\n') + '\n'
 }
 
-const sha = text => createHash('sha256').update(String(text)).digest('hex').slice(0, 16)
+/** The digest `prompt-reviewed.json` and the update report use for a section's text. */
+export const sha = text => createHash('sha256').update(String(text)).digest('hex').slice(0, 16)
 
 function guideFile(g) {
   return [

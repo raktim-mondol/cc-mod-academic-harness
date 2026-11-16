@@ -12,9 +12,10 @@ test('the host serves exactly the tier-1 tools, each identical to what upstream 
   assert.deepEqual(r.notFromManifest, [], 'a module upstream registers that the manifest does not discover')
   assert.deepEqual(r.mismatched, [])
   assert.deepEqual(r.unexplained, [], 'a tier-1 tool that upstream registers but the host does not serve')
-  // 136 registered upstream, less 2 for later (zvec_index, ah_rsi) and 13 left out on purpose (server/src/fit.mjs)
-  assert.equal(r.served, 136 - 2 - Object.keys(DROPPED_TOOLS).length)
-  assert.deepEqual(r.hostServed.sort(), ['job_kill', 'job_log', 'job_status', 'job_wait'])
+  // 136 registered upstream, less the ones left out on purpose (server/src/fit.mjs); none is waiting for a later phase any more
+  assert.equal(r.served, 136 - Object.keys(DROPPED_TOOLS).length)
+  assert.equal(r.notServed.filter(n => n.tier === 'later').length, 0)
+  assert.deepEqual(r.hostServed.sort(), ['doctor', 'job_kill', 'job_log', 'job_status', 'job_wait'])
   assert.equal(r.upstreamTools, 136)
   assert.ok(r.notServed.every(n => n.tier === 'later' || n.tier === 'host-only' || n.tier === 'dropped'))
   assert.deepEqual(r.notServed.filter(n => n.tier === 'dropped').map(n => n.tool).sort(), Object.keys(DROPPED_TOOLS).sort())

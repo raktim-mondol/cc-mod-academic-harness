@@ -11,7 +11,8 @@
 // Each module is then classified:
 //   tier 1      loaded in P2, in one of the areas below
 //   host-only   needs the DSH host (system prompt, subagent registry, MCP mounts); never loaded here
-//   later       registers tools that need the jobs service, a model route, or an install (P4 to P6)
+//   dropped     left out on purpose (server/src/fit.mjs): Claude Code already does it, or it is DSH's own UI
+//   later       nothing now; a module upstream adds that nobody has classified yet lands here, and the parity check says so
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { DROPPED_TOOLS, restoreList } from './fit.mjs'
@@ -59,13 +60,13 @@ export const TIER1 = {
 export const HOST_ONLY = {
   'academic-task.js': 'task modes are slash commands in P5',
   'prompt-section.js': 'the system prompt is the research-mode section (P1)',
-  'subagent-models.js': 'subagent routing is agent definitions (P1, P6)',
+  'subagent-models.js': 'subagent routing: a Claude Code agent takes a `model` of its own',
   'subagent-list-compat.js': 'DSH subagent registry',
   'mcp-connectors.js': 'Firecrawl and Scite connectors are attached to Claude Code directly',
-  'zvec-grep.js': 'mount MCP server (P6)',
+  'zvec-grep.js': 'the zvec daemon: dropped (server/src/fit.mjs, zvec_index)',
   'papermemory.js': 'mount MCP server, the manifest runs papermemory-mcp.mjs (P1)',
   'academic-harness-hooks.js': 'writing-engine guards are function hooks (P3)',
-  'rsi-hooks.js': 'host events (D10, P6)',
+  'rsi-hooks.js': 'host events of the self-improvement loop: dropped (server/src/fit.mjs, ah_rsi; D10)',
 }
 
 const toFile = rel => rel.replace(/^\.\//, '')

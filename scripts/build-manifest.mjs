@@ -13,16 +13,10 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { DROPPED_KEY_FIELDS } from '../server/src/fit.mjs'
+import { DROPPED_KEY_FIELDS, DROPPED_TOOLS, NOT_OFFERED_KEY_FIELDS } from '../server/src/fit.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const manifestPath = join(root, '.claude-plugin', 'plugin.json')
-
-/** Fields whose tools the host does not load yet. Each phase removes lines from here. */
-export const NOT_YET = [
-  /^SUBAGENT_/, // P6: agent definitions
-  /^ZVEC_/, // P6: the zvec-grep mount
-]
 
 const DESCRIPTIONS = {
   UNPAYWALL_EMAIL: 'Contact address sent to Unpaywall. Unpaywall asks for one; it is not a secret.',
@@ -35,7 +29,7 @@ const pretty = name => name.replace(/_/g, ' ').toLowerCase().replace(/\b(api|id|
 export async function keyFields(upstream = join(root, 'upstream')) {
   const mod = await import(pathToFileURL(join(upstream, 'settings-keys.js')).href)
   // A field only a dropped tool reads is not offered (server/src/fit.mjs); a shell variable still reaches a restored tool.
-  return mod.KEY_FIELDS.filter(f => !NOT_YET.some(re => re.test(f)) && !DROPPED_KEY_FIELDS.has(f)).map(name => ({ name, secret: mod.SECRET_FIELDS.has(name) }))
+  return mod.KEY_FIELDS.filter(f => !NOT_OFFERED_KEY_FIELDS.some(re => re.test(f)) && !DROPPED_KEY_FIELDS.has(f)).map(name => ({ name, secret: mod.SECRET_FIELDS.has(name) }))
 }
 
 export async function build(manifest) {
@@ -62,7 +56,7 @@ export async function build(manifest) {
   userConfig.restore_tools = {
     type: 'string',
     title: 'Tools to bring back',
-    description: 'Tools this plugin leaves out because Claude Code already does the job (see docs/FIT-REVIEW.md): brave_search, tavily_search, exa_search, perplexity_search, parallel_search, parallel_extract, consensus_search, elicit_search, scientific_result, fold_text, research_template, latex_compile. Comma separated; the tool\'s API key is then read from its environment variable.',
+    description: `Tools this plugin leaves out because Claude Code already does the job (see docs/FIT-REVIEW.md): ${Object.entries(DROPPED_TOOLS).filter(([, t]) => t.restorable !== false).map(([n]) => n).join(', ')}. Comma separated; the tool's API key is then read from its environment variable.`,
     default: '',
   }
   userConfig.llm_model = {
