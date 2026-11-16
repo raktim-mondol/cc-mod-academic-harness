@@ -83,7 +83,7 @@ It adds what only Claude Code has: commands, a pane and a status line, the guard
 
 ## Licences
 
-Code written for the plugin is MIT (`LICENSE`). The research engine, tools and skills it runs come from Academic Harness, a public MIT repository (Copyright 2026 ResearchCraft); the plugin fetches the pinned commit on first start, so none of that code is committed here, and upstream's own `NOTICE` travels with the download.
+Code written for the plugin is MIT (`LICENSE`). The research engine, tools and skills it runs come from Academic Harness, a public MIT repository (Copyright 2026 Academic Harness, formerly ResearchCraft); the plugin fetches the pinned commit on first start, so none of that code is committed here, and upstream's own `NOTICE` travels with the download.
 
 What is committed is `skills/` and `agents/`, generated from the snapshot. The review of their licences was settled on 2026-11-16, when the repository was made public:
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- The README has an architecture diagram (`docs/assets/architecture.mmd`, rendered to SVG with Pele), says the repository is public, and the copyright holder is named Academic Harness (formerly ResearchCraft) in `LICENSE`, `NOTICE` and the architecture page. The getting-started page and `CONTRIBUTING.md` no longer say the repository is private.
+
 ## 0.4.0 (2026-11-16)
 
 - **Licence review, with the repository made public.** `NOTICE` now credits what is copied from other projects: the K-Dense MIT skills with their copyright lines, three Supervisor-Skills skills under CC BY 4.0 (with their changes), and the one reference file adapted from Wikipedia under CC BY-SA 4.0, and says what the plugin downloads on first start and under whose licences. The README and the architecture page say the same, and `tests/scripts/repo.test.mjs` fails when a copied skill's licence is not one the build allows or is missing from `NOTICE`.

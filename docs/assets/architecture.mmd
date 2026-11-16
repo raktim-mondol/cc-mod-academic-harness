@@ -1,0 +1,16 @@
+flowchart TB
+  subgraph CC["Claude Code session"]
+    direction TB
+    H["Hooks module<br/>commands, research mode,<br/>status line, pane,<br/>guard, approvals"]
+    AH["MCP server ah<br/>126 tools, jobs, doctor"]
+    PM["MCP server papermemory<br/>paper library"]
+    SK["Skills and agents<br/>54 skills, 21 specialists"]
+  end
+  H -->|"process.run"| BIN["Node helpers<br/>ah-hook, ah-approve, ah-ui, ah-doctor"]
+  BIN --> ENG["Writing engine<br/>Python, ah_* tools"]
+  AH -->|"loads tool modules"| UP[("Academic Harness snapshot<br/>pinned by UPSTREAM.lock.json")]
+  AH -->|"long tools run as"| JOBS["Background jobs"]
+  AH -->|"model route"| CLI["claude -p"]
+  UP -.->|"fetched on first start"| GH["github.com/raktim-mondol/academic-harness"]
+  ENG --- UP
+  PM --> LIB[("PaperMemory library")]

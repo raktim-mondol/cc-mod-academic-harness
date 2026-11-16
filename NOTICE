@@ -11,7 +11,7 @@ generated agents/ and the build tooling) is under the MIT License in LICENSE.
 Upstream
 --------
 
-Academic Harness, MIT License, Copyright (c) 2026 ResearchCraft,
+Academic Harness, MIT License, Copyright (c) 2026 Academic Harness (formerly ResearchCraft),
 https://github.com/raktim-mondol/academic-harness.
 
 Its tool modules, writing engine, PaperMemory and prompt are NOT in this
