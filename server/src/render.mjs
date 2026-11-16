@@ -4,10 +4,29 @@
 // (MAX_MCP_OUTPUT_TOKENS), so a result longer than `maxChars` is cut: the head stays in the reply and
 // the whole text goes to a file under <cwd>/.dsh/tool-output/, named in the reply. The model can read
 // the file with its own tools.
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 export const DEFAULT_MAX_CHARS = 40_000
+/** How long a clipped result stays in <cwd>/.dsh/tool-output/ (AH_TOOL_OUTPUT_KEEP_DAYS; 0 keeps them all). */
+export const DEFAULT_OUTPUT_KEEP_DAYS = 30
+
+/** Remove the `.txt` files of `dir` last written more than `keepDays` ago. Returns how many. Never throws: housekeeping must not fail a call. */
+export function pruneOutputDir(dir, { keepDays = DEFAULT_OUTPUT_KEEP_DAYS, now = Date.now() } = {}) {
+  if (!(keepDays > 0)) return 0
+  const cutoff = now - keepDays * 24 * 60 * 60 * 1000
+  let removed = 0
+  try {
+    for (const name of readdirSync(dir)) {
+      if (!name.endsWith('.txt')) continue
+      const file = join(dir, name)
+      try {
+        if (statSync(file).mtimeMs < cutoff) { rmSync(file, { force: true }); removed++ }
+      } catch { /* gone already, or another server removed it */ }
+    }
+  } catch { /* no folder */ }
+  return removed
+}
 
 const safe = s => String(s).replace(/[^A-Za-z0-9._-]/g, '_').slice(0, 80)
 
@@ -40,7 +59,7 @@ export function blocksToContent(blocks) {
   return out.length ? out : [{ type: 'text', text: '' }]
 }
 
-export function clip(content, { maxChars = DEFAULT_MAX_CHARS, cwd, tool, callId, now = Date.now() } = {}) {
+export function clip(content, { maxChars = DEFAULT_MAX_CHARS, cwd, tool, callId, now = Date.now(), keepDays = DEFAULT_OUTPUT_KEEP_DAYS } = {}) {
   const textLen = content.reduce((n, c) => n + (c.type === 'text' ? c.text.length : 0), 0)
   if (!(maxChars > 0) || textLen <= maxChars) return { content, clipped: false }
   const full = content.filter(c => c.type === 'text').map(c => c.text).join('\n')
@@ -49,6 +68,7 @@ export function clip(content, { maxChars = DEFAULT_MAX_CHARS, cwd, tool, callId,
   try {
     const dir = join(cwd, '.dsh', 'tool-output')
     mkdirSync(dir, { recursive: true })
+    pruneOutputDir(dir, { keepDays, now })
     where = join(dir, `${safe(tool)}-${safe(callId ?? now)}.txt`)
     writeFileSync(where, full)
   } catch { /* the head alone still answers; say the file could not be written */ }

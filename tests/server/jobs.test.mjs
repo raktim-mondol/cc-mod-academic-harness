@@ -116,10 +116,10 @@ describe('upstream runAsJob over this service', { skip: !HAVE_UP }, () => {
 function fakeClaude(name) {
   const file = join(root, name)
   writeFileSync(file, `#!/usr/bin/env node
-import { appendFileSync } from 'node:fs'
+import { appendFileSync, readFileSync } from 'node:fs'
 let stdin = ''
 for await (const c of process.stdin) stdin += c
-if (process.env.FAKE_LOG) appendFileSync(process.env.FAKE_LOG, JSON.stringify({ argv: process.argv.slice(2), stdin, maxTokens: process.env.CLAUDE_CODE_MAX_OUTPUT_TOKENS ?? null }) + '\\n')
+const sf = process.argv.indexOf('--system-prompt-file')\nif (process.env.FAKE_LOG) appendFileSync(process.env.FAKE_LOG, JSON.stringify({ argv: process.argv.slice(2), stdin, maxTokens: process.env.CLAUDE_CODE_MAX_OUTPUT_TOKENS ?? null, systemFile: sf >= 0 ? process.argv[sf + 1] : null, systemFileText: sf >= 0 ? readFileSync(process.argv[sf + 1], 'utf8') : null }) + '\\n')
 if (process.env.FAKE_SLEEP) await new Promise(r => setTimeout(r, Number(process.env.FAKE_SLEEP)))
 if (process.env.FAKE_RAW) { process.stdout.write(process.env.FAKE_RAW); process.exit(Number(process.env.FAKE_EXIT ?? 0)) }
 process.stdout.write(JSON.stringify({ type: 'result', subtype: 'success', is_error: false, result: process.env.FAKE_TEXT ?? 'hello', stop_reason: process.env.FAKE_STOP ?? 'end_turn', total_cost_usd: Number(process.env.FAKE_COST ?? 0.01), usage: { input_tokens: 3, cache_creation_input_tokens: 100, cache_read_input_tokens: 7, output_tokens: 5 } }))
@@ -201,6 +201,63 @@ describe('model route', () => {
     const t = Date.now()
     await Promise.all([1, 2, 3, 4].map(() => collect(m.stream({ messages: [{ role: 'user', content: 'x' }] }))))
     assert.ok(Date.now() - t >= 450, 'four calls of 250 ms through two slots take at least two rounds')
+  })
+
+  const logged = file => readFileSync(file, 'utf8').trim().split('\n').map(l => JSON.parse(l))
+  const capOf = entry => Number(entry.argv[entry.argv.indexOf('--max-budget-usd') + 1])
+
+  test('calls that run together reserve their caps: together they are never allowed more than is left', async () => {
+    const log = join(root, 'llm-reserve.log')
+    // a $1 budget and a $0.6 cap per call: the first two may start together (0.6 + 0.4), the others wait for one to end
+    const m = llm({ env: { FAKE_SLEEP: '200', FAKE_COST: '0', FAKE_LOG: log }, budgetUsd: 1, callBudgetUsd: 0.6, concurrency: 4 })
+    const results = await Promise.all([1, 2, 3, 4].map(() => collect(m.stream({ messages: [{ role: 'user', content: 'x' }] }))))
+    for (const r of results) assert.equal(r.at(-1).reason.kind, 'stop')
+    const caps = logged(log).map(capOf)
+    assert.equal(caps.length, 4)
+    assert.ok(caps[0] + caps[1] <= 1.0001, `the first two caps (${caps[0]}, ${caps[1]}) fit in the budget`)
+    assert.ok(caps.every(c => c > 0 && c <= 0.6001))
+    assert.equal(m.stats().reservedUsd, 0, 'nothing stays reserved')
+  })
+
+  test('a call that waited for the budget and finds it spent fails with the message that says so', async () => {
+    const m = llm({ env: { FAKE_SLEEP: '150', FAKE_COST: '0.6' }, budgetUsd: 0.5, callBudgetUsd: 0.5, concurrency: 2 })
+    const [first, second] = await Promise.all([1, 2].map(() => collect(m.stream({ messages: [{ role: 'user', content: 'x' }] }))))
+    assert.equal(first.at(-1).reason.kind, 'stop')
+    assert.equal(second.length, 1)
+    assert.match(second[0].reason.failure.message, /budget for this server is used up/)
+    assert.equal(m.stats().calls, 1)
+    assert.equal(m.stats().reservedUsd, 0)
+  })
+
+  test('a call that waits for the budget can be cancelled', async () => {
+    const m = llm({ env: { FAKE_SLEEP: '800', FAKE_COST: '0' }, budgetUsd: 0.5, callBudgetUsd: 0.5, concurrency: 2 })
+    const c = new AbortController()
+    const holding = collect(m.stream({ messages: [{ role: 'user', content: 'x' }] }))
+    await sleep(100)
+    const t = Date.now()
+    const waiting = collect(m.stream({ messages: [{ role: 'user', content: 'x' }], signal: c.signal }))
+    setTimeout(() => c.abort('stop'), 100)
+    const chunks = await waiting
+    assert.equal(chunks.at(-1).reason.kind, 'aborted')
+    assert.ok(Date.now() - t < 600, 'it did not wait for the call that holds the budget')
+    await holding
+  })
+
+  test('a long system prompt goes by file, which the child can read and which is gone afterwards; a short one stays an argument', async () => {
+    const log = join(root, 'llm-system.log')
+    const home = join(root, 'llm-home')
+    const env = { FAKE_LOG: log, AH_MOD_HOME: home }
+    const long = 'long system prompt. '.repeat(2000)
+    await collect(llm({ env }).stream({ system: long, messages: [{ role: 'user', content: 'x' }] }))
+    await collect(llm({ env }).stream({ system: 'short', messages: [{ role: 'user', content: 'x' }] }))
+    const [a, b] = logged(log)
+    assert.equal(a.argv.includes('--system-prompt'), false)
+    assert.equal(a.argv.includes('--system-prompt-file'), true)
+    assert.equal(a.systemFileText, long, 'the child read the whole prompt')
+    assert.ok(a.systemFile.startsWith(join(home, 'tmp')), 'under the mod\'s home')
+    assert.equal(existsSync(a.systemFile), false, 'removed when the child ended')
+    assert.equal(b.argv[b.argv.indexOf('--system-prompt') + 1], 'short')
+    assert.equal(b.systemFile, null)
   })
 })
 

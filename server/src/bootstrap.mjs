@@ -5,11 +5,12 @@
 // follows (late-host.mjs, then tools/list_changed).
 import { spawn } from 'node:child_process'
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { readdir, rm, stat, utimes } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { sync } from '../../scripts/sync-upstream.mjs'
 import { claim, clearState, readState, writeState } from './bootstrap-state.mjs'
-import { isDevMode, modHome, modRoot, upstreamDir } from './paths.mjs'
+import { fetchedUpstreamDir, isDevMode, modHome, modRoot, upstreamDir } from './paths.mjs'
 import { checkSnapshot } from './snapshot.mjs'
 
 const STAMP = '.ah-lock-sha256'
@@ -88,3 +89,39 @@ export async function bootstrap({ env = process.env, root = modRoot(), fetchTarb
   }
 }
 
+
+export const DEFAULT_SNAPSHOT_KEEP_DAYS = 7
+
+/**
+ * Remove the snapshots in <home>/upstream/ that an update left behind: every folder other than the one for the locked commit and the one in
+ * use, that has not been used for `keepDays` days (AH_SNAPSHOT_KEEP_DAYS; 0 keeps them all). Each is about 170 MB with its dependencies and the
+ * engine's environment. A server that runs from its folder marks it used when it starts, so a session of an older plugin version that is
+ * still open is not cut from under it; an interrupted fetch's staging folder goes the same way. Asynchronous, so a start does not wait for it.
+ * Resolves the names removed. Never throws.
+ */
+export async function pruneOldSnapshots({ env = process.env, root = modRoot(), keepDays, now = Date.now() } = {}) {
+  try {
+    if (isDevMode(env)) return []
+    const raw = env.AH_SNAPSHOT_KEEP_DAYS?.trim()
+    const days = keepDays ?? (raw !== undefined && raw !== '' && Number(raw) >= 0 ? Number(raw) : DEFAULT_SNAPSHOT_KEEP_DAYS)
+    if (!(days > 0)) return []
+    const base = join(modHome(env), 'upstream')
+    const locked = resolve(fetchedUpstreamDir(env, root))
+    const inUse = resolve(upstreamDir(env, root))
+    if (inUse === locked) { const t = new Date(now); await utimes(locked, t, t).catch(() => {}) }
+    const cutoff = now - days * 24 * 60 * 60 * 1000
+    const removed = []
+    for (const entry of await readdir(base, { withFileTypes: true }).catch(() => [])) {
+      if (!entry.isDirectory()) continue
+      const path = resolve(base, entry.name)
+      if (path === locked || path === inUse) continue
+      const { mtimeMs } = await stat(path)
+      if (mtimeMs >= cutoff) continue
+      await rm(path, { recursive: true, force: true })
+      removed.push(entry.name)
+    }
+    return removed
+  } catch {
+    return []
+  }
+}

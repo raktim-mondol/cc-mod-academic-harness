@@ -2,13 +2,13 @@
 // for npm), two servers starting together, the doctor's view of it, and a host that is swapped for the full one while the server is running.
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { PassThrough } from 'node:stream'
 import { after, before, describe, test } from 'node:test'
 import { sync } from '../../scripts/sync-upstream.mjs'
-import { bootstrap } from '../../server/src/bootstrap.mjs'
+import { bootstrap, pruneOldSnapshots } from '../../server/src/bootstrap.mjs'
 import { claim, clearState, readState, stateFile, writeState } from '../../server/src/bootstrap-state.mjs'
 import { Registry } from '../../server/src/context.mjs'
 import { diagnose } from '../../server/src/doctor.mjs'
@@ -242,5 +242,49 @@ describe('the doctor after a failed fetch was repaired by hand', () => {
     assert.match(broken.checks.find(c => c.id === 'snapshot').detail, /first-start fetch failed/)
     const repaired = await diagnose({ env, root: plugin, upstream: up, home: join(root, 'home-stale') })
     assert.doesNotMatch(repaired.checks.find(c => c.id === 'snapshot').detail, /fetch failed/)
+  })
+})
+
+describe('snapshots an update left behind', () => {
+  const day = 24 * 60 * 60 * 1000
+  const made = (base, name, days) => {
+    const dir = join(base, name)
+    mkdirSync(join(dir, 'node_modules'), { recursive: true })
+    writeFileSync(join(dir, 'package.json'), '{"name":"x","version":"1.0.0"}')
+    const t = new Date(Date.now() - days * day)
+    utimesSync(dir, t, t)
+    return dir
+  }
+
+  test('an old folder that is not the locked commit goes; the locked one, the one in use and recent ones stay', async () => {
+    const env = envFor('home-prune')
+    const base = join(root, 'home-prune', 'upstream')
+    const locked = fetchedUpstreamDir(env, plugin)
+    mkdirSync(base, { recursive: true })
+    const lockedDir = made(base, locked.split('/').pop(), 40)
+    const oldDir = made(base, 'aaaaaaaaaaaa', 20)
+    const staging = made(base, 'bbbbbbbbbbbb.staging', 9)
+    const recentDir = made(base, 'cccccccccccc', 2)
+    writeFileSync(join(base, 'a-stray-file'), 'x')
+    const gone = await pruneOldSnapshots({ env, root: plugin })
+    assert.deepEqual(gone.sort(), ['aaaaaaaaaaaa', 'bbbbbbbbbbbb.staging'])
+    assert.equal(existsSync(oldDir), false)
+    assert.equal(existsSync(staging), false, 'an interrupted fetch\'s staging folder goes the same way')
+    assert.equal(existsSync(recentDir), true, 'used inside the keep time')
+    assert.equal(existsSync(lockedDir), true, 'the locked commit is never removed, however old')
+    assert.ok(existsSync(join(base, 'a-stray-file')), 'only folders are considered')
+    assert.ok(Date.now() - statSync(lockedDir).mtimeMs < 60_000, 'a server running from its folder marks it used')
+  })
+
+  test('0 keeps everything; a development checkout and a missing folder are left alone', async () => {
+    const env = envFor('home-prune-2')
+    const base = join(root, 'home-prune-2', 'upstream')
+    mkdirSync(base, { recursive: true })
+    const oldDir = made(base, 'dddddddddddd', 60)
+    assert.deepEqual(await pruneOldSnapshots({ env: { ...env, AH_SNAPSHOT_KEEP_DAYS: '0' }, root: plugin }), [])
+    assert.deepEqual(await pruneOldSnapshots({ env: { ...env, AH_UPSTREAM: root }, root: plugin }), [])
+    assert.equal(existsSync(oldDir), true)
+    assert.deepEqual(await pruneOldSnapshots({ env: envFor('home-never-made'), root: plugin }), [])
+    assert.deepEqual(await pruneOldSnapshots({ env: { ...env, AH_SNAPSHOT_KEEP_DAYS: '30' }, root: plugin }), ['dddddddddddd'])
   })
 })

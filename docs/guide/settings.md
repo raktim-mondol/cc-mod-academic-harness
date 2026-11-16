@@ -10,7 +10,7 @@ Set the settings where Claude Code configures plugin options (they are the plugi
 | `tool_areas` | `all` | Which tool groups load; see [Tools](tools-skills-agents.md) for the names |
 | `restore_tools` | empty | Tools the plugin leaves out, to bring back by name. The shell variable `AH_RESTORE_TOOLS` does the same. A restored tool reads its key from its environment variable. `paper_mcp`, `zvec_index` and `ah_rsi` cannot come back: their machinery is gone |
 | `llm_model` | `sonnet` | The model of the tools that call a model (the alias or id passed to `--model`) |
-| `llm_budget_usd` | `5` | The most the model route spends in one server run; one call is also capped at 1 USD |
+| `llm_budget_usd` | `5` | The most the model route spends in one server run; one call is also capped at 1 USD. Calls that run together reserve their caps, so together they can never be allowed more than is left |
 | `job_notices` | `prompt` | When a background job ends: `prompt` notifies you and prompts the model to read the result, `notify` only notifies, `off` neither (`job_status` and `job_wait` still work). Interactive sessions only |
 | `evidence_check` | `skip` | `run` makes the stop gate, in an `ah.yaml` project, check with a model the sources the turn's paragraphs cite (one call per paragraph, advisory) |
 | `compute_session_cap_usd` | empty | Cap on rented compute in one session |
@@ -38,6 +38,8 @@ The others unlock one source or tool each: Consensus, Scite and Firecrawl as sou
 | `AH_BOOTSTRAP=0` | Do not fetch the source snapshot on first start; the server exits and says what to run |
 | `AH_JOB_FOREGROUND_MS` | How long a long tool holds the call before going on as a job. A headless `claude -p "/ah-research ..."` ends the session when the command returns, so set it high there |
 | `AH_JOBS_KEEP_DAYS` | How long the record and log of a job that has ended are kept (default 30 days; `0` keeps them all). Old ones are removed when a server starts |
+| `AH_TOOL_OUTPUT_KEEP_DAYS` | How long the full text of a clipped tool result stays in `<project>/.dsh/tool-output/` (default 30 days; `0` keeps it all). Older files are removed when a new one is written |
+| `AH_SNAPSHOT_KEEP_DAYS` | How long a source snapshot that an update left in the mod's home is kept after its last use (default 7 days; `0` keeps them all). The locked commit's is never removed |
 | `AH_NO_ENFORCE=1` | Work in an `ah.yaml` project without the guard: edits and shell commands are not checked. Set it in the shell before starting Claude Code. It also holds when the engine cannot run |
 | `AH_LLM_MODEL`, `AH_LLM_BUDGET_USD` | The model route, from the shell |
 | `AH_SOURCE` | A local Academic Harness checkout that `setup` and `update-upstream` read before going to GitHub (default `~/academic-harness`) |

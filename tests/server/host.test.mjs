@@ -2,7 +2,7 @@
 // Scratch state lives under ~/.cache (plan ground rule 4).
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -12,7 +12,7 @@ import { applyKeyEnv, MANAGED_INSTALLS, prepareEnv } from '../../server/src/env.
 import { createContext, Registry, UnportedServiceError } from '../../server/src/context.mjs'
 import { makeExec } from '../../server/src/exec.mjs'
 import { classify, discover, indexComponents, parseAreas, plan, presetModules, AREAS, TIER1, HOST_ONLY } from '../../server/src/manifest.mjs'
-import { adapt, blocksToContent, clip, fixSkillSearch } from '../../server/src/render.mjs'
+import { adapt, blocksToContent, clip, fixSkillSearch, pruneOutputDir } from '../../server/src/render.mjs'
 import { toInputSchema } from '../../server/src/schema.mjs'
 import { upstreamDir } from '../../server/src/paths.mjs'
 import { hostOver, serve } from '../../server/src/host.mjs'
@@ -145,6 +145,24 @@ describe('render', () => {
     assert.ok(long.file.startsWith(join(scratch, '.dsh', 'tool-output')))
     assert.equal(readFileSync(long.file, 'utf8').length, 100)
     assert.match(long.content[0].text, /^x{10}\n\n\[output clipped: 100 characters, showing the first 10\. The full text is in /)
+  })
+  test('clipped results older than the keep time are removed when a new one is written; other files and recent ones stay', () => {
+    const cwd = join(scratch, 'prune-output')
+    const dir = join(cwd, '.dsh', 'tool-output')
+    mkdirSync(dir, { recursive: true })
+    const day = 24 * 60 * 60 * 1000
+    const aged = (name, days) => { const f = join(dir, name); writeFileSync(f, 'x'); const t = new Date(Date.now() - days * day); utimesSync(f, t, t); return f }
+    const old = aged('old-tool-call.txt', 40)
+    const recent = aged('recent-tool-call.txt', 5)
+    const other = aged('notes.md', 90)
+    clip([{ type: 'text', text: 'z'.repeat(100) }], { maxChars: 10, cwd, tool: 't', callId: 'new' })
+    assert.equal(existsSync(old), false)
+    assert.equal(existsSync(recent), true)
+    assert.equal(existsSync(other), true, 'only the .txt files of clipped results are touched')
+    assert.equal(existsSync(join(dir, 't-new.txt')), true)
+    assert.equal(pruneOutputDir(dir, { keepDays: 0 }), 0, '0 keeps everything')
+    assert.equal(pruneOutputDir(dir, { keepDays: 1 }), 1, 'a stricter keep time removes the 5-day-old one, not the one just written')
+    assert.equal(pruneOutputDir(join(scratch, 'no-such-folder')), 0)
   })
   test('if the file cannot be written the note says so and the head is still returned', () => {
     const notADir = join(scratch, 'a-file')

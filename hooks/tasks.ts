@@ -41,18 +41,31 @@ function clip(text: string, limit = OUTPUT_LIMIT): string {
 
 const usage = (task: TaskId): string => `Usage: /${TASK_COMMANDS[task]} ${TASK_USAGE[task]}`
 
-/** Every file a task names must be a file inside the folder, at most 50 MB (upstream's checks, in its words). */
+/**
+ * Every file a task names must be a file inside the folder, at most 50 MB (upstream's checks, in its words). The path is checked as written
+ * (`..` folded) and then again where it really lands, so a symbolic link inside the folder cannot lead a command to a file outside it.
+ */
 async function checkFiles($: EngineInterface, cwd: string, files: readonly string[]): Promise<string | null> {
+  let root = cwd
+  if (files.length > 0) {
+    try {
+      root = (await $.fs.stat(cwd, { resolve: true })).realPath ?? cwd // the session folder may itself be reached through a link
+    } catch {
+      root = cwd
+    }
+  }
   for (const path of files) {
     const at = insideWorkspace(cwd, path)
     if (!at.ok) return at.error
     let stat
     try {
-      stat = await $.fs.stat(at.abs)
+      stat = await $.fs.stat(at.abs, { resolve: true })
     } catch {
       return `file not found: ${path}`
     }
     if (stat.kind !== 'file') return `not a file: ${path}`
+    if (stat.realPath === undefined) return `cannot tell where ${path} leads, so it was not used`
+    if (!insideWorkspace(root, stat.realPath).ok) return `${path} is a link that leads outside the workspace (to ${stat.realPath}); copy the file into the folder to use it`
     if (stat.size > FILE_LIMIT_BYTES) return `file is larger than 50 MB: ${path}`
   }
   return null

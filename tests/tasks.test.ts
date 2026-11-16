@@ -9,7 +9,7 @@ const P = 'mcp__plugin_academic-harness_ah__'
 type Answer = Record<string, unknown>
 type Call = { tool: string; input: Answer }
 
-function world(on: any, opts: { cwd?: string; files?: Record<string, { size?: number; kind?: string }>; answer?: (tool: string, input: Answer, n: number) => Answer; messages?: unknown[] } = {}) {
+function world(on: any, opts: { cwd?: string; folderReal?: string; files?: Record<string, { size?: number; kind?: string; real?: string | null }>; answer?: (tool: string, input: Answer, n: number) => Answer; messages?: unknown[] } = {}) {
   const cwd = opts.cwd ?? '/p'
   const files = opts.files ?? {}
   const calls: Call[] = []
@@ -17,10 +17,12 @@ function world(on: any, opts: { cwd?: string; files?: Record<string, { size?: nu
   on('session.cwd', () => ({ value: cwd }))
   on('session.id', () => ({ value: 'sess-1' }))
   on('session.messages', () => ({ value: opts.messages ?? [] }))
-  on('fs.stat', (_: unknown, e: { path: string }) => {
-    const f = files[e.path]
+  on('fs.stat', (_: unknown, e: { path: string; resolve?: boolean }) => {
+    // the session folder itself is asked for where it lands, and lands where it is
+    const f = e.path === cwd ? { kind: 'dir' } as { kind?: string; size?: number; real?: string | null } : files[e.path]
     if (!f) throw new Error(`ENOENT: ${e.path}`)
-    return { value: { kind: f.kind ?? 'file', size: f.size ?? 100, mtimeMs: 1, isLink: false } }
+    const real = e.path === cwd ? (opts.folderReal ?? cwd) : f.real === undefined ? e.path : f.real
+    return { value: { kind: f.kind ?? 'file', size: f.size ?? 100, mtimeMs: 1, isLink: f.real !== undefined, ...(e.resolve && real !== null ? { realPath: real } : {}) } }
   })
   on('command.register', (_: unknown, e: { name: string }) => {
     commands.push(e.name)
@@ -119,6 +121,27 @@ test('an empty line, a bad effort and a missing file are refused before any tool
   const notFile = await run($, 'ah-review', 'd')
   expect(notFile.text).toContain('not a file: d')
   expect(w.calls.length).toBe(0)
+})
+
+test('a link inside the folder that leads outside it is refused; one that stays inside, and a folder reached through a link, are not', async ($, on) => {
+  const w = world(on, { files: { '/p/out.tex': { real: '/etc/secret.tex' }, '/p/in.tex': { real: '/p/sub/real.tex' }, '/p/lost.tex': { real: null }, '/p/a.tex': {}, '/p/b.tex': {} } })
+  await start($)
+  const out = await run($, 'ah-review', 'out.tex')
+  expect(out.text).toContain('is a link that leads outside the workspace')
+  expect(out.text).toContain('/etc/secret.tex')
+  const lost = await run($, 'ah-review', 'lost.tex')
+  expect(lost.text).toContain('cannot tell where lost.tex leads')
+  expect(w.calls.length).toBe(0)
+  await run($, 'ah-review', 'in.tex')
+  expect(w.calls.length).toBe(1)
+})
+
+test('the session folder reached through a link is compared by where it really is', async ($, on) => {
+  // /p is a link to /real/p: the file's real path is under /real/p, which is the folder's own real path
+  const w = world(on, { folderReal: '/real/p', files: { '/p/a.tex': { real: '/real/p/a.tex' } } })
+  await start($)
+  await run($, 'ah-review', 'a.tex')
+  expect(w.calls.length).toBe(1)
 })
 
 test('a file over 50 MB is refused; a two-line task takes " -- " for the break', async ($, on) => {

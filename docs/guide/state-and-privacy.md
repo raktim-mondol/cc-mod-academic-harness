@@ -6,12 +6,13 @@ What the mod reads, what it writes and where, and what it can spend.
 
 | What | Where |
 |---|---|
-| The source snapshot, its dependencies and the writing engine's environment | `<plugin>/upstream/` in a set-up clone, or `<home>/upstream/<commit>/` in an installed copy |
+| The source snapshot, its dependencies and the writing engine's environment | `<plugin>/upstream/` in a set-up clone, or `<home>/upstream/<commit>/` in an installed copy (the folder of an earlier commit goes a week after its last use) |
 | PaperMemory's CLI, TextFold, job records and logs, the compute ledger, the first-start state | `~/.local/share/cc-mod-academic-harness/home/` (`AH_MOD_HOME`) |
 | The PaperMemory library | `~/.local/share/papermemory/papermemory.db`, shared by every tool on this machine that uses PaperMemory |
 | A project's notebook and research ledgers | `<project>/.dsh/` (the folder name is fixed by the tools) |
 | The writing engine's state, and the guard's log | `<project>/.ah/` (`claude-hooks.jsonl`) |
-| A tool result longer than 40,000 characters, in full | `<project>/.dsh/tool-output/` |
+| A tool result longer than 40,000 characters, in full | `<project>/.dsh/tool-output/`, removed after 30 days (`AH_TOOL_OUTPUT_KEEP_DAYS`) |
+| A system prompt over 30,000 characters, while a model call that needs it runs | `<home>/tmp/`, removed when the call ends |
 | The `/academic on\|off` override, the pane's data, which job notices were shown | Claude Code's plugin state for the session; nothing of the mod's on disk |
 
 ## What it reads

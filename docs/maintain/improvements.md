@@ -2,18 +2,18 @@
 
 What came out of the review of the whole repository on 2026-11-16 and was not fixed in it. Nothing here is broken today. The eight defects that review did fix are in [the changelog](../../CHANGELOG.md). Tick an item when it is done.
 
-## Small, code only
+## Small, code only (done)
 
-These fit in one commit, each with a test.
+Done together, each with a test. The rows stay as a record of what was changed and why.
 
 | # | Done | What | Why | Where |
 |---|---|---|---|---|
-| 1 | [ ] | Hold the model budget exactly: reserve each call's cap before it starts | Up to four model calls run at once and each is capped at $1, so a run can pass `llm_budget_usd` by a few dollars before it stops | `server/src/llm.mjs` |
-| 2 | [ ] | Remove old snapshots at server start: any `<home>/upstream/<commit>` that is not the locked commit | After an update the previous folder stays, about 170 MB plus the engine's environment | `server/src/bootstrap.mjs`, `server/src/paths.mjs` |
-| 3 | [ ] | Remove clipped tool output after 30 days | Files under `<project>/.dsh/tool-output/` are written and never cleaned up | `server/src/render.mjs`, `server/src/host.mjs` |
-| 4 | [ ] | Send the system prompt to the model child by file or standard input | It goes as a command-line argument, and one over about 128 KB would stop the child from starting. Today's prompts are far below that | `server/src/llm.mjs` |
-| 5 | [ ] | Resolve symbolic links in the task commands' file check | A link inside the session folder that points outside it passes the check | `hooks/tasks.ts`, `hooks/tasks-core.ts` |
-| 6 | [ ] | Add a plugin icon | It is the one warning `claude plugin validate .` still gives | `.claude-plugin/plugin.json` |
+| 1 | [x] | Hold the model budget exactly: reserve each call's cap before it starts | Up to four model calls run at once and each is capped at $1, so a run can pass `llm_budget_usd` by a few dollars before it stops | `server/src/llm.mjs` |
+| 2 | [x] | Remove old snapshots at server start: any `<home>/upstream/<commit>` that is not the locked commit | After an update the previous folder stays, about 170 MB plus the engine's environment | `server/src/bootstrap.mjs`, `server/bin/ah-mcp.mjs` |
+| 3 | [x] | Remove clipped tool output after 30 days | Files under `<project>/.dsh/tool-output/` are written and never cleaned up | `server/src/render.mjs`, `server/src/host.mjs` |
+| 4 | [x] | Send the system prompt to the model child by file or standard input | It goes as a command-line argument, and one over about 128 KB would stop the child from starting. Today's prompts are far below that | `server/src/llm.mjs` |
+| 5 | [x] | Resolve symbolic links in the task commands' file check | A link inside the session folder that points outside it passes the check | `hooks/tasks.ts` |
+| 6 | [x] | Add a plugin icon | It is the one warning `claude plugin validate .` still gives | `.claude-plugin/icon.png`, `scripts/make-icon.py` |
 
 ## Worth adding
 
@@ -33,7 +33,7 @@ These fit in one commit, each with a test.
 
 ## Order
 
-Items 1 to 6 together, then 7 and 8, then 9 and 10. Items 11 and 12 do not wait on any of them.
+Items 1 to 6 are done. Then 7 and 8, then 9 and 10. Items 11 and 12 do not wait on any of them.
 
 ## Not read line by line
 

@@ -2,6 +2,8 @@
 
 ## 0.4.0 (not tagged)
 
+- **Hardening after the review.** The model budget is held exactly (calls that run together reserve their caps, so together they cannot pass `llm_budget_usd`). A long system prompt goes to the model child by file, not as an argument. A source snapshot that an update left behind is removed a week after its last use (`AH_SNAPSHOT_KEEP_DAYS`), and clipped tool output after 30 days (`AH_TOOL_OUTPUT_KEEP_DAYS`). The task commands refuse a link that leads outside the session folder. The plugin has an icon.
+
 - **Install from the marketplace.** The repository is its own marketplace (`/plugin install academic-harness --marketplace raktim-mondol/cc-mod-academic-harness`). An installed copy, or a clone nobody set up, fetches the engine code on first start, verified against `UPSTREAM.lock.json`; until it is done the server offers the `doctor` tool and then swaps in the full list.
 - **`/ah-watch`** runs the saved literature searches that are due and prints what is new (`/loop 1d /ah-watch` to schedule).
 - Fixed after a review of the whole repository:

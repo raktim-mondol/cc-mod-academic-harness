@@ -23,7 +23,7 @@ Seven research tasks as slash commands. Each starts the tool the task needs, wit
 | `/ah-analyze` | `analysis_run` (plan) | an optional slug and `--`, then the question |
 | `/ah-hypotheses` | `coscientist` (start) | an optional slug and `--`, then the research goal |
 
-The effort comes first: `--effort low|medium|high` (also `--effort=`, `-e`, `effort=`). A bare first word is part of the prompt (`low rank adaptation` is a topic). ` -- ` is the line break of a two-line task: `/ah-review --effort high paper.tex -- focus on the statistics`. Paths are relative to the session folder and must stay inside it. The names carry `ah-` because `/analyze` already belongs to another plugin.
+The effort comes first: `--effort low|medium|high` (also `--effort=`, `-e`, `effort=`). A bare first word is part of the prompt (`low rank adaptation` is a topic). ` -- ` is the line break of a two-line task: `/ah-review --effort high paper.tex -- focus on the statistics`. Paths are relative to the session folder and must stay inside it, also where a symbolic link leads: a link in the folder that points outside it is refused, and the file is copied into the folder to use it. The names carry `ah-` because `/analyze` already belongs to another plugin.
 
 A long task goes on as a background job: the command waits about 30 seconds per step, then says the job id, and you are told when it ends (`job_notices`).
 

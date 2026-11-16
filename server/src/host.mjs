@@ -17,7 +17,7 @@ import { jobTools } from './jobtools.mjs'
 import { modHome, modRoot } from './paths.mjs'
 import { makeExec, sessionIdFrom } from './exec.mjs'
 import { parseAreas, plan, restoreList } from './manifest.mjs'
-import { adapt, blocksToContent, clip, DEFAULT_MAX_CHARS, fixSkillSearch } from './render.mjs'
+import { adapt, blocksToContent, clip, DEFAULT_MAX_CHARS, DEFAULT_OUTPUT_KEEP_DAYS, fixSkillSearch } from './render.mjs'
 import { listedSkills } from './skills-list.mjs'
 import { toInputSchema } from './schema.mjs'
 
@@ -101,6 +101,8 @@ export function hostOver(registry, { loaded = [], failed = [], env = process.env
   // The session directory: the server's own at start, then what the client says with roots/list (it changes with /cd).
   let cwd = startCwd
   const maxChars = Number(env.AH_MAX_RESULT_CHARS) > 0 ? Number(env.AH_MAX_RESULT_CHARS) : DEFAULT_MAX_CHARS
+  const keepRaw = env.AH_TOOL_OUTPUT_KEEP_DAYS?.trim()
+  const keepOutputDays = keepRaw !== undefined && keepRaw !== '' && Number(keepRaw) >= 0 ? Number(keepRaw) : DEFAULT_OUTPUT_KEEP_DAYS
   const route = llm ? { provider: 'claude-code', model: llm.model } : null
   const raw = env.AH_JOB_FOREGROUND_MS
   const foregroundMs = raw !== undefined && raw !== '' && Number(raw) >= 0 ? Number(raw) : DEFAULT_FOREGROUND_MS
@@ -118,7 +120,7 @@ export function hostOver(registry, { loaded = [], failed = [], env = process.env
   const renderValue = (tool, args, value) => (tool.output?.render ? tool.output.render(args, value) : [{ type: 'text', text: typeof value === 'string' ? value : JSON.stringify(value, null, 2) }])
   const listed = listedSkills()
   const fixContent = (tool, content) => (tool.name === 'skill_search' ? content.map(c => (c.type === 'text' ? { ...c, text: fixSkillSearch(c.text, listed) } : c)) : content)
-  const ok = (tool, args, value, exec) => ({ content: clip(fixContent(tool, blocksToContent(renderValue(tool, args, value))), { maxChars, cwd, tool: tool.name, callId: exec.callId }).content })
+  const ok = (tool, args, value, exec) => ({ content: clip(fixContent(tool, blocksToContent(renderValue(tool, args, value))), { maxChars, cwd, tool: tool.name, callId: exec.callId, keepDays: keepOutputDays }).content })
   const failure = text => ({ isError: true, content: [{ type: 'text', text: adapt(`Error: ${text}`) }] })
 
   /** A long tool as a job: the call waits `foregroundMs`, then answers and the work goes on. */

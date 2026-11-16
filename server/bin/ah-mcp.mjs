@@ -17,7 +17,7 @@
 import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { bootstrap } from '../src/bootstrap.mjs'
+import { bootstrap, pruneOldSnapshots } from '../src/bootstrap.mjs'
 import { Registry } from '../src/context.mjs'
 import { prepareEnv } from '../src/env.mjs'
 import { createHost, hostOver, missingDependencies, serve } from '../src/host.mjs'
@@ -66,6 +66,9 @@ const open = async () => {
 }
 // The snapshot is fetched on first start (bootstrap.mjs) unless this is development mode, `--list`, or AH_BOOTSTRAP=0.
 const needsFetch = !isDevMode() && !listing && process.env.AH_BOOTSTRAP?.trim() !== '0' && missingDependencies(upstreamDir()) !== null
+
+// Snapshots an update left behind in the mod's home (bootstrap.mjs): removed in the background, a week after their last use.
+if (!listing) void pruneOldSnapshots().then(gone => { if (gone.length) say(`removed ${gone.length} old source snapshot${gone.length === 1 ? '' : 's'}: ${gone.join(', ')}`) })
 
 let host
 if (needsFetch) {
