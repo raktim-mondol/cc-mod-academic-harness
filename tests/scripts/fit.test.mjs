@@ -7,7 +7,7 @@ import { join, resolve } from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { adapt, RULES, TARGETS } from '../../scripts/adapt.mjs'
-import { DROPPED_AGENTS, DROPPED_KEY_FIELDS, DROPPED_SKILLS, DROPPED_TOOLS, ON_DEMAND_SKILLS, restoreList } from '../../server/src/fit.mjs'
+import { DROPPED_AGENTS, DROPPED_KEY_FIELDS, DROPPED_SKILLS, DROPPED_TOOLS, EXTRA_KEY_FIELDS, ON_DEMAND_SKILLS, restoreList } from '../../server/src/fit.mjs'
 import { classify, discover, plan } from '../../server/src/manifest.mjs'
 import { upstreamDir } from '../../server/src/paths.mjs'
 
@@ -77,6 +77,17 @@ describe('the tools left out', () => {
       Object.assign(process.env, saved)
       rmSync(home, { recursive: true, force: true })
     }
+  })
+  test('every key a tool can use has a plugin option: restorable tools\' keys and the extras are offered, a tool that cannot come back is not', () => {
+    const manifest = JSON.parse(read('.claude-plugin', 'plugin.json'))
+    for (const [tool, t] of Object.entries(DROPPED_TOOLS)) {
+      for (const key of t.keys ?? []) {
+        const field = manifest.userConfig[key.toLowerCase()]
+        if (t.restorable === false) assert.equal(field, undefined, `${key}: ${tool} cannot come back`)
+        else { assert.equal(field?.sensitive, true, `${key}: ${tool} can be restored, so its key is offered`); assert.equal(manifest.mcpServers.ah.env[`AH_KEY_${key}`], `\${user_config.${key.toLowerCase()}}`) }
+      }
+    }
+    for (const key of Object.keys(EXTRA_KEY_FIELDS)) assert.equal(manifest.userConfig[key.toLowerCase()]?.sensitive, true, key)
   })
   test('the settings only they read are not offered, and the restore setting is', () => {
     const manifest = JSON.parse(read('.claude-plugin', 'plugin.json'))

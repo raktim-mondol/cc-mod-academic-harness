@@ -10,7 +10,7 @@
 // Nothing here removes a tool for being unusual. A researcher's tools (search, citation, ledgers, the writing engine, reviews, compute)
 // stay. `restore_tools` (setting) / AH_RESTORE_TOOLS brings a dropped tool back by name, for a person who has the key and wants it.
 
-/** Tools not served. `module` is the upstream file that registers it (one tool each), `area` the tool area it came from (for `restore_tools`), `keys` the settings fields only it reads (not offered), `restorable: false` when the machinery it needed is gone too, `why` the reason shown in the report and the docs. */
+/** Tools not served. `module` is the upstream file that registers it (one tool each), `area` the tool area it came from (for `restore_tools`), `keys` the settings fields only it reads (offered, so the key can be saved before the tool is brought back with `restore_tools`; withheld only when `restorable: false`), `restorable: false` when the machinery it needed is gone too, `why` the reason shown in the report and the docs. */
 export const DROPPED_TOOLS = {
   brave_search: { module: 'brave-search.js', area: 'search', keys: ['BRAVE_API_KEY'], why: 'General web search: Claude Code has WebSearch, and a paid key buys nothing it lacks.' },
   tavily_search: { module: 'tavily-search.js', area: 'search', keys: ['TAVILY_API_KEY'], why: 'General web search: Claude Code has WebSearch.' },
@@ -85,5 +85,16 @@ export function restoreList(value) {
   return { restore: names.filter(can), unknown: names.filter(n => !can(n)) }
 }
 
-/** Settings fields that only a dropped tool reads. */
-export const DROPPED_KEY_FIELDS = new Set(Object.values(DROPPED_TOOLS).flatMap(t => t.keys ?? []))
+/** Settings fields that only a tool which cannot come back reads: not offered. A restorable tool's key is offered, so it can be saved ahead of `restore_tools`. */
+export const DROPPED_KEY_FIELDS = new Set(Object.values(DROPPED_TOOLS).filter(t => t.restorable === false).flatMap(t => t.keys ?? []))
+
+/**
+ * Credentials a served tool reads that Academic Harness's own settings list (settings-keys.js KEY_FIELDS) does not name, so a person could
+ * only export them in a shell. Offered here as plugin options, empty until set, so every key a tool can use has a place in the plugin's
+ * secure store. Each one is read from the environment by the tool named.
+ */
+export const EXTRA_KEY_FIELDS = {
+  GITHUB_TOKEN: 'GitHub token for repo_audit: raises the API rate limit and reaches private repositories. Leave empty to use the GITHUB_TOKEN environment variable, or none.',
+  OSF_TOKEN: 'Open Science Framework token for preregistration (OSF). Leave empty to use the OSF_TOKEN environment variable, or none.',
+  IMAGE_API_KEY: 'Key for an OpenAI-compatible Images API, used by image_generate with IMAGE_PROVIDER=openai (the default Gemini path uses the Gemini key). Leave empty to use the IMAGE_API_KEY environment variable, or none.',
+}

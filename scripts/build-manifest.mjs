@@ -13,12 +13,13 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { DROPPED_KEY_FIELDS, DROPPED_TOOLS, NOT_OFFERED_KEY_FIELDS } from '../server/src/fit.mjs'
+import { DROPPED_KEY_FIELDS, DROPPED_TOOLS, EXTRA_KEY_FIELDS, NOT_OFFERED_KEY_FIELDS } from '../server/src/fit.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const manifestPath = join(root, '.claude-plugin', 'plugin.json')
 
 const DESCRIPTIONS = {
+  ...EXTRA_KEY_FIELDS,
   UNPAYWALL_EMAIL: 'Contact address sent to Unpaywall. Unpaywall asks for one; it is not a secret.',
   CROSSREF_MAILTO: 'Contact address for Crossref\'s polite pool (faster, steadier). Not a secret.',
   NCBI_EMAIL: 'Contact address NCBI asks for with PubMed requests. Not a secret.',
@@ -28,8 +29,11 @@ const pretty = name => name.replace(/_/g, ' ').toLowerCase().replace(/\b(api|id|
 
 export async function keyFields(upstream = join(root, 'upstream')) {
   const mod = await import(pathToFileURL(join(upstream, 'settings-keys.js')).href)
-  // A field only a dropped tool reads is not offered (server/src/fit.mjs); a shell variable still reaches a restored tool.
-  return mod.KEY_FIELDS.filter(f => !NOT_OFFERED_KEY_FIELDS.some(re => re.test(f)) && !DROPPED_KEY_FIELDS.has(f)).map(name => ({ name, secret: mod.SECRET_FIELDS.has(name) }))
+  // A field only a tool that cannot come back reads is not offered (server/src/fit.mjs); the keys of restorable tools are, so they can be saved ahead of `restore_tools`.
+  const own = mod.KEY_FIELDS.filter(f => !NOT_OFFERED_KEY_FIELDS.some(re => re.test(f)) && !DROPPED_KEY_FIELDS.has(f)).map(name => ({ name, secret: mod.SECRET_FIELDS.has(name) }))
+  // Keys a served tool reads that the snapshot's list does not name (fit.mjs EXTRA_KEY_FIELDS): every one is a credential.
+  const extra = Object.keys(EXTRA_KEY_FIELDS).filter(name => !own.some(f => f.name === name)).map(name => ({ name, secret: true }))
+  return [...own, ...extra]
 }
 
 export async function build(manifest) {
