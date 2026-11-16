@@ -10,6 +10,7 @@ A release is a tagged commit of the private repository. Nothing here publishes a
 4. `node scripts/check-upstream-clean.mjs`.
 5. A secret scan of the files that would be committed: copy `git ls-files -co --exclude-standard` to a scratch folder and scan that (the snapshot would otherwise be scanned too). No personal address in committed files.
 6. `CHANGELOG.md` has the entry; `.claude-plugin/plugin.json` has the version.
+7. The CI workflow is green on the commit to tag ([Testing](testing.md)), and `TESTED_VERSIONS` in `server/src/compat.mjs` lists the Claude Code versions the live scripts were run on for this release.
 
 ## Tag
 

@@ -15,7 +15,21 @@ Every run of either kind ends with `node scripts/check-upstream-clean.mjs`, afte
 | `node scripts/build-manifest.mjs --check` | `plugin.json` matches what the snapshot would generate |
 | `node scripts/measure-surface.mjs` | The host serves what upstream registers, minus what is left out on purpose, and each tool is identical |
 
-`node --test` needs the globs quoted (Node 24). The tests under `tests/server` and `tests/scripts` that touch the snapshot are skipped when it is absent.
+`node --test` needs the globs quoted (Node 24). The type check needs the engine's types, which exist only after a real Claude Code session has loaded the mod, so it is a local step and not part of CI. Three tests in `tests/server/papermemory.test.mjs` build real environments (`uv`, or `python -m venv` and `pip`) and need the network (PyPI): they fail on a machine with neither.
+
+## CI
+
+`.github/workflows/ci.yml` runs on every push to `main`, every pull request and by hand, with no account and no model:
+
+| Job | Runs | Covers |
+|---|---|---|
+| `node` (Node 22 and 24) | `node scripts/setup.mjs --github`, the node suites, `build-manifest.mjs --check`, `measure-surface.mjs` | The builds, the tool host, the guard bridge, the snapshot and first start from a download with no source checkout, and that the claimed minimum Node works |
+| `versions` | `scripts/ci-matrix.mjs` | Reads `TESTED_VERSIONS` (`server/src/compat.mjs`) and hands the versions to the next job |
+| `claude-code` (each tested version, then `latest`) | Installs that Claude Code, `claude plugin validate . --strict`, `claude plugin test .` | The manifests and the hooks module as the engine reads them, on the versions the mod was seen on and on the newest |
+
+`claude-code` is set `continue-on-error` because it has not yet been seen on GitHub: a failure shows but does not fail the workflow. Remove that line from the workflow once it has been green. Actions are pinned to major versions, not to commits. The live scripts are not run in CI.
+
+Adding a Claude Code version: run the live scripts on it ([What to do next](next-steps.md)), then add it to `TESTED_VERSIONS`. The doctor then calls it a version the mod was seen on, and CI tests it. The tests under `tests/server` and `tests/scripts` that touch the snapshot are skipped when it is absent.
 
 ### The plugin tests (`tests/*.test.ts`, `*.test.tsx`)
 
@@ -27,6 +41,7 @@ Every run of either kind ends with `node scripts/check-upstream-clean.mjs`, afte
 | `tasks.test.ts` | The task commands, `/ah-watch` and `/fold`: tools and arguments, file checks, refusals |
 | `ui.test.tsx` | The status line, and the pane at 40 and 120 columns |
 | `doctor.test.ts` | `/academic doctor`, with the server, without it, and with nothing |
+| `seen.test.ts` | The record the module leaves at session start: its name and content, and that a failure to write it never fails the start |
 
 ### The node suites
 
@@ -37,7 +52,8 @@ Every run of either kind ends with `node scripts/check-upstream-clean.mjs`, afte
 | `tests/scripts/ui-core.test.mjs` | The status text, the pane's parts and layouts, the readers of jobs and the notebook |
 | `tests/scripts/fit.test.mjs` | What is left out, the restore setting, the wording rules, that nothing built names a tool that is not served |
 | `tests/scripts/sync.test.mjs` | The snapshot digest, and fetching without a checkout (a throw-away repository stands in for GitHub) |
-| `tests/scripts/doctor.test.mjs` | The doctor's report, and that it never prints a key |
+| `tests/scripts/doctor.test.mjs` | The doctor's report, including the hooks module and the Claude Code version, and that it never prints a key |
+| `tests/scripts/compat.test.mjs` | Which versions are ok, warned about or only said; that the hooks module and the server name the record the same way; the CI matrix |
 | `tests/scripts/update.test.mjs` | The update report's comparison |
 | `tests/scripts/docs.test.mjs` | Every markdown link and path resolves, and every page is reachable from the indexes |
 | `tests/server/host.test.mjs` | The protocol, the registry, schemas, the context, rendering, the server over stdio |

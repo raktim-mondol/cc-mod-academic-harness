@@ -16,6 +16,8 @@ Start with `/academic doctor` (outside a session: `node server/bin/ah-doctor.mjs
 | A headless `claude -p "/ah-research ..."` returns with the job unfinished | The command ends the session when it returns. Set `AH_JOB_FOREGROUND_MS` high so the run finishes inside it |
 | A data or statistics tool says an import is missing | `node scripts/install-helpers.mjs`, or install the package it names |
 | `/ah-papers` and the other commands say a file is not found | Paths are relative to the session folder and must stay inside it |
+| The doctor says the hooks module "has not reported in this session" | Claude Code did not load it: `/academic`, the status line, the guard and the approvals are then absent, while the tools, skills and agents still work. It needs a Claude Code with the mod platform (the doctor names the version the mod was seen on). Update Claude Code, start a new session, and `claude --debug` shows why a hooks module did not load |
+| The doctor says the Claude Code version "has not been tried with the mod" | Only the versions it lists were seen working. Others are expected to work; if a command, the status line or the guard misbehaves, report it with the version |
 | A tool the guidance names is not found | It is one of the 15 left out ([fit review](../design/fit-review.md)); `restore_tools` brings back most of them |
 | The doctor says the snapshot "is not what the lock says" | It was edited or came from another commit. `node scripts/setup.mjs` restores the locked one |
 | A skill names a tool you do not have | Skills loaded on demand are written generally and may name a tool this plugin leaves out. Claude says so and uses the nearest one |

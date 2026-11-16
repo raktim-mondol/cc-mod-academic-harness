@@ -17,10 +17,12 @@ Done together, each with a test. The rows stay as a record of what was changed a
 
 ## Worth adding
 
+Items 7 and 8 are done. The CI's `claude-code` job has not been seen on GitHub yet and is allowed to fail until it has.
+
 | # | Done | What | Why |
 |---|---|---|---|
-| 7 | [ ] | CI on GitHub: on every push run `node scripts/setup.mjs --github`, the node suites, the type check and `node scripts/build-manifest.mjs --check` | These checks run today only when someone remembers to |
-| 8 | [ ] | A Claude Code version check in the doctor: show the running version, warn when it is not one that was tested or when the hooks module did not load | The mod part has only been seen working on 2.1.325 |
+| 7 | [x] | CI on GitHub: on every push run `node scripts/setup.mjs --github`, the node suites, the manifest and parity checks, and the plugin checks on each tested Claude Code version (the type check stays local: its types exist only after a real session loads the mod) | These checks run today only when someone remembers to |
+| 8 | [x] | A Claude Code version check in the doctor: show the running version, warn when it is not one that was tested or when the hooks module did not load | The mod part has only been seen working on 2.1.325 |
 | 9 | [ ] | A weekly upstream check: a scheduled workflow that runs the `node scripts/update-upstream.mjs` report and opens an issue when Academic Harness has moved | Academic Harness is released often, and nothing says so unless someone asks (`/academic doctor --online`) |
 | 10 | [ ] | Local usage counts: which tools and skills are called, as names and counts only, kept in the mod's home and shown by the doctor | It turns "which skills never load" into data for the next review of what to leave out |
 
@@ -33,7 +35,7 @@ Done together, each with a test. The rows stay as a record of what was changed a
 
 ## Order
 
-Items 1 to 6 are done. Then 7 and 8, then 9 and 10. Items 11 and 12 do not wait on any of them.
+Items 1 to 8 are done. Then 9 and 10. Items 11 and 12 do not wait on any of them.
 
 ## Not read line by line
 

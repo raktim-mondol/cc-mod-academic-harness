@@ -5,6 +5,7 @@ import { registerGuard } from './guard'
 import { startNotices } from './notices'
 import { doctorText } from './doctor'
 import { addSection, run, showStatus } from './mode'
+import { recordSeen } from './seen'
 import { registerTaskCommands, registerTasks } from './tasks'
 import { openPane, registerUi, startUi } from './ui'
 
@@ -14,6 +15,7 @@ import { openPane, registerUi, startUi } from './ui'
 export const register: Register = (on, options) => {
   on('session.start', async ($, e, next) => {
     await showStatus($, options)
+    await recordSeen($)
     await startNotices($, options, e.isInteractive === true)
     try {
       await $.command.register({ name: 'academic', description: 'Research mode and the pane: on, off, auto, status, doctor; bare opens the pane' })

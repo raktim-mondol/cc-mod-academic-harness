@@ -15,7 +15,7 @@ In Claude Code a **plugin** is the package: a folder with `.claude-plugin/plugin
 
 So there is nothing to choose between: loading the plugin loads the mod. It has been seen working, in Claude Code 2.1.325, from `--plugin-dir`: the commands answer, the status line and the pane draw (also in a real terminal under tmux), the guard refuses protected writes, and the servers connect with their tools. See [How Claude Code mods work](../design/how-claude-code-mods-work.md).
 
-**Not yet seen:** the mod part of a copy *installed from the marketplace* (step 4 below), and any Claude Code version other than 2.1.325. The servers, skills and agents are ordinary plugin parts; the hooks module needs a Claude Code that has the mod platform.
+**Not yet seen:** the mod part of a copy *installed from the marketplace* (step 4 below), and any Claude Code version other than 2.1.325 (`/academic doctor` says which version is running and whether the mod was seen on it; after running the live scripts on another, add it to `TESTED_VERSIONS` in `server/src/compat.mjs`, see [Testing](testing.md)). The servers, skills and agents are ordinary plugin parts; the hooks module needs a Claude Code that has the mod platform.
 
 ## Before you start
 

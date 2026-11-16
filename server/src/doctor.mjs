@@ -5,6 +5,7 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { join } from 'node:path'
+import { assessVersion, readSeen, TESTED_VERSIONS } from './compat.mjs'
 import { engineDir, engineStatus } from './engine.mjs'
 import { DROPPED_TOOLS } from './fit.mjs'
 import { installDir, installedStamp, wantStamp } from './papermemory.mjs'
@@ -68,6 +69,23 @@ export async function diagnose({ env = process.env, online = false, root = modRo
 
   const claude = tryRun('claude', ['--version'])
   add('claude', claude ? 'ok' : 'warn', 'Claude Code CLI (the model route of deep_research, deep_review, coscientist)', claude ?? 'not on PATH: tools that call a model fail', claude ? undefined : 'put `claude` on PATH')
+
+  // The hooks module (research mode, the guard, the commands, the pane) and the Claude Code it runs in. It leaves a record at session start
+  // (hooks/seen.ts); this session's is the proof that it loaded, and carries the version that is really running.
+  const mod = 'Hooks module (research mode, guard, commands, pane)'
+  const session = env.CLAUDE_CODE_SESSION_ID?.trim()
+  if (!session) {
+    const onPath = claude ? assessVersion(claude) : null
+    add('mod', 'info', mod, `not checked: this report is not from inside a session; /academic doctor checks it.${onPath ? ` The Claude Code on PATH is ${onPath.detail}` : ''}`)
+  } else {
+    const seen = readSeen(home, session)
+    if (!seen) {
+      add('mod', 'warn', mod, `has not reported in this session, so Claude Code probably did not load it: /academic, the status line, the guard and the approvals are not working. It needs a Claude Code with the mod platform (seen working on ${TESTED_VERSIONS.join(', ')})`, 'update Claude Code, then start a new session; `claude --debug` shows why a hooks module did not load')
+    } else {
+      const a = assessVersion(seen.version)
+      add('mod', a.state, mod, `loaded in this session, Claude Code ${a.detail}`, a.state === 'warn' ? 'update Claude Code' : undefined)
+    }
+  }
 
   const uv = tryRun('uv', ['--version'])
   add('uv', uv ? 'ok' : 'warn', 'uv (installs the engine and PaperMemory quickly)', uv ?? 'not found: the installers fall back to python -m venv', uv ? undefined : 'https://docs.astral.sh/uv/')

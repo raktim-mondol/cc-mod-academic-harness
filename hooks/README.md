@@ -12,6 +12,7 @@ The Claude Code side of the mod: a hooks module the engine loads from `hooks.jso
 | `tasks.ts`, `tasks-core.ts` | `/ah-research` and the other task commands, `/ah-watch`, `/fold` |
 | `ui.tsx`, `ui-core.ts` | The pane, and the parts of the status line |
 | `doctor.ts` | `/academic doctor` |
+| `seen.ts` | At session start, leaves a record that this module loaded, with the Claude Code version, for the doctor |
 | `generated/` | **Generated; do not edit.** The research-mode text (`prompt.ts`), the task catalogue and the fold, copied from the engine code (`task-modes.ts`, `fold-core.ts`) |
 
 Rules this code follows:

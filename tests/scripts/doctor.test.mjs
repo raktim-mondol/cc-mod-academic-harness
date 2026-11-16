@@ -5,6 +5,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { after, before, describe, test } from 'node:test'
+import { seenDir, seenName, TESTED_VERSIONS } from '../../server/src/compat.mjs'
 import { diagnose, format } from '../../server/src/doctor.mjs'
 import { doctorTool } from '../../server/src/doctortool.mjs'
 import { treeDigest } from '../../server/src/snapshot.mjs'
@@ -68,6 +69,43 @@ describe('the report', () => {
   test('the text ends with a verdict', async () => {
     const r = await diagnose({ env: base, root: clone, upstream: snap, home: join(root, 'home6') })
     assert.match(format({ ...r, blocking: 0 }).split('\n').at(-1), /^(Ready\.|Ready, with \d+ feature)/)
+  })
+})
+
+describe('the hooks module and the Claude Code version', () => {
+  const home = join(root, 'home-mod')
+  const inSession = id => ({ ...base, CLAUDE_CODE_SESSION_ID: id })
+  const record = (id, version) => {
+    mkdirSync(seenDir(home), { recursive: true })
+    writeFileSync(join(seenDir(home), seenName(id)), `${JSON.stringify({ session: id, version, at: 1 })}\n`)
+  }
+  test('outside a session it is not checked (and says what Claude Code on PATH is, when there is one)', async () => {
+    const r = await diagnose({ env: base, root: clone, upstream: snap, home })
+    assert.equal(by(r, 'mod').state, 'info')
+    assert.match(by(r, 'mod').detail, /not from inside a session; \/academic doctor checks it\./)
+  })
+  test('a session whose hooks module reported, on a version it was seen on, is ok', async () => {
+    record('s-ok', TESTED_VERSIONS[0])
+    const r = await diagnose({ env: inSession('s-ok'), root: clone, upstream: snap, home })
+    assert.equal(by(r, 'mod').state, 'ok')
+    assert.match(by(r, 'mod').detail, new RegExp(`loaded in this session, Claude Code ${TESTED_VERSIONS[0].replace(/\./g, '\\.')}`))
+  })
+  test('a newer version is said, not warned about; an older one warns with the fix', async () => {
+    record('s-new', '9.9.9')
+    const newer = await diagnose({ env: inSession('s-new'), root: clone, upstream: snap, home })
+    assert.equal(by(newer, 'mod').state, 'info')
+    assert.match(by(newer, 'mod').detail, /9\.9\.9 has not been tried/)
+    record('s-old', '1.0.0')
+    const older = await diagnose({ env: inSession('s-old'), root: clone, upstream: snap, home })
+    assert.equal(by(older, 'mod').state, 'warn')
+    assert.equal(by(older, 'mod').fix, 'update Claude Code')
+  })
+  test('a session whose hooks module never reported warns, and does not make the report blocking', async () => {
+    const r = await diagnose({ env: inSession('s-silent'), root: clone, upstream: snap, home })
+    assert.equal(by(r, 'mod').state, 'warn')
+    assert.match(by(r, 'mod').detail, /has not reported in this session/)
+    assert.match(by(r, 'mod').fix, /claude --debug/)
+    assert.ok(!r.checks.filter(c => c.state === 'missing').some(c => c.id === 'mod'))
   })
 })
 

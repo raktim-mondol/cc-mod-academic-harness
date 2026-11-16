@@ -1,0 +1,91 @@
+# Checks that need no account and no model: the node suites on the supported Node versions, and the plugin checks on the Claude Code versions the
+# mod was seen working on (plus the newest). The live scripts (tests/live) are not run here: they need a signed-in Claude Code and cost money.
+# What to run by hand and what each job covers: docs/maintain/testing.md.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  node:
+    name: Node ${{ matrix.node }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      # PaperMemory's installer tests build real environments (uv, or python -m venv and pip), so both are provided.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v5
+      # The source snapshot of Academic Harness at the commit in UPSTREAM.lock.json, downloaded and checked against the digest in the lock, then its
+      # dependencies and the writing engine's environment. No source checkout is needed.
+      - name: Set up
+        run: node scripts/setup.mjs --github
+      - name: Node suites
+        run: node --test "tests/scripts/*.test.mjs" "tests/server/*.test.mjs"
+      - name: plugin.json is what the snapshot generates
+        run: node scripts/build-manifest.mjs --check
+      - name: The host serves what the source registers, minus what is left out
+        run: node scripts/measure-surface.mjs
+
+  versions:
+    name: Claude Code versions
+    runs-on: ubuntu-24.04
+    outputs:
+      claude: ${{ steps.matrix.outputs.claude }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: matrix
+        run: node scripts/ci-matrix.mjs >> "$GITHUB_OUTPUT"
+
+  claude-code:
+    name: Claude Code ${{ matrix.claude }}
+    needs: versions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # Not seen running on GitHub yet: a failure here is shown but does not fail the workflow. Remove this line once it has been green.
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        claude: ${{ fromJSON(needs.versions.outputs.claude) }}
+    env:
+      DISABLE_AUTOUPDATER: '1'
+      CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Claude Code ${{ matrix.claude }}
+        env:
+          CLAUDE_VERSION: ${{ matrix.claude }}
+        run: |
+          npm install -g "@anthropic-ai/claude-code@${CLAUDE_VERSION}"
+          claude --version
+      # Neither command signs in or calls a model.
+      - name: Validate the plugin, the marketplace file and the hooks module
+        run: claude plugin validate . --strict
+      - name: Plugin tests (the hooks module, with the engine stood in for)
+        run: claude plugin test .

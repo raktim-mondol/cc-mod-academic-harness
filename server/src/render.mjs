@@ -11,14 +11,14 @@ export const DEFAULT_MAX_CHARS = 40_000
 /** How long a clipped result stays in <cwd>/.dsh/tool-output/ (AH_TOOL_OUTPUT_KEEP_DAYS; 0 keeps them all). */
 export const DEFAULT_OUTPUT_KEEP_DAYS = 30
 
-/** Remove the `.txt` files of `dir` last written more than `keepDays` ago. Returns how many. Never throws: housekeeping must not fail a call. */
-export function pruneOutputDir(dir, { keepDays = DEFAULT_OUTPUT_KEEP_DAYS, now = Date.now() } = {}) {
+/** Remove the files of `dir` that end in `ext` (`.txt`, the clipped results) and were last written more than `keepDays` ago. Returns how many. Never throws: housekeeping must not fail a call. */
+export function pruneOutputDir(dir, { keepDays = DEFAULT_OUTPUT_KEEP_DAYS, now = Date.now(), ext = '.txt' } = {}) {
   if (!(keepDays > 0)) return 0
   const cutoff = now - keepDays * 24 * 60 * 60 * 1000
   let removed = 0
   try {
     for (const name of readdirSync(dir)) {
-      if (!name.endsWith('.txt')) continue
+      if (!name.endsWith(ext)) continue
       const file = join(dir, name)
       try {
         if (statSync(file).mtimeMs < cutoff) { rmSync(file, { force: true }); removed++ }

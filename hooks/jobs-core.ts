@@ -11,10 +11,16 @@ export function noticeMode(setting: unknown): NoticeMode {
   return (NOTICE_MODES as readonly string[]).includes(v) ? (v as NoticeMode) : 'prompt'
 }
 
-/** The folder the tool host keeps job records in: AH_MOD_HOME when set, else the default under the home directory. */
-export function jobsDir(modHome: string | undefined, home: string | undefined): string | null {
+/** The mod's home: AH_MOD_HOME when set, else the default under the home directory. */
+export function modHomeOf(modHome: string | undefined, home: string | undefined): string | null {
   const base = modHome?.trim() || (home ? `${home.replace(/\/+$/, '')}/.local/share/cc-mod-academic-harness/home` : '')
-  return base ? `${base.replace(/\/+$/, '')}/jobs` : null
+  return base ? base.replace(/\/+$/, '') : null
+}
+
+/** The folder the tool host keeps job records in. */
+export function jobsDir(modHome: string | undefined, home: string | undefined): string | null {
+  const base = modHomeOf(modHome, home)
+  return base ? `${base}/jobs` : null
 }
 
 /** Records of this session that have ended, were not announced and whose result the model has not already been given, oldest first. */

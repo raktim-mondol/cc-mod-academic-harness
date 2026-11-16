@@ -12,6 +12,7 @@ What the mod reads, what it writes and where, and what it can spend.
 | A project's notebook and research ledgers | `<project>/.dsh/` (the folder name is fixed by the tools) |
 | The writing engine's state, and the guard's log | `<project>/.ah/` (`claude-hooks.jsonl`) |
 | A tool result longer than 40,000 characters, in full | `<project>/.dsh/tool-output/`, removed after 30 days (`AH_TOOL_OUTPUT_KEEP_DAYS`) |
+| A small record that the hooks module loaded (session id, Claude Code version, time), one per session | `<home>/mod-seen/`, removed after a week |
 | A system prompt over 30,000 characters, while a model call that needs it runs | `<home>/tmp/`, removed when the call ends |
 | The `/academic on\|off` override, the pane's data, which job notices were shown | Claude Code's plugin state for the session; nothing of the mod's on disk |
 

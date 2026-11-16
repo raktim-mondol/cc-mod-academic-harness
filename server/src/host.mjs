@@ -17,7 +17,8 @@ import { jobTools } from './jobtools.mjs'
 import { modHome, modRoot } from './paths.mjs'
 import { makeExec, sessionIdFrom } from './exec.mjs'
 import { parseAreas, plan, restoreList } from './manifest.mjs'
-import { adapt, blocksToContent, clip, DEFAULT_MAX_CHARS, DEFAULT_OUTPUT_KEEP_DAYS, fixSkillSearch } from './render.mjs'
+import { seenDir } from './compat.mjs'
+import { adapt, blocksToContent, clip, DEFAULT_MAX_CHARS, DEFAULT_OUTPUT_KEEP_DAYS, fixSkillSearch, pruneOutputDir } from './render.mjs'
 import { listedSkills } from './skills-list.mjs'
 import { toInputSchema } from './schema.mjs'
 
@@ -70,6 +71,8 @@ export async function createHost({ upstream, areas = 'all', env = process.env, c
     const gone = jobs.prune({ keepDays: keep !== undefined && keep !== '' && Number(keep) >= 0 ? Number(keep) : DEFAULT_KEEP_DAYS })
     if (gone) logger(`removed ${gone} job record${gone === 1 ? '' : 's'} that ended long ago`)
   } catch { /* housekeeping must not stop the server */ }
+  // The records the hooks module leaves, one per session (compat.mjs): a week is longer than any session worth checking.
+  pruneOutputDir(seenDir(modHome(env)), { keepDays: 7, ext: '.json' })
   const budget = Number(env.AH_LLM_BUDGET_USD)
   const llm = createLlm({ model: env.AH_LLM_MODEL?.trim() || DEFAULT_MODEL, budgetUsd: budget > 0 ? budget : DEFAULT_BUDGET_USD, cwd, env })
   const services = { jobs, llm }
