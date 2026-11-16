@@ -34,7 +34,16 @@ const tryRun = (command, args) => {
 export async function diagnose({ env = process.env, online = false, root = modRoot(), upstream = upstreamDir(env), home = modHome(env), served } = {}) {
   const checks = []
   const add = (id, state, label, detail, fix) => checks.push({ id, state, label, detail, ...(fix ? { fix } : {}) })
-  const lock = existsSync(join(root, 'UPSTREAM.lock.json')) ? JSON.parse(readFileSync(join(root, 'UPSTREAM.lock.json'), 'utf8')) : null
+  // A missing or corrupt lock is a finding, not a crash: the doctor is what a person runs when something is wrong.
+  const lockPath = join(root, 'UPSTREAM.lock.json')
+  let lock = null
+  let lockProblem = null
+  if (!existsSync(lockPath)) {
+    lockProblem = 'UPSTREAM.lock.json is missing: this is not the plugin\'s folder'
+  } else {
+    try { lock = JSON.parse(readFileSync(lockPath, 'utf8')) } catch (error) { lockProblem = `UPSTREAM.lock.json is not readable JSON: ${String(error?.message ?? error).split('\n')[0]}` }
+    if (!lockProblem && (!lock || typeof lock !== 'object' || typeof lock.commit !== 'string' || !lock.treeSha256)) lockProblem = 'UPSTREAM.lock.json has no commit or digest'
+  }
 
   const major = Number(process.versions.node.split('.')[0])
   add('node', major >= 22 ? 'ok' : 'missing', 'Node.js', `v${process.versions.node}${major >= 22 ? '' : ' (22 or newer is needed for node:sqlite)'}`, major >= 22 ? undefined : 'install a current Node.js')
@@ -44,7 +53,9 @@ export async function diagnose({ env = process.env, online = false, root = modRo
   const usable = existsSync(join(upstream, 'node_modules', 'ah-dsh-tools'))
   const state = isDevMode(env) ? null : readState(env)
   const fetching = state?.error && usable ? null : state
-  if (fetching && !fetching.error) {
+  if (lockProblem) {
+    add('snapshot', 'missing', 'Source snapshot', lockProblem, 'restore UPSTREAM.lock.json from the repository, then run node scripts/setup.mjs')
+  } else if (fetching && !fetching.error) {
     add('snapshot', 'info', 'Source snapshot', `being set up by the server (started ${Math.max(0, Math.round((Date.now() - fetching.startedAt) / 1000))} s ago): ${fetching.step}. The other tools appear when it is done`)
   } else if (fetching?.error) {
     add('snapshot', 'missing', 'Source snapshot', `the first-start fetch failed at "${fetching.step}": ${fetching.error}`, 'node scripts/setup.mjs (it shows the whole error)')

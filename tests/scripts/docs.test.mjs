@@ -9,10 +9,12 @@ import { fileURLToPath } from 'node:url'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
 
-/** The markdown a person reads: not the snapshot, not the generated skills and agents (only their READMEs), not fixtures. */
+/** The markdown a person reads: not the snapshot, not the generated skills and agents (only their READMEs), not fixtures, and not the
+ *  repository automation templates (`.github/`), which describe a process rather than the project. */
 const pages = execFileSync('git', ['-C', root, 'ls-files', '-co', '--exclude-standard'], { encoding: 'utf8' }).split('\n')
   .filter(f => f.endsWith('.md'))
   .filter(f => !f.startsWith('upstream/') && !f.startsWith('tests/fixtures/') && !f.startsWith('tests/probe/') && !f.startsWith('scripts/research-mode'))
+  .filter(f => !f.startsWith('.github/'))
   .filter(f => !/^(skills|agents)\//.test(f))
 
 const read = f => readFileSync(join(root, f), 'utf8')

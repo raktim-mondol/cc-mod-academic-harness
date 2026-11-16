@@ -50,6 +50,15 @@ test('inside an ah.yaml tree, auto mode is on, even from a subfolder', async ($,
   expect(composed.sections[1]?.scope).toBe('session')
 })
 
+test('a project above a deeply nested folder is found, with no fixed depth limit', async ($, on) => {
+  const project = '/p'
+  const deep = `${project}${'/level'.repeat(100)}`
+  const seen = engine(on, { cwd: deep, files: [`${project}/ah.yaml`] })
+  await $.session.start({ cwd: deep, surface: 'terminal', isInteractive: true })
+  expect(seen.status).toEqual(['research mode on'])
+  expect((await academic($, 'status')).text).toContain('on (auto: ah.yaml in /p)')
+})
+
 test('the plugin folder replaces the placeholder in the section text', async ($, on) => {
   engine(on, { cwd: '/p', files: ['/p/ah.yaml'] })
   await $.session.start({ cwd: '/p', surface: 'terminal', isInteractive: true })

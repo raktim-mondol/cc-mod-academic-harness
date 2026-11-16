@@ -39,12 +39,8 @@ jobs:
       # dependencies and the writing engine's environment. No source checkout is needed.
       - name: Set up
         run: node scripts/setup.mjs --github
-      - name: Node suites
-        run: node --test "tests/scripts/*.test.mjs" "tests/server/*.test.mjs"
-      - name: plugin.json is what the snapshot generates
-        run: node scripts/build-manifest.mjs --check
-      - name: The host serves what the source registers, minus what is left out
-        run: node scripts/measure-surface.mjs
+      - name: Checks (node suites, manifest, served tool surface)
+        run: npm run check
 
   versions:
     name: Claude Code versions

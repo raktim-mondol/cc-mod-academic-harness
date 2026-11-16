@@ -10,4 +10,4 @@
 | `fixtures/` | A manuscript, a script, and the other inputs the tests use | |
 | `probe/` | The probe plugin of phase P0 | |
 
-Which command checks what, what each live script costs, and how to write a test: [Testing](../docs/maintain/testing.md).
+Which command checks what, what each live script costs, and how to write a test: [Testing](../docs/maintain/testing.md). The whole fast gate is `npm run check`.

@@ -52,6 +52,7 @@ export function assertSafeHome(env = process.env) {
 }
 
 export async function createHost({ upstream, areas = 'all', env = process.env, cwd = process.cwd(), logger = log } = {}) {
+  // Deliberately process.env, not `env`: the upstream modules read process.env, so that is the home that must be safe.
   assertSafeHome(process.env)
   const problem = missingDependencies(upstream)
   if (problem) throw new Error(problem)
@@ -155,7 +156,8 @@ export function hostOver(registry, { loaded = [], failed = [], env = process.env
       }
     })()
     let timer
-    const onCancel = () => jobs.kill(job.id, null, 'the call was cancelled')
+    // A cancellation that arrives after the job settled (or its record was pruned) has nothing to stop; it must not throw from an abort listener.
+    const onCancel = () => { try { jobs.kill(job.id, null, 'the call was cancelled') } catch { /* already gone */ } }
     signal?.addEventListener('abort', onCancel, { once: true })
     const window = new Promise(resolve => { timer = setTimeout(() => resolve(null), foregroundMs) })
     const first = await Promise.race([finished, window])

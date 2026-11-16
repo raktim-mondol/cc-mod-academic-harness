@@ -36,6 +36,16 @@ describe('the report', () => {
     assert.ok(r.blocking >= 2)
     assert.match(format(r), /the mod cannot work without/)
   })
+  test('a lock that is not readable JSON is reported, never thrown', async () => {
+    const broken = join(root, 'broken-lock')
+    mkdirSync(broken, { recursive: true })
+    writeFileSync(join(broken, 'UPSTREAM.lock.json'), '{')
+    const r = await diagnose({ env: base, root: broken, upstream: join(root, 'nowhere'), home: join(root, 'home-lock') })
+    assert.equal(by(r, 'snapshot').state, 'missing')
+    assert.match(by(r, 'snapshot').detail, /UPSTREAM\.lock\.json is not readable JSON/)
+    assert.match(by(r, 'snapshot').fix, /restore UPSTREAM\.lock\.json/)
+    assert.doesNotThrow(() => format(r))
+  })
   test('a snapshot that matches the lock is ok; an edited one is a warning, not a crash', async () => {
     const good = await diagnose({ env: base, root: clone, upstream: snap, home: join(root, 'home2') })
     assert.equal(by(good, 'snapshot').state, 'ok')

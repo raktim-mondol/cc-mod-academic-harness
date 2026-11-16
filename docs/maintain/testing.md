@@ -8,7 +8,8 @@ Every run of either kind ends with `node scripts/check-upstream-clean.mjs`, afte
 
 | Command | Covers |
 |---|---|
-| `npx --yes -p typescript@5.6.3 tsc -p . --noEmit` | Types of the hooks module |
+| `npm run check` | The node suites, `build-manifest.mjs --check` and `measure-surface.mjs` in one command. This is the gate CI runs; `node scripts/check.mjs` is the same script |
+| `npx --yes -p typescript@5.6.3 tsc -p . --noEmit` | Types of the hooks module (`npm run typecheck`) |
 | `claude plugin validate .` | The manifest, the marketplace file and the hooks module as the engine reads them |
 | `claude plugin test .` | The hooks (see below), with every engine call stood in for |
 | `node --test "tests/scripts/*.test.mjs" "tests/server/*.test.mjs"` | The builds, the tool host, the guard bridge, jobs, the model route, the snapshot and the first start |
@@ -23,7 +24,7 @@ Every run of either kind ends with `node scripts/check-upstream-clean.mjs`, afte
 
 | Job | Runs | Covers |
 |---|---|---|
-| `node` (Node 22 and 24) | `node scripts/setup.mjs --github`, the node suites, `build-manifest.mjs --check`, `measure-surface.mjs` | The builds, the tool host, the guard bridge, the snapshot and first start from a download with no source checkout, and that the claimed minimum Node works |
+| `node` (Node 22 and 24) | `node scripts/setup.mjs --github`, then `npm run check` | The builds, the tool host, the guard bridge, the snapshot and first start from a download with no source checkout, the manifest, the served surface against upstream's, and that the claimed minimum Node works |
 | `versions` | `scripts/ci-matrix.mjs` | Reads `TESTED_VERSIONS` (`server/src/compat.mjs`) and hands the versions to the next job |
 | `claude-code` (each tested version, then `latest`) | Installs that Claude Code, `claude plugin validate . --strict`, `claude plugin test .` | The manifests and the hooks module as the engine reads them, on the versions the mod was seen on and on the newest |
 

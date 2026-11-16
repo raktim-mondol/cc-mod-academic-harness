@@ -23,20 +23,52 @@ export type EngineReply = {
   raw: Record<string, unknown>
 }
 
-/** The first JSON object in the engine's stdout, as a reply. Null for an empty or unreadable stdout. */
+const REPLY_KEYS = [
+  'hookSpecificOutput', 'decision', 'additionalContext', 'systemMessage', 'reason',
+  // The other fields of Claude Code's settings-hook result: a reply that only carries one of them is still a reply.
+  'continue', 'stopReason', 'suppressOutput', 'hookEventName', 'permissionDecision', 'permissionDecisionReason',
+]
+
+/** The first complete JSON object in a stream that looks like a hook reply, even when a warning or a log line shares it. */
+function firstReplyObject(text: string): unknown {
+  let from = 0
+  for (;;) {
+    const start = text.indexOf('{', from)
+    if (start === -1) return null
+    let depth = 0
+    let inString = false
+    let escaped = false
+    let end = -1
+    for (let i = start; i < text.length; i++) {
+      const ch = text[i]
+      if (inString) {
+        if (escaped) escaped = false
+        else if (ch === '\\') escaped = true
+        else if (ch === '"') inString = false
+        continue
+      }
+      if (ch === '"') inString = true
+      else if (ch === '{') depth++
+      else if (ch === '}' && --depth === 0) { end = i; break }
+    }
+    if (end === -1) return null
+    try {
+      const parsed = JSON.parse(text.slice(start, end + 1))
+      // A JSON log line is not the reply: skip it whole and keep looking. An empty object is the engine saying "no decision".
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && (Object.keys(parsed).length === 0 || REPLY_KEYS.some(k => k in parsed))) return parsed
+    } catch { /* not JSON at this brace: try the next */ }
+    from = end + 1
+  }
+}
+
+/** The engine's reply in its stdout, or null when stdout is empty or holds no reply-shaped object. */
 export function parseEngineStdout(stdout: string): EngineReply | null {
   const text = String(stdout ?? '').trim()
   if (!text) return null
-  const i = text.indexOf('{')
-  if (i < 0) return null
-  let parsed: any
-  try {
-    parsed = JSON.parse(text.slice(i))
-  } catch {
-    return null
-  }
-  if (!parsed || typeof parsed !== 'object') return null
-  const spec = parsed.hookSpecificOutput ?? {}
+  const parsed = firstReplyObject(text) as Record<string, any> | null
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null
+  // The engine usually wraps its fields in hookSpecificOutput; a plain result on its own is read the same way.
+  const spec = parsed.hookSpecificOutput && typeof parsed.hookSpecificOutput === 'object' ? parsed.hookSpecificOutput : parsed
   const additionalContext: string | undefined = spec.additionalContext || (typeof parsed.additionalContext === 'string' ? parsed.additionalContext : undefined)
   const deny = spec.permissionDecision === 'deny' || parsed.decision === 'block' || parsed.decision === 'deny'
   const reason: string | undefined = spec.permissionDecisionReason || parsed.reason || (deny ? additionalContext : undefined)
