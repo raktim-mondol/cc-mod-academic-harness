@@ -176,14 +176,20 @@ export function hostOver(registry, { loaded = [], failed = [], env = process.env
       const tool = registry.tools.get(name)
       if (!tool) return { isError: true, content: [{ type: 'text', text: `Unknown tool "${name}". Known tools: ${[...registry.tools.keys()].slice(0, 12).join(', ')}${registry.tools.size > 12 ? ', ...' : ''}` }] }
       if (jobs && detached.has(name)) return callDetached(tool, name, args, { signal, callId })
-      const timeout = AbortSignal.timeout(timeoutFor(tool))
-      const merged = signal ? AbortSignal.any([signal, timeout]) : timeout
+      // An explicit timer, cleared when the call ends. `AbortSignal.timeout` would do, but its timer does not keep the event loop alive, so a
+      // process with nothing else pending (a test, on Node 22) is ended before a hung tool's limit is reached.
+      const limit = timeoutFor(tool)
+      const timeout = new AbortController()
+      const timer = setTimeout(() => timeout.abort(new Error(`timed out after ${limit} ms`)), limit)
+      const merged = signal ? AbortSignal.any([signal, timeout.signal]) : timeout.signal
       const exec = makeExec({ name, args, callId, signal: merged, cwd, sessionId, route })
       try {
         return ok(tool, args, await tool.execute(args, exec), exec)
       } catch (error) {
-        const why = merged.aborted ? (signal?.aborted ? 'was cancelled' : `timed out after ${Math.round(timeoutFor(tool) / 1000)} s`) : null
+        const why = merged.aborted ? (signal?.aborted ? 'was cancelled' : `timed out after ${Math.round(limit / 1000)} s`) : null
         return failure(why ? `${name} ${why}` : String(error?.message ?? error))
+      } finally {
+        clearTimeout(timer)
       }
     },
     /** Run the handlers modules registered with `ctx.on(event, ...)`. Upstream's events are DSH's; the host raises the ones that have a meaning here. */

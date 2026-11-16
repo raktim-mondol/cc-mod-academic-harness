@@ -435,6 +435,22 @@ describe('protocol loop with fake tools', () => {
     await s.end()
   })
 
+  test('a hung tool reaches its time limit even when nothing else keeps the process alive', async () => {
+    // A process whose only pending work is the tool: if the limit's timer did not keep it alive, Node would end it (exit 13) before the limit.
+    const hostUrl = pathToFileURL(fileURLToPath(new URL('../../server/src/host.mjs', import.meta.url))).href
+    const contextUrl = pathToFileURL(fileURLToPath(new URL('../../server/src/context.mjs', import.meta.url))).href
+    const script = `
+      import { hostOver } from ${JSON.stringify(hostUrl)}
+      import { Registry } from ${JSON.stringify(contextUrl)}
+      const registry = new Registry()
+      registry.register({ name: 'hang', timeoutMs: 80, execute: (a, exec) => new Promise((_, reject) => exec.signal.addEventListener('abort', () => reject(new Error('x')))) })
+      const r = await hostOver(registry, { env: {} }).call('hang', {})
+      process.stdout.write(JSON.stringify(r))`
+    const out = await new Promise(res => { const c = spawn(process.execPath, ['--input-type=module', '-e', script], { stdio: ['ignore', 'pipe', 'pipe'] }); let o = ''; let e = ''; c.stdout.on('data', d => { o += d }); c.stderr.on('data', d => { e += d }); c.on('close', code => res({ code, o, e })) })
+    assert.equal(out.code, 0, out.e)
+    assert.match(JSON.parse(out.o).content[0].text, /hang timed out after \d+ s/)
+  })
+
   test('a thrown error becomes a tool error with the DSH wording replaced; the callId is the tool-use id', async () => {
     let seen
     const s = fakeServer([{ name: 'boom', execute: async (a, exec) => { seen = exec; throw new Error('KEY is not set (Settings -> Academic Harness API keys)') } }])
