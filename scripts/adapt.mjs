@@ -51,6 +51,12 @@ export const RULES = [
     find: /Use `latex_compile` to compile[\s\S]*$/,
     to: 'Compile with `latexmk -pdf` (or `xelatex`/`lualatex` if the document needs them) from Bash; it handles bibtex and biber. In an Academic Harness project prefer `ah_build` so errors map back to units. A clean compile does not mean the page layout is right: render pages (`pdftoppm`) and `Read` the images rather than assuming the log is enough.',
   },
+  {
+    target: 'skill:research-monitoring/SKILL.md',
+    why: 'Claude Code has a scheduler (/loop) and the mod has /ah-watch, so "you run a watch" can be made regular',
+    find: /timer: you run a watch, then read the digest\./,
+    to: 'timer: you run a watch, then read the digest. In Claude Code `/ah-watch` does both in one line (it runs the watches that are due and prints what is new), and `/loop 1d /ah-watch` makes it daily while the session is open.',
+  },
   // ---- tools this mod does not serve ----
   {
     target: 'guide:reproducible-analysis',

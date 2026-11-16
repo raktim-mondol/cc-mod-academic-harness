@@ -57,7 +57,7 @@ Tool host and tier-1 tools. Measured on Claude Code 2.1.325 against upstream `a3
 
 ## Open items
 
-- **Closed by the audit (`docs/AUDIT-P0-P4.md`, item 7):** `tests/live/p2-config.mjs` saves a key with `claude plugin configure`, finds it in the secure store only, and shows an installed copy's server receiving it. Earlier text: **Interactive secure storage for `sensitive` fields.** The key test uses `pluginConfigs` through `--settings`, the S4 route. The config menu of an interactive session, which stores sensitive values in the keychain, was not tried. It is the one P2 exit item not shown by a run.
+- **Closed by the audit (`docs/history/audit-p0-p4.md`, item 7):** `tests/live/p2-config.mjs` saves a key with `claude plugin configure`, finds it in the secure store only, and shows an installed copy's server receiving it. Earlier text: **Interactive secure storage for `sensitive` fields.** The key test uses `pluginConfigs` through `--settings`, the S4 route. The config menu of an interactive session, which stores sensitive values in the keychain, was not tried. It is the one P2 exit item not shown by a run.
 - **Dependencies are installed by a script.** A fresh clone has no `upstream/`, no `node_modules`, and the server exits with a message saying to run `scripts/install-deps.mjs`. P6 bundles the code and installs native dependencies on first use.
 - **Closed by the audit (item 5):** the server now follows `roots/list`, so `/cd` moves its working directory. Earlier text: **The server's cwd is fixed at start.**
 - **Closed by the audit (item 11):** `skill_search` now says how to load a listed skill and that a left-out one is left out. Earlier text: it marked the 86 listed skills and the 6 excluded ones alike.

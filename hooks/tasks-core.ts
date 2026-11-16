@@ -304,3 +304,29 @@ export function insideWorkspace(cwd: string, path: string): { ok: true; abs: str
 }
 
 export const FILE_LIMIT_BYTES = 50 * 1024 * 1024
+
+// ---- /ah-watch: the saved literature searches, run and read in one line ----
+//
+// Not one of upstream's seven tasks, so it is not compared with upstream's task code. `literature_watch` keeps saved searches under
+// `.dsh/watch/`; "scheduling is manual: nothing runs on a timer". In Claude Code a schedule is `/loop`, so one command runs what is due
+// and prints what is new: `/loop 1d /ah-watch`.
+
+export const WATCH_COMMAND = 'ah-watch'
+export const WATCH_USAGE = '[--all] [--preview]   (default: run the watches that are due, then print what is new since the last digest)'
+
+export type WatchPlan = { steps: Step[]; error?: undefined } | { error: string }
+
+/** `--all` runs every watch, not only the due ones; `--preview` prints the digest without moving its "since" cut. */
+export function planWatch(raw: string): WatchPlan {
+  const words = String(raw ?? '').trim().split(/\s+/).filter(Boolean)
+  const unknown = words.filter(w => w !== '--all' && w !== '--preview')
+  if (unknown.length) return { error: `unknown argument "${unknown[0]}"` }
+  const all = words.includes('--all')
+  const preview = words.includes('--preview')
+  return {
+    steps: [
+      { tool: 'literature_watch', progress: all ? 'Running every watch' : 'Running the watches that are due', args: { action: 'run', ...(all ? {} : { due_only: true }) } },
+      { tool: 'literature_watch', progress: preview ? 'Reading what is new (the cut stays where it was)' : 'Reading what is new since the last digest', args: { action: 'digest', ...(preview ? { preview: true } : {}) } },
+    ],
+  }
+}

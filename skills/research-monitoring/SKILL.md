@@ -13,7 +13,7 @@ metadata:
 > **In Academic Harness:** `literature_watch` stores watches, what each has seen, and
 > what was new, under `.dsh/watch/`. `paper_recommend` returns related papers with a
 > stated reason. Neither ingests anything into PaperMemory, sends email, or runs on a
-> timer: you run a watch, then read the digest.
+> timer: you run a watch, then read the digest. In Claude Code `/ah-watch` does both in one line (it runs the watches that are due and prints what is new), and `/loop 1d /ah-watch` makes it daily while the session is open.
 
 ## Choose the tool
 

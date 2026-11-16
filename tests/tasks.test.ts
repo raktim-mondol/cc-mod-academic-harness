@@ -41,10 +41,10 @@ function world(on: any, opts: { cwd?: string; files?: Record<string, { size?: nu
 const run = ($: any, command: string, args = '') => $.command.run({ command, args, origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 80 } })
 const start = ($: any, cwd = '/p') => $.session.start({ cwd, surface: 'terminal', isInteractive: false })
 
-test('the seven task commands and /fold are declared at session start', async ($, on) => {
+test('the seven task commands, /ah-watch and /fold are declared at session start', async ($, on) => {
   const w = world(on)
   await start($)
-  expect(w.commands).toEqual(['academic', 'ah-research', 'ah-review', 'ah-papers', 'ah-references', 'ah-write', 'ah-analyze', 'ah-hypotheses', 'fold'])
+  expect(w.commands).toEqual(['academic', 'ah-research', 'ah-review', 'ah-papers', 'ah-references', 'ah-write', 'ah-analyze', 'ah-hypotheses', 'ah-watch', 'fold'])
 })
 
 test('/ah-papers starts literature_search with the effort\'s limit and shows what it answered', async ($, on) => {
@@ -188,4 +188,47 @@ test('/fold with no reply yet says so', async ($, on) => {
   await start($)
   const r = await run($, 'fold')
   expect(r.text).toContain('There is no reply to fold yet')
+})
+
+// ---- /ah-watch ----
+
+test('/ah-watch runs what is due, then prints what is new, and moves the digest\'s cut', async ($, on) => {
+  const w = world(on, { answer: (_t, input) => (input['action'] === 'run' ? { text: 'Ran 2 watches: 5 new records.' } : { text: '# New since the last digest\n\n- A paper (2025)' }) })
+  await start($)
+  const r = await run($, 'ah-watch')
+  expect(w.calls.map(c => [c.tool.replace(P, ''), c.input['action']])).toEqual([['literature_watch', 'run'], ['literature_watch', 'digest']])
+  expect(w.calls[0]!.input['due_only']).toBe(true)
+  expect(w.calls[1]!.input['preview']).toBeUndefined()
+  expect(r.text).toContain('→ Running the watches that are due')
+  expect(r.text).toContain('Ran 2 watches: 5 new records.')
+  expect(r.text).toContain('- A paper (2025)')
+})
+
+test('--all runs every watch and --preview leaves the cut where it was', async ($, on) => {
+  const w = world(on, { answer: () => ({ text: 'ok' }) })
+  await start($)
+  await run($, 'ah-watch', '--all --preview')
+  expect(w.calls[0]!.input).toEqual({ action: 'run' })
+  expect(w.calls[1]!.input).toEqual({ action: 'digest', preview: true })
+})
+
+test('with no watch saved it says how to make one, and reads nothing', async ($, on) => {
+  const w = world(on, { answer: () => ({ text: 'no watches to run' }) })
+  await start($)
+  const r = await run($, 'ah-watch')
+  expect(w.calls.length).toBe(1)
+  expect(r.text).toContain('Save a search first')
+  expect(r.text).toContain('/loop 1d /ah-watch')
+})
+
+test('an unknown word and a refusing tool are reported', async ($, on) => {
+  const w = world(on, { answer: () => ({ deny: 'a rule refuses this tool' }) })
+  await start($)
+  const bad = await run($, 'ah-watch', '--weekly')
+  expect(bad.text).toContain('unknown argument "--weekly"')
+  expect(bad.text).toContain('Usage: /ah-watch')
+  expect(w.calls.length).toBe(0)
+  const refused = await run($, 'ah-watch')
+  expect(refused.text).toContain('stopped at')
+  expect(refused.text).toContain('a rule refuses this tool')
 })

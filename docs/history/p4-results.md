@@ -56,4 +56,4 @@ The rest of the tool surface, long-running work and the model route. Measured on
 - **The prompt queued by a notice appears as "Prompt from the academic-harness plugin"** and the model may reply that a job it already read about is a duplicate. Delivered results are not announced, but a notice for a job read a moment earlier can still land.
 - **Plan mode, subagent-started jobs and several concurrent sessions** sharing one mod home were not tried. Records carry the session id, so notices stay per session.
 - **Descriptions still say DSH in places** (kept identical to upstream for the parity check).
-- **`zvec_index`, `ah_rsi`** are P6. (`paper_mcp`, `paper_backfill` and the dream pass were added by the audit, `docs/AUDIT-P0-P4.md`.)
+- **`zvec_index`, `ah_rsi`** are P6. (`paper_mcp`, `paper_backfill` and the dream pass were added by the audit, `docs/history/audit-p0-p4.md`.)

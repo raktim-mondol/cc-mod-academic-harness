@@ -10,6 +10,7 @@ import { DROPPED_TOOLS } from './fit.mjs'
 import { installDir, installedStamp, wantStamp } from './papermemory.mjs'
 import { isDevMode, modHome, modRoot, upstreamDir } from './paths.mjs'
 import { libraryCounts } from './panel.mjs'
+import { readState } from './bootstrap-state.mjs'
 import { checkSnapshot } from './snapshot.mjs'
 
 /** Keys that change what a researcher gets the most; the rest are listed by count. */
@@ -35,7 +36,12 @@ export async function diagnose({ env = process.env, online = false, root = modRo
   const major = Number(process.versions.node.split('.')[0])
   add('node', major >= 22 ? 'ok' : 'missing', 'Node.js', `v${process.versions.node}${major >= 22 ? '' : ' (22 or newer is needed for node:sqlite)'}`, major >= 22 ? undefined : 'install a current Node.js')
 
-  if (isDevMode(env)) {
+  const fetching = isDevMode(env) ? null : readState(env)
+  if (fetching && !fetching.error) {
+    add('snapshot', 'info', 'Source snapshot', `being set up by the server (started ${Math.max(0, Math.round((Date.now() - fetching.startedAt) / 1000))} s ago): ${fetching.step}. The other tools appear when it is done`)
+  } else if (fetching?.error) {
+    add('snapshot', 'missing', 'Source snapshot', `the first-start fetch failed at "${fetching.step}": ${fetching.error}`, 'node scripts/setup.mjs (it shows the whole error)')
+  } else if (isDevMode(env)) {
     add('snapshot', 'info', 'Source snapshot', `development mode: reading ${upstream} (AH_UPSTREAM), read-only`)
   } else {
     const s = checkSnapshot(upstream, lock)
@@ -91,7 +97,7 @@ export async function diagnose({ env = process.env, online = false, root = modRo
 
   const dropped = Object.keys(DROPPED_TOOLS)
   const restored = `${env.AH_RESTORE_TOOLS ?? ''},${env.AH_RESTORE_TOOLS_SETTING ?? ''}`.split(/[\s,]+/).filter(n => dropped.includes(n))
-  add('surface', 'info', 'Tools', `areas: ${env.AH_TOOL_AREAS?.trim() || 'all'}; ${dropped.length} Academic Harness tools are left out on purpose${restored.length ? ` (restored: ${restored.join(', ')})` : ''}: docs/FIT-REVIEW.md`)
+  add('surface', 'info', 'Tools', `areas: ${env.AH_TOOL_AREAS?.trim() || 'all'}; ${dropped.length} Academic Harness tools are left out on purpose${restored.length ? ` (restored: ${restored.join(', ')})` : ''}: docs/design/fit-review.md`)
 
   if (online && lock) {
     const out = tryRun('git', ['ls-remote', `https://${lock.source}.git`, 'HEAD'])

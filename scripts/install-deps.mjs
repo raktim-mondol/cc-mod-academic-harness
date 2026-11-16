@@ -16,15 +16,16 @@ import { fileURLToPath } from 'node:url'
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const upstream = process.env.AH_UPSTREAM?.trim() ? null : join(root, 'upstream')
 
-export function install({ force = false } = {}) {
-  if (!upstream) throw new Error('AH_UPSTREAM is set (development mode): nothing is installed into a checkout')
-  const lockFile = join(upstream, 'package-lock.json')
-  if (!existsSync(lockFile)) throw new Error('upstream/package-lock.json is missing: run node scripts/sync-upstream.mjs first')
-  const stamp = join(upstream, 'node_modules', '.ah-lock-sha256')
+export function install({ force = false, dir, quiet = false } = {}) {
+  if (!upstream && !dir) throw new Error('AH_UPSTREAM is set (development mode): nothing is installed into a checkout')
+  const target = dir ?? upstream
+  const lockFile = join(target, 'package-lock.json')
+  if (!existsSync(lockFile)) throw new Error(`${lockFile} is missing: run node scripts/sync-upstream.mjs first`)
+  const stamp = join(target, 'node_modules', '.ah-lock-sha256')
   const want = createHash('sha256').update(readFileSync(lockFile)).digest('hex')
   const have = existsSync(stamp) ? readFileSync(stamp, 'utf8').trim() : ''
-  if (!force && have === want && existsSync(join(upstream, 'node_modules', 'ah-dsh-tools'))) return { installed: false, sha: want }
-  const r = spawnSync('npm', ['ci', '--omit=dev', '--no-audit', '--no-fund'], { cwd: upstream, stdio: ['ignore', 'inherit', 'inherit'] })
+  if (!force && have === want && existsSync(join(target, 'node_modules', 'ah-dsh-tools'))) return { installed: false, sha: want }
+  const r = spawnSync('npm', ['ci', '--omit=dev', '--no-audit', '--no-fund'], { cwd: target, stdio: ['ignore', quiet ? 'ignore' : 'inherit', 'inherit'] })
   if (r.status !== 0) throw new Error(`npm ci failed (exit ${r.status})`)
   writeFileSync(stamp, `${want}\n`)
   return { installed: true, sha: want }

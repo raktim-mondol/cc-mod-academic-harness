@@ -257,7 +257,7 @@ The built-in guard (`cc-plugin-sec-default`) keeps a user mod from approving wha
 
 ## 17. What this means for the academic-harness port
 
-| Rule above | Effect on the plan in `IMPLEMENTATION_PLAN.md` |
+| Rule above | Effect on the plan in `docs/history/implementation-plan.md` |
 |---|---|
 | No Node in the module (§2) | Tools run in a bundled MCP server; the module only calls `$.process.run` for the guard. Confirmed as the design |
 | Register each event once per matcher (§4) | One `session.start` hook only. It registers every command, starts the job-watching timer and sets the status line. Split into helper functions called from it, not into several hooks |

@@ -48,4 +48,4 @@ Skills, research mode, PaperMemory and agents. Measured on Claude Code 2.1.325 a
 - A fresh clone has no `upstream/`. The PaperMemory install and the on-demand skill fallback need it until P6 bundles the vendored package (620 KB of code) and the skills.
 - Until P2 there is no `skill_search`. The host notes tell the model to search `upstream/skills/` with Grep instead.
 - Interactive checks of `/academic` in the terminal were not repeated for P1; the `-p` runs exercise the same hooks. The status entry from P0 was seen interactively.
-- Closed by the audit (`docs/AUDIT-P0-P4.md`, item 9): the no-`uv` install is a test now and passes; the P1 live checks are `tests/live/p1.mjs`. Earlier text: not tested: PaperMemory install with no `uv` (the `python -m venv` fallback), and a store that needs migration.
+- Closed by the audit (`docs/history/audit-p0-p4.md`, item 9): the no-`uv` install is a test now and passes; the P1 live checks are `tests/live/p1.mjs`. Earlier text: not tested: PaperMemory install with no `uv` (the `python -m venv` fallback), and a store that needs migration.

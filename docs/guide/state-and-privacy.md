@@ -1,0 +1,48 @@
+# State and privacy
+
+What the mod reads, what it writes and where, and what it can spend.
+
+## Where things live
+
+| What | Where |
+|---|---|
+| The source snapshot, its dependencies and the writing engine's environment | `<plugin>/upstream/` in a set-up clone, or `<home>/upstream/<commit>/` in an installed copy |
+| PaperMemory's CLI, TextFold, job records and logs, the compute ledger, the first-start state | `~/.local/share/cc-mod-academic-harness/home/` (`AH_MOD_HOME`) |
+| The PaperMemory library | `~/.local/share/papermemory/papermemory.db`, shared with DeepSeek Harness |
+| A project's notebook and research ledgers | `<project>/.dsh/`, shared with DeepSeek Harness |
+| The writing engine's state, and the guard's log | `<project>/.ah/` (`claude-hooks.jsonl`) |
+| A tool result longer than 40,000 characters, in full | `<project>/.dsh/tool-output/` |
+| The `/academic on\|off` override, the pane's data, which job notices were shown | Claude Code's plugin state for the session; nothing of the mod's on disk |
+
+## What it reads
+
+- **The Academic Harness source checkout**, only with `git archive` against its object database, only at setup or update, and never written. `node scripts/check-upstream-clean.mjs` proves it untouched (its HEAD, its working-tree status and `~/.dsh`).
+- **The PaperMemory database**, opened read-only and immutable (`?immutable=1`) by the pane, so not even a `-shm` or `-wal` file appears beside it. The PaperMemory tools themselves write to it, as they always did.
+- **Keys**: from the plugin's options and the environment, into the server's environment. The doctor and the diagnostics print names, never values.
+
+## What it never touches
+
+- **`~/.dsh` and DeepSeek Harness on its port.** The server refuses to start if `DSH_HOME` is unset or points at `~/.dsh`, and the tests check the real home is unchanged.
+- **The source checkout's working tree.**
+- **Anything outside the project folder**, by the tools that take paths: they refuse a path that leaves the session folder.
+
+## What it can cost
+
+| Source | When | Bounded by |
+|---|---|---|
+| Tools that call a model (`deep_research`, `deep_review`, `coscientist`, ...) | They run headless `claude -p` calls under your login | `llm_model`, `llm_budget_usd` (default 5 USD a server run, 1 USD a call) |
+| `evidence_check=run` | One model call per paragraph a turn changed, at the end of the turn | The same budget |
+| Rented compute | `modal_run`, `runpod_run`, `vastai_run` | An approval every time, the cost ceiling in it, `compute_session_cap_usd`, and a ledger |
+| Keyed search and image APIs | Only with a key | The provider's own limits |
+
+Task commands themselves (`/ah-papers`, `/fold`, `/ah-watch`, `/academic ...`) make no model call.
+
+## What the guard does
+
+In a folder with an `ah.yaml` (and nowhere else), every `Write`, `Edit`, `NotebookEdit` and `Bash` call is checked by the writing engine before it runs (about 0.14 s): protected files cannot be changed, unit anchors cannot be dropped, and the author-only acts (waive, approve, accept) cannot be run from the shell. If the guard cannot run, those calls are refused and reads still work. `ah_author` and `ah_migrate` apply ask you first. Outside such a folder nothing runs.
+
+## Text that is not an instruction
+
+Search results, abstracts and paper text are wrapped in `<untrusted-source>` and the research-mode text tells the model to read them as claims, never as instructions.
+
+Next: [Troubleshooting](troubleshooting.md).

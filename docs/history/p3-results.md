@@ -70,7 +70,7 @@ Live scenarios (`node tests/live/p3.mjs`):
 
 ## Open items
 
-- **Closed by the audit (`docs/AUDIT-P0-P4.md`, item 8):** `tests/live/p3-tui.mjs` runs the interactive checks and `p3.mjs` now has all 15 scenarios. Earlier text: **The interactive terminal matrix** (`scripts/claude-host-test/tui_matrix.py`: the approval dialog for an allowed edit, no dialog for a protected one, the author's `!` waiver) was not run. Its pieces are covered separately: `tool.check` ask in a real dialog (P0, S6), the guard and gate in `-p` (here).
+- **Closed by the audit (`docs/history/audit-p0-p4.md`, item 8):** `tests/live/p3-tui.mjs` runs the interactive checks and `p3.mjs` now has all 15 scenarios. Earlier text: **The interactive terminal matrix** (`scripts/claude-host-test/tui_matrix.py`: the approval dialog for an allowed edit, no dialog for a protected one, the author's `!` waiver) was not run. Its pieces are covered separately: `tool.check` ask in a real dialog (P0, S6), the guard and gate in `-p` (here).
 - **`evidence_check=run`** was only tested as far as the engine receiving `AH_T3_MODE=run`. A real verifier call needs a configured backend (`ah.yaml`, the `claude` CLI or a key) and costs per paragraph.
 - **Plan mode with the `ah_author` ask** and subagents' tool calls were not tried. The PreToolUse envelope carries no `agentId` to the engine.
 - **Closed by the audit (item 3):** the server builds the engine's venv in the background when it is missing. Earlier text: **The engine is not installed by a fresh clone.** `node scripts/sync-upstream.mjs`, `node scripts/install-deps.mjs` and `node scripts/install-engine.mjs` are the steps. P6 bundles them.

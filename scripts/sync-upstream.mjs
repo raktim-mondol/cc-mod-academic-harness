@@ -5,7 +5,7 @@
 //
 // The source checkout is only read, with `git archive` and `git ls-tree` against
 // the object database: no working-tree file is opened and nothing is written in
-// it (ground rule 1 of IMPLEMENTATION_PLAN.md). With no checkout (a fresh clone of this
+// it (ground rule 1 of docs/history/implementation-plan.md). With no checkout (a fresh clone of this
 // repository on another machine), or with --github, the same commit is downloaded from
 // GitHub (the repository is public), cut down to the same allow-list, and checked
 // against the digest in the lock. Output:

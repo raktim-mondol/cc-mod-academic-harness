@@ -1,6 +1,6 @@
 # Phase P6 results
 
-P6 as planned was "remaining surface, packaging, release". Each item was asked the same question as in the fit review (`docs/FIT-REVIEW.md`): does it make the mod better for the person using it, or only repeat what Claude Code already does? Two items went, three were not built, and the rest made the mod reproducible and maintainable. 2026-11-16, Claude Code 2.1.325, upstream `a3f17eb` (0.54.1).
+P6 as planned was "remaining surface, packaging, release". Each item was asked the same question as in the fit review (`docs/design/fit-review.md`): does it make the mod better for the person using it, or only repeat what Claude Code already does? Two items went, three were not built, and the rest made the mod reproducible and maintainable. 2026-11-16, Claude Code 2.1.325, upstream `a3f17eb` (0.54.1).
 
 ## Decided
 
@@ -22,7 +22,7 @@ After this, nothing in Academic Harness's 136 tools is waiting for a later phase
 | A digest of the snapshot | `server/src/snapshot.mjs`, `UPSTREAM.lock.json` (`treeSha256`, `fileCount`) | One digest over the path and content of every file, without what installers generate (`node_modules`, `.venv`, `__pycache__`, the engine's stamps, PaperMemory's build output). A download of the locked commit must match it or it is refused, and the lock is left alone. **The real download of `a3f17eb` holds the same 3,276 files and the same digest as `git archive`** |
 | `/academic doctor`, the `doctor` tool | `server/src/doctor.mjs`, `doctortool.mjs`, `server/bin/ah-doctor.mjs`, `hooks/doctor.ts` | Node, the snapshot against the lock, dependencies, the engine, the Claude Code CLI, `uv`, PaperMemory's CLI and library, TextFold, the helpers, LaTeX, which keys are set (names only), jobs, what is left out, and with `--online` whether upstream has moved. The command asks the running server (so it sees the keys saved in the plugin's options and which modules loaded or failed) and falls back to a fresh process when the server is not there |
 | The update procedure | `scripts/update-upstream.mjs`, `scripts/update-lib.mjs` | Takes a candidate commit in a scratch folder, loads its tools with the current dependencies and compares: tools added, removed, changed; prompt sections, and whether the ones `research-mode.md` was written from changed; core skills; settings fields; dependencies; modules nobody has classified. `--apply` stops when a decision is needed, else syncs, installs, builds, checks parity and runs the tests |
-| Docs | `docs/USER-GUIDE.md`, `README.md` | Set up, what it adds, settings and switches, where things live, troubleshooting, updating |
+| Docs | `docs/guide/`, `README.md` | Set up, what it adds, settings and switches, where things live, troubleshooting, updating |
 | Version | `plugin.json` 0.3.0 | |
 
 ## Verification
@@ -48,7 +48,7 @@ After this, nothing in Academic Harness's 136 tools is waiting for a later phase
 
 ## Known limits
 
-- A marketplace install is not supported: the snapshot is fetched by `setup.mjs`, not at first use. When you want to share the mod, the first start of the server could fetch it into the plugin's persistent data folder; that is the one piece left, and it comes with the ask.
+- A marketplace install was not supported at the time of P6: the snapshot was fetched by `setup.mjs`, not at first use. The first-start fetch and the marketplace file came afterwards ([wrap-up](wrap-up.md)).
 - `setup` downloads about 17 MB from GitHub and 115 MB of npm packages the first time; the engine and the helpers need PyPI.
 - The update report loads the candidate's tools with the current dependencies; a changed `package-lock.json` is reported, and `--apply` installs it, so a tool that needs a new package shows as a load error in the report until then.
 - Linux only, as upstream.

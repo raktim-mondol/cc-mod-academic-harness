@@ -8,9 +8,18 @@
 // If the CLI cannot be found or installed this exits 1 with a message on stderr, so a missing
 // memory server shows up as a failed server and never looks like an empty library.
 import { spawn } from 'node:child_process'
-import { resolveLaunch, say, serverEnv, installDir, vendorDir } from '../src/papermemory.mjs'
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
+import { bootstrap } from '../src/bootstrap.mjs'
+import { findManaged, isDevMode, resolveLaunch, say, serverEnv, installDir, vendorDir } from '../src/papermemory.mjs'
 
 const arg = process.argv[2]
+// The first install builds from the source snapshot. On a first start the `ah` server is fetching it at the same moment: join in (bootstrap.mjs
+// coordinates), so this server does not fail for a snapshot that is a minute away.
+if (!process.env.PAPERMEMORY_CLI?.trim() && !isDevMode() && !findManaged() && !existsSync(join(vendorDir(), 'pyproject.toml')) && process.env.AH_BOOTSTRAP?.trim() !== '0') {
+  say('the source snapshot is not here yet: fetching it first')
+  try { await bootstrap() } catch (error) { say(`could not fetch it: ${error.message}`) }
+}
 const launch = await resolveLaunch()
 if (!launch) {
   say(`CLI not found and could not be installed. Set PAPERMEMORY_CLI to a papermemory executable, or fix ${installDir()} (source: ${vendorDir()}).`)

@@ -1,6 +1,6 @@
 {
   "name": "academic-harness",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Academic Harness research tools, skills and writing guards, as a Claude Code mod.",
   "author": {
     "name": "Raktim Mondol"
@@ -28,7 +28,7 @@
     "restore_tools": {
       "type": "string",
       "title": "Tools to bring back",
-      "description": "Tools this plugin leaves out because Claude Code already does the job (see docs/FIT-REVIEW.md): brave_search, tavily_search, exa_search, perplexity_search, parallel_search, parallel_extract, consensus_search, elicit_search, scientific_result, fold_text, research_template, latex_compile. Comma separated; the tool's API key is then read from its environment variable.",
+      "description": "Tools this plugin leaves out because Claude Code already does the job (see docs/design/fit-review.md): brave_search, tavily_search, exa_search, perplexity_search, parallel_search, parallel_extract, consensus_search, elicit_search, scientific_result, fold_text, research_template, latex_compile. Comma separated; the tool's API key is then read from its environment variable.",
       "default": ""
     },
     "llm_model": {

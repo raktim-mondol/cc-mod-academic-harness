@@ -22,7 +22,7 @@ Research mode is on: this session is for academic work. That means finding and c
 
 - The notebook and the research ledgers are under `<project>/.dsh/` (shared with DeepSeek Harness); the writing engine's state is under `<project>/.ah/`. The PaperMemory library is `~/.local/share/papermemory/papermemory.db`.
 - Write outputs (plots, tables, reports, `.tex`) into the project folder.
-- Task commands run the matching tool in one line: `/ah-research`, `/ah-review`, `/ah-papers`, `/ah-references`, `/ah-write`, `/ah-analyze`, `/ah-hypotheses`. `/fold` folds your last reply for the person. `/academic` opens the pane.
+- Task commands run the matching tool in one line: `/ah-research`, `/ah-review`, `/ah-papers`, `/ah-references`, `/ah-write`, `/ah-analyze`, `/ah-hypotheses`. `/ah-watch` runs the saved literature searches that are due and prints what is new. `/fold` folds your last reply for the person. `/academic` opens the pane; `/academic doctor` says what is ready.
 
 ## How you work
 

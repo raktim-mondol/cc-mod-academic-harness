@@ -1,6 +1,6 @@
 # Platform notes (phase P0)
 
-Results of the eight platform checks from `IMPLEMENTATION_PLAN.md` section 7, P0. Each result says how it was observed. Nothing here is taken from documentation alone unless marked **[docs]**.
+Results of the eight platform checks from `docs/history/implementation-plan.md` section 7, P0. Each result says how it was observed. Nothing here is taken from documentation alone unless marked **[docs]**.
 
 | | |
 |---|---|

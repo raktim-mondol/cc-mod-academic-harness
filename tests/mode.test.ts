@@ -36,7 +36,7 @@ test('outside an ah.yaml tree, auto mode is off: no section, status says off', a
   await $.session.start({ cwd: '/home/u/notes', surface: 'terminal', isInteractive: true })
 
   expect(seen.status).toEqual(['research mode off'])
-  expect(seen.commands).toEqual(['academic', 'ah-research', 'ah-review', 'ah-papers', 'ah-references', 'ah-write', 'ah-analyze', 'ah-hypotheses', 'fold'])
+  expect(seen.commands).toEqual(['academic', 'ah-research', 'ah-review', 'ah-papers', 'ah-references', 'ah-write', 'ah-analyze', 'ah-hypotheses', 'ah-watch', 'fold'])
   expect(ids(await compose($))).toEqual(['intro'])
 })
 

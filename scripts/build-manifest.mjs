@@ -56,7 +56,7 @@ export async function build(manifest) {
   userConfig.restore_tools = {
     type: 'string',
     title: 'Tools to bring back',
-    description: `Tools this plugin leaves out because Claude Code already does the job (see docs/FIT-REVIEW.md): ${Object.entries(DROPPED_TOOLS).filter(([, t]) => t.restorable !== false).map(([n]) => n).join(', ')}. Comma separated; the tool's API key is then read from its environment variable.`,
+    description: `Tools this plugin leaves out because Claude Code already does the job (see docs/design/fit-review.md): ${Object.entries(DROPPED_TOOLS).filter(([, t]) => t.restorable !== false).map(([n]) => n).join(', ')}. Comma separated; the tool's API key is then read from its environment variable.`,
     default: '',
   }
   userConfig.llm_model = {

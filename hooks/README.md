@@ -1,0 +1,23 @@
+# hooks/
+
+The Claude Code side of the mod: a hooks module the engine loads from `hooks.json` → `register.tsx`. It has no Node and no DOM, and reaches the outside only through the engine interface `$` (and, for anything that needs Node, through a process it runs: `server/bin/ah-*.mjs`). One `session.start` hook only: the engine refuses two with no matcher, so everything that must happen at start is called from it.
+
+| File | What it does |
+|---|---|
+| `register.tsx` | Every registration, in one place |
+| `mode.ts` | Research mode (`/academic on\|off\|auto\|status`), the research section of the system prompt, and `showStatus`, the only writer of the one status line |
+| `guard.ts`, `guard-core.ts` | The writing-engine guard: the four classic events run `ah hook` through `server/bin/ah-hook.mjs` in an `ah.yaml` project; fails closed for writes and shell |
+| `approvals.ts` | `tool.check`: `ah_author` and `ah_migrate apply` ask; paid compute always asks |
+| `notices.ts`, `jobs-core.ts` | Job completion notices: a timer reads the job records and notifies, and prompts the model |
+| `tasks.ts`, `tasks-core.ts` | `/ah-research` and the other task commands, `/ah-watch`, `/fold` |
+| `ui.tsx`, `ui-core.ts` | The pane, and the parts of the status line |
+| `doctor.ts` | `/academic doctor` |
+| `generated/` | **Generated; do not edit.** The research-mode text (`prompt.ts`), upstream's task catalogue and fold (`task-modes.ts`, `fold-core.ts`) |
+
+Rules this code follows:
+
+- A helper takes `$` as a parameter and calls it in full (`$.fs.read(...)`). The engine reads the source statically and refuses an aliased `$`.
+- The `*-core.ts` files are pure and written in the erasable subset of TypeScript (no enums, no parameter properties), so node tests import them as they are (`tests/helpers/ts-resolve.mjs`).
+- The state the module keeps lives in `$.state`, declared in [`types/index.d.ts`](../types/README.md).
+
+Tests: `claude plugin test .` runs `tests/*.test.ts(x)`; see [Testing](../docs/maintain/testing.md). How the pieces meet: [Architecture](../docs/design/architecture.md).

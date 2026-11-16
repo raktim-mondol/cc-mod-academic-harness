@@ -1,0 +1,12 @@
+{
+  "name": "academic-harness-mod",
+  "description": "Research tooling for Claude Code: literature search, citation checks, deep research and review, and guarded LaTeX paper writing.",
+  "owner": { "name": "Raktim Mondol" },
+  "plugins": [
+    {
+      "name": "academic-harness",
+      "source": "./",
+      "description": "Academic Harness research tools, skills and writing guards for Claude Code: literature search, citation checks, deep research and review, and guarded LaTeX paper writing."
+    }
+  ]
+}

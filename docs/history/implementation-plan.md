@@ -1,6 +1,6 @@
 # cc-mod-academic-harness: implementation plan
 
-Status: **P0 to P6 done, and a fit review** (2026-11-16). P6 (`docs/P6-RESULTS.md`): zvec and `ah_rsi` dropped, a fresh clone works with no source checkout (`scripts/setup.mjs`), `/academic doctor`, an update procedure; the bundle, the extra agents and the marketplace were not built. The fit review (`docs/FIT-REVIEW.md`) dropped 13 tools, 15 skills and 1 agent that Claude Code already covers, moved 17 skills to on-demand, and rewrote the research-mode text and the passages of the guides that were wrong for this host; where the plan below says otherwise (tool counts, `paper_mcp`, the skill count), the review is later. P0: the scaffold loads and the eight platform checks are answered in `docs/PLATFORM-NOTES.md`. P1: skills, research mode, PaperMemory and agents, results in `docs/P1-RESULTS.md`. P2: the tool host serves 35 tier-1 tools, results in `docs/P2-RESULTS.md`. P3: the writing engine and its guards; 38 `ah_*` tools (73 served in all), results in `docs/P3-RESULTS.md`. P4: 134 of 136 tools served plus 4 job tools, a jobs service, a model route and compute approvals, results in `docs/P4-RESULTS.md`. P5: the seven task commands, `/fold`, the status line and the pane, results in `docs/P5-RESULTS.md`. Sections below are unchanged from the plan as written, except where a P0 result corrected them (marked "P0 result").
+Status: **P0 to P6 done, and a fit review** (2026-11-16). P6 (`docs/history/p6-results.md`): zvec and `ah_rsi` dropped, a fresh clone works with no source checkout (`scripts/setup.mjs`), `/academic doctor`, an update procedure; the bundle, the extra agents and the marketplace were not built. The fit review (`docs/design/fit-review.md`) dropped 13 tools, 15 skills and 1 agent that Claude Code already covers, moved 17 skills to on-demand, and rewrote the research-mode text and the passages of the guides that were wrong for this host; where the plan below says otherwise (tool counts, `paper_mcp`, the skill count), the review is later. P0: the scaffold loads and the eight platform checks are answered in `docs/design/platform-notes.md`. P1: skills, research mode, PaperMemory and agents, results in `docs/history/p1-results.md`. P2: the tool host serves 35 tier-1 tools, results in `docs/history/p2-results.md`. P3: the writing engine and its guards; 38 `ah_*` tools (73 served in all), results in `docs/history/p3-results.md`. P4: 134 of 136 tools served plus 4 job tools, a jobs service, a model route and compute approvals, results in `docs/history/p4-results.md`. P5: the seven task commands, `/fold`, the status line and the pane, results in `docs/history/p5-results.md`. Sections below are unchanged from the plan as written, except where a P0 result corrected them (marked "P0 result").
 
 | | |
 |---|---|
@@ -118,7 +118,7 @@ Claude Code defers MCP tools behind ToolSearch. The model sees tool names and lo
 
 ```
 cc-mod-academic-harness/
-├── IMPLEMENTATION_PLAN.md
+├── docs/history/implementation-plan.md
 ├── README.md
 ├── UPSTREAM.lock.json            source commit, version, archive hash
 ├── .claude-plugin/plugin.json    name, version, types, userConfig, mcpServers
@@ -157,7 +157,7 @@ cc-mod-academic-harness/
 │   ├── *.test.ts                 run by `claude plugin test`
 │   ├── server/*.test.mjs         run by `node --test`
 │   └── live/                     nested-claude scenarios
-└── docs/PLATFORM-NOTES.md        results of the P0 checks
+└── docs/design/platform-notes.md        results of the P0 checks
 ```
 
 State outside the folder:
@@ -200,7 +200,7 @@ Work:
 1. Initialise the folder as its own git repository. Add `.gitignore`, `LICENSE` (MIT, as upstream) and a `NOTICE` that points at upstream's.
 2. Write `.claude-plugin/plugin.json`, `hooks/hooks.json`, `hooks/register.tsx` and `types/index.d.ts`. The first hook sets a status-line entry at `session.start`, as visible proof of loading.
 3. Write `scripts/check-upstream-clean.mjs`.
-4. Run the checks below and record each result in `docs/PLATFORM-NOTES.md`.
+4. Run the checks below and record each result in `docs/design/platform-notes.md`.
 
 | Check | Question |
 |---|---|
@@ -215,7 +215,7 @@ Work:
 
 **Exit:** `claude plugin validate` and `tsc -p` pass. The mod loads with `claude --plugin-dir`. All eight checks have a recorded result. The upstream-clean check passes.
 
-**P0 result:** met. S1 to S6 pass as assumed, S7 and S8 gave numbers. Four follow-ups for later phases are listed at the end of `docs/PLATFORM-NOTES.md` (guard input shape, bare command names, empty `userConfig` values, tool-name prefix).
+**P0 result:** met. S1 to S6 pass as assumed, S7 and S8 gave numbers. Four follow-ups for later phases are listed at the end of `docs/design/platform-notes.md` (guard input shape, bare command names, empty `userConfig` values, tool-name prefix).
 
 **If a check fails:** S1 or S2 failing changes the layout (skills or the server would move to a companion plugin). S5 failing moves the guard to `tool.call`, `prompt.submit` and `turn.complete` hooks, or to command hooks printed by `ah hooks-config`.
 
@@ -236,7 +236,7 @@ Work:
 
 **Exit:** `/academic on` adds the section and `/academic off` removes it. The core skills are listed. The 14 PaperMemory tools are callable. Agents are offered. `~/.dsh` and the source are untouched.
 
-**P1 result:** met. 86 of 92 core skills are listed (6 excluded by D5), the always-on section is about 4,100 tokens, 14 PaperMemory tools answer, 22 agents are offered, and the source and `~/.dsh` are untouched. Deviations and costs are in `docs/P1-RESULTS.md`.
+**P1 result:** met. 86 of 92 core skills are listed (6 excluded by D5), the always-on section is about 4,100 tokens, 14 PaperMemory tools answer, 22 agents are offered, and the source and `~/.dsh` are untouched. Deviations and costs are in `docs/history/p1-results.md`.
 
 ### P2. Tool host and tier-1 tools (L)
 
@@ -264,7 +264,7 @@ Tier 1: `literature_search`, the OpenAlex, Semantic Scholar, PubMed, arXiv and C
 
 **Exit:** tier-1 tools work in a research-mode session. Parity is green. A key set in `userConfig` reaches a tool and appears in no log. `~/.dsh` is untouched.
 
-**P2 result:** met, with one exit item shown only through `--settings` (the interactive keychain path is open). 35 of 136 tools are served in four areas, parity with upstream is green for names, descriptions and parameters, upstream's own 25 tier-1 tests pass in the snapshot, and two live nested runs pass (search then notebook; a config key reaches a tool and appears in no output). Decisions, costs and open items are in `docs/P2-RESULTS.md`. `index.js` is not run (it seeds skills and binds a settings service); the host calls its component functions.
+**P2 result:** met, with one exit item shown only through `--settings` (the interactive keychain path is open). 35 of 136 tools are served in four areas, parity with upstream is green for names, descriptions and parameters, upstream's own 25 tier-1 tests pass in the snapshot, and two live nested runs pass (search then notebook; a config key reaches a tool and appears in no output). Decisions, costs and open items are in `docs/history/p2-results.md`. `index.js` is not run (it seeds skills and binds a settings service); the host calls its component functions.
 
 **Risks:** modules find assets through `import.meta.url`. Unbundled, that works from `upstream/`. Bundled, the bundle must sit at the snapshot root (P6).
 
@@ -288,7 +288,7 @@ Work:
 
 **Exit:** the scenarios pass. With the engine deliberately broken, mutating calls are denied and reads pass. Outside an `ah.yaml` tree the guard starts no process.
 
-**P3 result:** met. The engine's venv is built inside the snapshot (`scripts/install-engine.mjs`), the guard is four function hooks plus a `tool.check` approval, and a failing guard denies mutating calls and passes reads. The engine's own suite passes in the mod's environment (519 tests), 19 hook tests and 16 bridge tests pass, and 11 live nested runs pass: protected write, protected shell, author-only shell, anchor loss, a clean edit, the stop gate holding the turn and handing off, the model handing a finding over with `ah_decision_request`, the card reaching the model, no engine process outside a project, a broken engine, and `ah_author` refused under `-p`. The interactive terminal matrix was not run. Decisions and open items are in `docs/P3-RESULTS.md`.
+**P3 result:** met. The engine's venv is built inside the snapshot (`scripts/install-engine.mjs`), the guard is four function hooks plus a `tool.check` approval, and a failing guard denies mutating calls and passes reads. The engine's own suite passes in the mod's environment (519 tests), 19 hook tests and 16 bridge tests pass, and 11 live nested runs pass: protected write, protected shell, author-only shell, anchor loss, a clean edit, the stop gate holding the turn and handing off, the model handing a finding over with `ah_decision_request`, the card reaching the model, no engine process outside a project, a broken engine, and `ah_author` refused under `-p`. The interactive terminal matrix was not run. Decisions and open items are in `docs/history/p3-results.md`.
 
 **First release ends here.**
 
@@ -311,7 +311,7 @@ Work:
 
 **Risks:** a job dies with the server process when the session ends. Whether deep research can resume from its store needs reading before this phase is sized.
 
-**P4 result:** met. The host serves 134 of 136 upstream tools (the two left are P6: `zvec_index`, `ah_rsi`) and four job tools. An audit of P0 to P4 after the phase found and fixed eleven gaps; see `docs/AUDIT-P0-P4.md`. D7 is decided: the model route is a headless Claude Code child. A deep research run goes from start to notice to report in a real terminal session, and the model reads the result with no polling. Paid compute always asks. Upstream's tests pass 125 of 125 (six DSH-only ones excluded). Decisions, costs and open items are in `docs/P4-RESULTS.md`.
+**P4 result:** met. The host serves 134 of 136 upstream tools (the two left are P6: `zvec_index`, `ah_rsi`) and four job tools. An audit of P0 to P4 after the phase found and fixed eleven gaps; see `docs/history/audit-p0-p4.md`. D7 is decided: the model route is a headless Claude Code child. A deep research run goes from start to notice to report in a real terminal session, and the model reads the result with no polling. Paid compute always asks. Upstream's tests pass 125 of 125 (six DSH-only ones excluded). Decisions, costs and open items are in `docs/history/p4-results.md`.
 
 ### P5. Terminal UI and task commands (M)
 
@@ -326,7 +326,7 @@ Work:
 
 **Exit:** the pane draws at wide and narrow widths. Every task command starts the right tool with the right arguments.
 
-**P5 result (2026-11-16):** done. The commands are `/ah-research`, `/ah-review`, `/ah-papers`, `/ah-references`, `/ah-write`, `/ah-analyze`, `/ah-hypotheses` (S7: `analyze` is taken) and `/fold`; the effort is a leading `--effort`. The status line, the pane and a table test against upstream's own `submitAcademicTask` are in `docs/P5-RESULTS.md`.
+**P5 result (2026-11-16):** done. The commands are `/ah-research`, `/ah-review`, `/ah-papers`, `/ah-references`, `/ah-write`, `/ah-analyze`, `/ah-hypotheses` (S7: `analyze` is taken) and `/fold`; the effort is a leading `--effort`. The status line, the pane and a table test against upstream's own `submitAcademicTask` are in `docs/history/p5-results.md`.
 
 ### P6. Remaining surface, packaging, release (M)
 
@@ -343,7 +343,7 @@ Work:
 
 **Exit:** a fresh clone works with `claude --plugin-dir` and no source checkout present. The update procedure has been run once against a newer upstream commit.
 
-**P6 result (2026-11-16):** met, with items 1 to 3 and 4's bundle decided against (`docs/P6-RESULTS.md`): both exit lines are `tests/live/p6.mjs` scenarios (`fresh`, `update`).
+**P6 result (2026-11-16):** met, with items 1 to 3 and 4's bundle decided against (`docs/history/p6-results.md`): both exit lines are `tests/live/p6.mjs` scenarios (`fresh`, `update`).
 
 ## 8. Verification summary
 
@@ -363,7 +363,7 @@ Work:
 
 | Risk | Effect | Handling |
 |---|---|---|
-| The mod API is early access and changes between releases | Hooks stop loading after a Claude Code update | Keep the hooks module small. Record the Claude Code version in `docs/PLATFORM-NOTES.md`. Rerun the P0 checks after an update |
+| The mod API is early access and changes between releases | Hooks stop loading after a Claude Code update | Keep the hooks module small. Record the Claude Code version in `docs/design/platform-notes.md`. Rerun the P0 checks after an update |
 | Tool names differ from the bare names in the prompt and in 791 skills | The model looks for a tool under the wrong name | Tool-name map in the always-on section. Check in the live tests |
 | Prompt size | 100k characters cannot all be always on | D6: short core plus on-demand guides. Measure the section size in the build |
 | Stop gate behaves differently at Claude Code's turn end | Turns end with blockers open, or loop | Live scenarios in P3. The engine caps its own gate loops |
@@ -388,4 +388,4 @@ These are assumptions from reading the mod documentation and types. P0 tests eac
 
 1. Confirm or change the defaults in section 6, at least D1 to D6.
 2. Run P0.
-3. Review `docs/PLATFORM-NOTES.md` together before starting P1, because S1, S2 and S5 can change the layout.
+3. Review `docs/design/platform-notes.md` together before starting P1, because S1, S2 and S5 can change the layout.

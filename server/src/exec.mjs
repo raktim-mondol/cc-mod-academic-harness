@@ -1,7 +1,7 @@
 // The per-call context upstream tools read as their second argument.
 //
 // What the tier-1 tools use (grepped, not guessed): exec.signal, exec.callId, and
-// exec.agent.session.header.{id,cwd,parentSession}. S3 of docs/PLATFORM-NOTES.md says where each
+// exec.agent.session.header.{id,cwd,parentSession}. S3 of docs/design/platform-notes.md says where each
 // comes from: the server's cwd is the session directory, CLAUDE_CODE_SESSION_ID is the session id,
 // and the call's _meta["claudecode/toolUseId"] is the call id.
 import { randomUUID } from 'node:crypto'

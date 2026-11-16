@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Ground rules 1 and 2 of IMPLEMENTATION_PLAN.md, as a check.
+// Ground rules 1 and 2 of docs/history/implementation-plan.md, as a check.
 //
 //   node scripts/check-upstream-clean.mjs --record   before a test run
 //   node scripts/check-upstream-clean.mjs            after it (default mode: compare)

@@ -1,5 +1,5 @@
 // The snapshot digest, and fetching the source without a checkout. The download is replaced by a tarball made from a throw-away repository, so
-// these tests need no network; the real download is exercised by scripts/setup.mjs (see docs/P6-RESULTS.md).
+// these tests need no network; the real download is exercised by scripts/setup.mjs (see docs/history/p6-results.md).
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'

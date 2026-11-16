@@ -1,5 +1,5 @@
 // The update report (scripts/update-lib.mjs): what two snapshots differ in, and what that asks of a person. The snapshots here are descriptions
-// made by hand; describeSnapshot itself is exercised by scripts/update-upstream.mjs against real commits (docs/P6-RESULTS.md).
+// made by hand; describeSnapshot itself is exercised by scripts/update-upstream.mjs against real commits (docs/history/p6-results.md).
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import { diffDescriptions, formatDiff, needsDecision } from '../../scripts/update-lib.mjs'

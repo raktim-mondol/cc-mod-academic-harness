@@ -82,7 +82,7 @@ The keys only these read (`BRAVE_API_KEY`, `TAVILY_API_KEY`, `EXA_API_KEY`, `PER
 
 - **An `academic-harness:pro` agent and a vision agent.** A Claude Code agent takes a `model` of its own, and the session model reads images with `Read`.
 - **An esbuild bundle of the server.** The server answers `initialize` at once and lists its tools in under a second after start; what a bundle would save is not worth a build step that has to follow dynamic imports of 100 modules and native dependencies.
-- **A marketplace entry.** Sharing is left until you ask for it (`docs/USER-GUIDE.md` says so).
+- **A marketplace entry.** Sharing was left until asked for; the marketplace file and the first-start fetch came afterwards ([wrap-up](../history/wrap-up.md)).
 
 ## Not decided here
 
