@@ -74,7 +74,7 @@ async function refreshStatus($: EngineInterface, options: PluginOptions, running
     if (got && !('error' in got)) live.gate = (got.project && 'gate' in got.project ? got.project.gate : null) ?? null
   }
   live.jobs = running
-  if (statusKey(live.jobs, live.gate) !== live.shownKey) await showStatus($, options)
+  if (statusKey(live.jobs, live.gate, live.router) !== live.shownKey) await showStatus($, options)
 }
 
 /** Refresh the pane's data (and the line with it). `withBridge` asks the engine and PaperMemory too. */
@@ -98,7 +98,7 @@ export async function refreshPanel($: EngineInterface, options: PluginOptions, w
   const next: PanelState = { at: now, cwd: files.cwd, project, library, jobs: files.jobs, notes: files.notes }
   await update($, panel, () => next)
   live.jobs = files.running
-  if (statusKey(live.jobs, live.gate) !== live.shownKey) await showStatus($, options)
+  if (statusKey(live.jobs, live.gate, live.router) !== live.shownKey) await showStatus($, options)
   return next
 }
 

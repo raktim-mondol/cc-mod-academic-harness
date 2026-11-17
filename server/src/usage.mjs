@@ -17,7 +17,7 @@ export const DEFAULT_KEEP_DAYS = 365
 /** Most distinct names kept per kind in one file: a name the model makes up (a mistyped skill) must not grow a file for ever. */
 export const MAX_NAMES = 500
 /** The slash commands the hooks module registers (hooks/tasks-core.ts TASK_COMMANDS, hooks/tasks.ts, hooks/register.tsx); a test keeps this list equal to them. */
-export const KNOWN_COMMANDS = ['academic', 'ah-research', 'ah-review', 'ah-papers', 'ah-references', 'ah-write', 'ah-analyze', 'ah-hypotheses', 'ah-watch', 'fold']
+export const KNOWN_COMMANDS = ['academic', 'ah-research', 'ah-review', 'ah-papers', 'ah-references', 'ah-write', 'ah-analyze', 'ah-hypotheses', 'ah-watch', 'fold', 'model-router']
 
 export const usageDir = home => join(home, 'usage')
 

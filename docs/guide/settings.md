@@ -14,6 +14,9 @@ Set the settings where Claude Code configures plugin options (they are the plugi
 | `job_notices` | `prompt` | When a background job ends: `prompt` notifies you and prompts the model to read the result, `notify` only notifies, `off` neither (`job_status` and `job_wait` still work). Interactive sessions only |
 | `evidence_check` | `skip` | `run` makes the stop gate, in an `ah.yaml` project, check with a model the sources the turn's paragraphs cite (one call per paragraph, advisory) |
 | `usage_counts` | `on` | `on` keeps a count per tool, skill, agent and command (names and numbers only, never what they were used for) so `/academic usage` can show what is used and what never is; `off` counts nothing. The shell switch `AH_USAGE=0` does the same. See [State and privacy](state-and-privacy.md) |
+| `model_router` | `off` | `on` picks the model for each prompt (planning Opus, coding Sonnet, academic writing Haiku, the rest Sonnet). `/model-router on\|off` overrides it for a session. See [the model router](model-router.md) |
+| `router_engine` | `auto` | `auto` reads prompts with Jev when a TypeSafe key is saved (the start and end of each prompt go to TypeSafe) and with keyword rules otherwise; `rules` never sends a prompt anywhere |
+| `router_plan_model`, `router_code_model`, `router_write_model`, `router_fallback_model` | `opus`, `sonnet`, `haiku`, `sonnet` | The model for planning, coding, academic writing, and everything else: an alias or a full model id |
 | `compute_session_cap_usd` | empty | Cap on rented compute in one session |
 | `image_model`, `deep_review_*`, `co_scientist_*`, `rebuttal_max_tasks` | empty | Tool tuning, passed on to the tool that reads it |
 

@@ -46,7 +46,7 @@ const start = ($: any, cwd = '/p') => $.session.start({ cwd, surface: 'terminal'
 test('the seven task commands, /ah-watch and /fold are declared at session start', async ($, on) => {
   const w = world(on)
   await start($)
-  expect(w.commands).toEqual(['academic', 'ah-research', 'ah-review', 'ah-papers', 'ah-references', 'ah-write', 'ah-analyze', 'ah-hypotheses', 'ah-watch', 'fold'])
+  expect(w.commands).toEqual(['academic', 'ah-research', 'ah-review', 'ah-papers', 'ah-references', 'ah-write', 'ah-analyze', 'ah-hypotheses', 'ah-watch', 'fold', 'model-router'])
 })
 
 test('/ah-papers starts literature_search with the effort\'s limit and shows what it answered', async ($, on) => {

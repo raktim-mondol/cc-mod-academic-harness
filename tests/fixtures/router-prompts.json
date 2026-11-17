@@ -1,0 +1,238 @@
+[
+ {
+  "expect": "plan",
+  "prompt": "Make a plan for migrating our data pipeline from Airflow to Dagster"
+ },
+ {
+  "expect": "plan",
+  "prompt": "Draft a research plan for a cohort study on sleep and memory in older adults"
+ },
+ {
+  "expect": "plan",
+  "prompt": "How should we structure the ablation experiments for this paper?"
+ },
+ {
+  "expect": "plan",
+  "prompt": "Before we write any code, think through the trade-offs between Postgres and DuckDB for this workload"
+ },
+ {
+  "expect": "plan",
+  "prompt": "I need a roadmap for finishing my thesis in 9 months"
+ },
+ {
+  "expect": "plan",
+  "prompt": "Come up with an architecture for a service that ingests 10k PDFs a day"
+ },
+ {
+  "expect": "plan",
+  "prompt": "Help me design the study: sample size, controls, and which statistical tests"
+ },
+ {
+  "expect": "plan",
+  "prompt": "We want to add multi-tenant support. Where do we even start? Break it down for me."
+ },
+ {
+  "expect": "plan",
+  "prompt": "What's the best approach to restructure this repo into packages? Lay out options before touching anything."
+ },
+ {
+  "expect": "plan",
+  "prompt": "Propose an experimental design to test whether the new regulariser helps"
+ },
+ {
+  "expect": "plan",
+  "prompt": "Plan the revision: reviewers asked for three new experiments and a rewritten discussion"
+ },
+ {
+  "expect": "plan",
+  "prompt": "Can you outline a strategy for reproducing the results of this paper?"
+ },
+ {
+  "expect": "plan",
+  "prompt": "Create a project plan for a two-person team building a literature database"
+ },
+ {
+  "expect": "plan",
+  "prompt": "Quiero que hagas un plan para migrar la base de datos a PostgreSQL"
+ },
+ {
+  "expect": "plan",
+  "prompt": "请为我的博士论文制定一个研究计划"
+ },
+ {
+  "expect": "code",
+  "prompt": "Fix the failing test in tests/test_io.py"
+ },
+ {
+  "expect": "code",
+  "prompt": "Why does this raise a TypeError?\n```python\nx = 1 + 'a'\n```"
+ },
+ {
+  "expect": "code",
+  "prompt": "Refactor the parser into smaller functions and keep the tests green"
+ },
+ {
+  "expect": "code",
+  "prompt": "npm install fails with ERESOLVE unable to resolve dependency tree"
+ },
+ {
+  "expect": "code",
+  "prompt": "write a function that deduplicates a list while keeping order"
+ },
+ {
+  "expect": "code",
+  "prompt": "Add a --verbose flag to cli.py"
+ },
+ {
+  "expect": "code",
+  "prompt": "git rebase keeps conflicting on the same file, how do I resolve it"
+ },
+ {
+  "expect": "code",
+  "prompt": "Implement the plan we agreed on: step 1 is the schema migration"
+ },
+ {
+  "expect": "code",
+  "prompt": "The LaTeX build fails with 'Undefined control sequence' on line 42"
+ },
+ {
+  "expect": "code",
+  "prompt": "Write a pandas script that computes the mean and 95% CI per group and saves a CSV"
+ },
+ {
+  "expect": "code",
+  "prompt": "Make the plot script faster, it takes 10 minutes"
+ },
+ {
+  "expect": "code",
+  "prompt": "Explain what this regex does: ^(?=.*\\d)(?=.*[a-z]).{8,}$",
+  "accept": [
+   "other"
+  ]
+ },
+ {
+  "expect": "code",
+  "prompt": "Traceback (most recent call last):\n  File \"train.py\", line 12, in <module>\nValueError: shapes (3,) and (4,) not aligned"
+ },
+ {
+  "expect": "code",
+  "prompt": "Convert this SQL query to use a window function"
+ },
+ {
+  "expect": "code",
+  "prompt": "Corrige el bug en el archivo main.py"
+ },
+ {
+  "expect": "write",
+  "prompt": "Proofread this paragraph of my discussion section: 'The results suggests that the effect were robust.'"
+ },
+ {
+  "expect": "write",
+  "prompt": "Rewrite my abstract to be under 150 words"
+ },
+ {
+  "expect": "write",
+  "prompt": "Polish the introduction of my paper, it reads clumsily"
+ },
+ {
+  "expect": "write",
+  "prompt": "Draft a cover letter for submitting this manuscript to Nature Communications"
+ },
+ {
+  "expect": "write",
+  "prompt": "Summarise the related work section into three sentences"
+ },
+ {
+  "expect": "write",
+  "prompt": "Write a response to reviewer 2's comment about the sample size"
+ },
+ {
+  "expect": "write",
+  "prompt": "Make this sentence more academic: 'we did lots of tests and they were good'"
+ },
+ {
+  "expect": "write",
+  "prompt": "Shorten the conclusion by a third without losing the main claim"
+ },
+ {
+  "expect": "write",
+  "prompt": "Expand this bullet list into a paragraph for the methods section"
+ },
+ {
+  "expect": "write",
+  "prompt": "Write the acknowledgements section for my thesis"
+ },
+ {
+  "expect": "write",
+  "prompt": "Rephrase this so it is not too close to the source: 'Deep networks generalise poorly out of distribution.'"
+ },
+ {
+  "expect": "write",
+  "prompt": "Improve the flow of this literature review paragraph"
+ },
+ {
+  "expect": "write",
+  "prompt": "Escribe un resumen académico de este artículo en inglés",
+  "accept": [
+   "other"
+  ]
+ },
+ {
+  "expect": "other",
+  "prompt": "What is the capital of Australia?"
+ },
+ {
+  "expect": "other",
+  "prompt": "What does a p-value actually mean?"
+ },
+ {
+  "expect": "other",
+  "prompt": "List the files in this folder"
+ },
+ {
+  "expect": "other",
+  "prompt": "Who proposed the transformer architecture?"
+ },
+ {
+  "expect": "other",
+  "prompt": "Explain the architecture of this repo to me"
+ },
+ {
+  "expect": "other",
+  "prompt": "I want to understand the approach used in this paper"
+ },
+ {
+  "expect": "other",
+  "prompt": "what time zone is Sydney in"
+ },
+ {
+  "expect": "other",
+  "prompt": "Summarise the plan in plan.md"
+ },
+ {
+  "expect": "code",
+  "prompt": "yes, go ahead",
+  "previous": "code"
+ },
+ {
+  "expect": "write",
+  "prompt": "looks good, continue",
+  "previous": "write"
+ },
+ {
+  "expect": "other",
+  "prompt": "ok do it",
+  "previous": "plan",
+  "note": "a plan is not kept"
+ },
+ {
+  "expect": "other",
+  "prompt": "thanks!"
+ },
+ {
+  "expect": "plan",
+  "prompt": "yes, and also make a plan for the next stage",
+  "previous": "code",
+  "note": "more than a go-ahead"
+ }
+]

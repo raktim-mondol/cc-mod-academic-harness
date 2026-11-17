@@ -53,8 +53,8 @@ export async function verdict($: EngineInterface, options: PluginOptions): Promi
 export async function showStatus($: EngineInterface, options: PluginOptions): Promise<Verdict> {
   const v = await verdict($, options)
   // The one status line of the mod: the mode, the jobs running and the gate (hooks/ui-core.ts, refreshed by hooks/ui.tsx).
-  $.ui.status(composeStatus(v.isOn, live.jobs, live.gate))
-  live.shownKey = statusKey(live.jobs, live.gate)
+  $.ui.status(composeStatus(v.isOn, live.jobs, live.gate, live.router))
+  live.shownKey = statusKey(live.jobs, live.gate, live.router)
   return v
 }
 

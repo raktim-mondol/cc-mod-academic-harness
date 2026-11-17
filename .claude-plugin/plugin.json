@@ -1,6 +1,6 @@
 {
   "name": "academic-harness",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Academic research toolkit for Claude Code: literature search, citation checks, deep research and review, hypothesis tournaments, study design, and guarded LaTeX paper writing.",
   "author": {
     "name": "Raktim Mondol"
@@ -73,6 +73,50 @@
         "on",
         "off"
       ]
+    },
+    "model_router": {
+      "type": "string",
+      "title": "Model router",
+      "description": "on picks the model for each prompt: planning on Opus, coding on Sonnet, academic writing on Haiku, anything else on Sonnet. /model-router on or off overrides it for one session. off leaves the model you chose.",
+      "default": "off",
+      "options": [
+        "off",
+        "on"
+      ]
+    },
+    "router_engine": {
+      "type": "string",
+      "title": "What the router reads prompts with",
+      "description": "auto asks Jev (TypeSafe) when a TypeSafe key is saved, which sends the start and end of each prompt to TypeSafe, and uses keyword rules when there is no key or Jev does not answer. rules always uses keyword rules on this machine and sends nothing.",
+      "default": "auto",
+      "options": [
+        "auto",
+        "rules"
+      ]
+    },
+    "router_plan_model": {
+      "type": "string",
+      "title": "Router: model for planning",
+      "description": "An alias (opus, sonnet, haiku) or a full model id, for prompts that ask for a plan, design or approach first.",
+      "default": "opus"
+    },
+    "router_code_model": {
+      "type": "string",
+      "title": "Router: model for coding",
+      "description": "An alias or a full model id, for prompts about code, scripts, errors and builds.",
+      "default": "sonnet"
+    },
+    "router_write_model": {
+      "type": "string",
+      "title": "Router: model for academic writing",
+      "description": "An alias or a full model id, for prompts that write, edit or polish scholarly prose. Used only when the writing is clearly the task and code is not.",
+      "default": "haiku"
+    },
+    "router_fallback_model": {
+      "type": "string",
+      "title": "Router: model for everything else",
+      "description": "An alias or a full model id, for prompts that fit none of the above and for any prompt the router is unsure about.",
+      "default": "sonnet"
     },
     "parallel_api_key": {
       "type": "string",

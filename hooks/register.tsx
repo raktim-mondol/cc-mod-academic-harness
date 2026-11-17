@@ -6,15 +6,17 @@ import { startNotices } from './notices'
 import { doctorText, usageText } from './doctor'
 import { addSection, run, showStatus } from './mode'
 import { recordSeen } from './seen'
+import { registerRouter, registerRouterCommand, startRouter } from './router'
 import { registerTaskCommands, registerTasks } from './tasks'
 import { openPane, registerUi, startUi } from './ui'
 import { count, registerUsage } from './usage'
 
 // P1: research mode. P3: the writing-engine guard and the author-only approvals. P4: completion notices. P5: the task commands,
-// /fold, the status line and the pane. One session.start hook only: the engine refuses two with no matcher, so everything that must
-// happen at start is called from it.
+// /fold, the status line and the pane. The model router (router.ts): the model each prompt runs on.
+// One session.start hook only: the engine refuses two with no matcher, so everything that must happen at start is called from it.
 export const register: Register = (on, options) => {
   on('session.start', async ($, e, next) => {
+    await startRouter($, options)
     await showStatus($, options)
     await recordSeen($)
     await startNotices($, options, e.isInteractive === true)
@@ -24,6 +26,7 @@ export const register: Register = (on, options) => {
       // A built-in or another plugin already has the name: carry on without the command.
     }
     await registerTaskCommands($)
+    await registerRouterCommand($)
     await startUi($, options, e.isInteractive === true)
     return next(e)
   })
@@ -38,6 +41,7 @@ export const register: Register = (on, options) => {
   })
 
   registerTasks(on, options)
+  registerRouter(on, options)
   registerUsage(on, options)
   registerUi(on)
   registerGuard(on, options)

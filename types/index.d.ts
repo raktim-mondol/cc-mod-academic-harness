@@ -14,6 +14,20 @@ export type PanelValue = {
   notes: { at: number; type: string; title: string }[]
 }
 
+/** The model router's switch as the user set it for this session; null follows the model_router setting. */
+export type RouterOverride = 'on' | 'off' | null
+
+/** What the router decided for the last prompt: the status line, a go-ahead and /model-router status read it. */
+export type RouterLast = {
+  route: 'plan' | 'code' | 'write' | 'other'
+  model: string
+  via: 'jev' | 'rules' | 'directive' | 'plan-mode' | 'continuation' | 'carry'
+  why: string
+  /** Why Jev did not decide (no key, timeout, ...); empty when it did. */
+  note: string
+  at: number
+}
+
 declare module 'claude-code' {
   interface PluginState {
     'academic-harness': {
@@ -26,6 +40,10 @@ declare module 'claude-code' {
       noticed: string[]
       /** The pane's data, as the last refresh read it. */
       panel: Shaped<PanelValue>
+      /** The model router's switch for this session. */
+      router: RouterOverride
+      /** The last routing decision. */
+      routerLast: Shaped<RouterLast | null>
     }
   }
 }

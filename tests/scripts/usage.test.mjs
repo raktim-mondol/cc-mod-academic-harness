@@ -16,6 +16,7 @@ import { createUsage, formatReport, KINDS, KNOWN_COMMANDS, MAX_NAMES, readUsage,
 
 const hooks = await import('../../hooks/usage.ts')
 const tasks = await import('../../hooks/tasks-core.ts')
+const router = await import('../../hooks/router-core.ts')
 const scratch = join(homedir(), '.cache', 'ah-test-homes')
 mkdirSync(scratch, { recursive: true })
 const root = mkdtempSync(join(scratch, 'usage-'))
@@ -228,7 +229,7 @@ describe('the doctor', () => {
 
 describe('the hooks module and the server agree', () => {
   test('the commands the server lists are the ones the hooks module registers', () => {
-    const registered = new Set([...Object.values(tasks.TASK_COMMANDS), tasks.WATCH_COMMAND, 'academic', 'fold'])
+    const registered = new Set([...Object.values(tasks.TASK_COMMANDS), tasks.WATCH_COMMAND, 'academic', 'fold', router.ROUTER_COMMAND])
     assert.deepEqual([...KNOWN_COMMANDS].sort(), [...registered].sort())
   })
   test('a file the hooks module writes is read by the server, and its kinds are the server\'s', () => {

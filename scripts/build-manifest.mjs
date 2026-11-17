@@ -25,6 +25,48 @@ const DESCRIPTIONS = {
   NCBI_EMAIL: 'Contact address NCBI asks for with PubMed requests. Not a secret.',
 }
 
+/** The model router (hooks/router.ts). Off by default: it changes which model answers, and so what a prompt costs. */
+export const ROUTER_OPTIONS = {
+  model_router: {
+    type: 'string',
+    title: 'Model router',
+    description: 'on picks the model for each prompt: planning on Opus, coding on Sonnet, academic writing on Haiku, anything else on Sonnet. /model-router on or off overrides it for one session. off leaves the model you chose.',
+    default: 'off',
+    options: ['off', 'on'],
+  },
+  router_engine: {
+    type: 'string',
+    title: 'What the router reads prompts with',
+    description: 'auto asks Jev (TypeSafe) when a TypeSafe key is saved, which sends the start and end of each prompt to TypeSafe, and uses keyword rules when there is no key or Jev does not answer. rules always uses keyword rules on this machine and sends nothing.',
+    default: 'auto',
+    options: ['auto', 'rules'],
+  },
+  router_plan_model: {
+    type: 'string',
+    title: 'Router: model for planning',
+    description: 'An alias (opus, sonnet, haiku) or a full model id, for prompts that ask for a plan, design or approach first.',
+    default: 'opus',
+  },
+  router_code_model: {
+    type: 'string',
+    title: 'Router: model for coding',
+    description: 'An alias or a full model id, for prompts about code, scripts, errors and builds.',
+    default: 'sonnet',
+  },
+  router_write_model: {
+    type: 'string',
+    title: 'Router: model for academic writing',
+    description: 'An alias or a full model id, for prompts that write, edit or polish scholarly prose. Used only when the writing is clearly the task and code is not.',
+    default: 'haiku',
+  },
+  router_fallback_model: {
+    type: 'string',
+    title: 'Router: model for everything else',
+    description: 'An alias or a full model id, for prompts that fit none of the above and for any prompt the router is unsure about.',
+    default: 'sonnet',
+  },
+}
+
 const pretty = name => name.replace(/_/g, ' ').toLowerCase().replace(/\b(api|id|ads|wos|ncbi|s2|core|ieee|ocr)\b/g, m => m.toUpperCase()).replace(/^./, c => c.toUpperCase())
 
 export async function keyFields(upstream = join(root, 'upstream')) {
@@ -52,6 +94,7 @@ export async function build(manifest) {
   delete userConfig.llm_budget_usd
   delete userConfig.job_notices
   delete userConfig.usage_counts
+  for (const name of Object.keys(ROUTER_OPTIONS)) delete userConfig[name]
   userConfig.tool_areas = {
     type: 'string',
     title: 'Tool areas',
@@ -97,6 +140,8 @@ export async function build(manifest) {
     default: 'on',
     options: ['on', 'off'],
   }
+  // The model router's settings are read by the hooks module (hooks/router-core.ts), not the server, so they carry no AH_ variable.
+  Object.assign(userConfig, ROUTER_OPTIONS)
   const env = { AH_TOOL_AREAS: '${user_config.tool_areas}', AH_RESTORE_TOOLS_SETTING: '${user_config.restore_tools}', AH_LLM_MODEL: '${user_config.llm_model}', AH_LLM_BUDGET_USD: '${user_config.llm_budget_usd}', AH_USAGE_SETTING: '${user_config.usage_counts}' }
   for (const { name, secret } of fields) {
     const key = name.toLowerCase()
