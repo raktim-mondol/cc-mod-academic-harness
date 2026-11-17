@@ -1,13 +1,13 @@
-// Surface parity against the snapshot (scripts/measure-surface.mjs). Needs upstream/ and its node_modules.
+// Surface parity against the snapshot (scripts/measure-surface.mjs). Needs core/ and its node_modules (node scripts/setup.mjs).
 import assert from 'node:assert/strict'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { compare } from '../../scripts/measure-surface.mjs'
-import { upstreamDir } from '../../server/src/paths.mjs'
+import { coreDir } from '../../server/src/paths.mjs'
 import { DROPPED_TOOLS } from '../../server/src/fit.mjs'
 
-test('the host serves exactly the tier-1 tools, each identical to what upstream registers', { skip: !existsSync(join(upstreamDir(), 'node_modules', 'ah-dsh-tools')) }, async () => {
+test('the host serves exactly the tier-1 tools, each identical to what upstream registers', { skip: !existsSync(join(coreDir(), 'node_modules', 'ah-dsh-tools')) }, async () => {
   const r = await compare()
   assert.deepEqual(r.notFromManifest, [], 'a module upstream registers that the manifest does not discover')
   assert.deepEqual(r.mismatched, [])

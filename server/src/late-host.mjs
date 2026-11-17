@@ -1,5 +1,5 @@
 // A host that can be replaced while the server is running: the first-start fetch (bootstrap.mjs) takes a minute, and the server must answer
-// `initialize` at once. It starts as a host that has only the `doctor` tool and, when the snapshot is ready, swaps in the full host and
+// `initialize` at once. It starts as a host that has only the `doctor` tool and, when the core is set up, swaps in the full host and
 // tells the client the tool list changed. What the client already told the server (the session folder, that the session has started) is
 // handed to the new host.
 export function lateHost(first) {

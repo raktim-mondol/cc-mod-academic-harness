@@ -6,7 +6,7 @@
 //   - It never runs `init` on an existing store and never migrates one. A store that needs
 //     migrating makes the server report `migration-required`; migrating it (after `papermemory
 //     backup`) is the user's step. A store that does not exist yet is created by the server itself.
-//   - With AH_UPSTREAM set (development against a checkout) nothing is installed: building from
+//   - With AH_CORE set (development against a checkout) nothing is installed: building from
 //     a live checkout could write into it (plan ground rule 1).
 //
 // Everything here logs to stderr. Standard output belongs to the MCP protocol.
@@ -33,10 +33,10 @@ const IS_WIN = process.platform === 'win32'
 
 export const say = msg => process.stderr.write(`${LOG}: ${msg}\n`)
 
-import { isDevMode, modHome, modRoot, upstreamDir } from './paths.mjs'
-export { modRoot, modHome, upstreamDir, isDevMode }
+import { isDevMode, modHome, modRoot, coreDir } from './paths.mjs'
+export { modRoot, modHome, coreDir, isDevMode }
 export function installDir(env = process.env) { return join(modHome(env), 'papermemory') }
-export function vendorDir(env = process.env) { return join(upstreamDir(env), 'vendor', 'papermemory') }
+export function vendorDir(env = process.env) { return join(coreDir(env), 'vendor', 'papermemory') }
 
 const venvBin = (env, name) => join(installDir(env), '.venv', IS_WIN ? 'Scripts' : 'bin', IS_WIN ? `${name}.exe` : name)
 const stampPath = env => join(installDir(env), 'installed-version')
@@ -138,7 +138,7 @@ async function withInstallLock(env, fn) {
 
 export async function install(env = process.env) {
   const vendor = vendorDir(env)
-  if (!existsSync(join(vendor, 'pyproject.toml'))) { say(`vendored package missing at ${vendor}. Run: node scripts/sync-upstream.mjs`); return undefined }
+  if (!existsSync(join(vendor, 'pyproject.toml'))) { say(`vendored package missing at ${vendor}. Run: node scripts/setup.mjs`); return undefined }
   return withInstallLock(env, async () => {
     if (findManaged(env)) return findManaged(env)
     const dir = installDir(env)

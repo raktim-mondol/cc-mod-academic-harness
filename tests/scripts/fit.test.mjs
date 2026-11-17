@@ -9,10 +9,10 @@ import { fileURLToPath } from 'node:url'
 import { adapt, RULES, TARGETS } from '../../scripts/adapt.mjs'
 import { DROPPED_AGENTS, DROPPED_KEY_FIELDS, DROPPED_SKILLS, DROPPED_TOOLS, EXTRA_KEY_FIELDS, ON_DEMAND_SKILLS, restoreList } from '../../server/src/fit.mjs'
 import { classify, discover, plan } from '../../server/src/manifest.mjs'
-import { upstreamDir } from '../../server/src/paths.mjs'
+import { coreDir } from '../../server/src/paths.mjs'
 
 const root = resolve(fileURLToPath(new URL('../..', import.meta.url)))
-const UP = upstreamDir()
+const UP = coreDir()
 const HAVE_UP = existsSync(join(UP, 'node_modules', 'ah-dsh-tools'))
 const read = (...p) => readFileSync(join(root, ...p), 'utf8')
 
@@ -99,7 +99,7 @@ describe('the tools left out', () => {
 })
 
 describe('the skills and agents left out', () => {
-  const core = JSON.parse(read('upstream', 'skills-core.json'))
+  const core = JSON.parse(read('core', 'skills-core.json'))
   test('every name is a core skill, so a typo cannot hide a skill', { skip: !HAVE_UP }, () => {
     for (const n of [...Object.keys(DROPPED_SKILLS), ...Object.keys(ON_DEMAND_SKILLS)]) assert.ok(core.includes(n), n)
   })

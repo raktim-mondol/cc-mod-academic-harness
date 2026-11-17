@@ -17,7 +17,7 @@ import { isDevMode } from '../server/src/paths.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const scratch = join(homedir(), '.cache', 'ah-cc-p3', 'engine-test')
-const dir = engineDir(join(root, 'upstream'))
+const dir = engineDir(join(root, 'core'))
 
 function which(name) {
   for (const d of (process.env.PATH || '').split(delimiter)) if (d && existsSync(join(d, name))) return join(d, name)
@@ -29,8 +29,8 @@ function sh(cmd, args, opts = {}) {
   return r.status ?? 1
 }
 
-if (isDevMode()) throw new Error('AH_UPSTREAM is set: this script tests the snapshot only')
-if (!existsSync(join(dir, 'tests'))) throw new Error(`no engine tests in ${dir}: run node scripts/sync-upstream.mjs`)
+if (isDevMode()) throw new Error('AH_CORE is set: this script tests the snapshot only')
+if (!existsSync(join(dir, 'tests'))) throw new Error(`no engine tests in ${dir}: run node scripts/setup.mjs`)
 mkdirSync(scratch, { recursive: true })
 const venv = join(scratch, 'venv')
 const py = join(venv, 'bin', 'python')

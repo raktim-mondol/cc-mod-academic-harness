@@ -6,7 +6,7 @@ What the mod reads, what it writes and where, and what it can spend.
 
 | What | Where |
 |---|---|
-| The source snapshot, its dependencies and the writing engine's environment | `<plugin>/upstream/` in a set-up clone, or `<home>/upstream/<commit>/` in an installed copy (the folder of an earlier commit goes a week after its last use) |
+| The core's installed dependencies and the writing engine's environment | `<plugin>/core/` in a set-up clone, or `<home>/core/<version>-<fingerprint>/` in an installed copy, which is a copy of the plugin's `core/` (the folder of an earlier core goes a week after its last use) |
 | PaperMemory's CLI, TextFold, job records and logs, the compute ledger, the first-start state | `~/.local/share/cc-mod-academic-harness/home/` (`AH_MOD_HOME`) |
 | The PaperMemory library | `~/.local/share/papermemory/papermemory.db`, shared by every tool on this machine that uses PaperMemory |
 | A project's notebook and research ledgers | `<project>/.dsh/` (the folder name is fixed by the tools) |
@@ -29,14 +29,13 @@ Off by default. When it is on and a TypeSafe key is saved, each prompt it classi
 
 ## What it reads
 
-- **A local Academic Harness checkout**, if there is one, only at setup or update, only with `git archive` against its object database, and never written. `node scripts/check-upstream-clean.mjs` proves it untouched (its HEAD, its working-tree status and `~/.dsh`).
+- **The plugin's own `core/`**: read, and copied to the mod's home on a first start. It is never written by the server.
 - **The PaperMemory database**, opened read-only and immutable (`?immutable=1`) by the pane, so not even a `-shm` or `-wal` file appears beside it. The PaperMemory tools themselves write to it, as they always did.
 - **Keys**: from the plugin's options and the environment, into the server's environment. The doctor and the diagnostics print names, never values.
 
 ## What it never touches
 
-- **`~/.dsh`**, the data folder other Academic Harness tools keep. The server refuses to run if its home would be that folder, and the tests check it is unchanged.
-- **A local checkout's working tree.**
+- **`~/.dsh`**, the data folder other Academic Harness tools keep. The server refuses to run if its home would be that folder.
 - **Anything outside the project folder**, by the tools that take paths: they refuse a path that leaves the session folder.
 
 ## What it can cost

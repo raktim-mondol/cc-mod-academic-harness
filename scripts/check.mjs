@@ -4,27 +4,27 @@
 //   npm run check              the node suites, the manifest check and the tool-surface check
 //   npm run check -- --types   also the hooks module's type check (the types exist after a real session has loaded the mod)
 //
-// CI runs `npm run check` after `node scripts/setup.mjs --github`. The live scripts are not here: they drive a real Claude Code and cost
+// CI runs `npm run check` after `node scripts/setup.mjs`. The live scripts are not here: they drive a real Claude Code and cost
 // money (docs/maintain/testing.md). Everything runs from the repository root, whichever folder the command was started in.
 import { spawnSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { upstreamDir } from '../server/src/paths.mjs'
+import { coreDir } from '../server/src/paths.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const args = new Set(process.argv.slice(2))
-const hasUpstream = existsSync(join(upstreamDir(), 'package.json'))
+const hasUpstream = existsSync(join(coreDir(), 'node_modules', 'ah-dsh-tools'))
 const hasTypes = existsSync(join(root, '.claude-plugin', 'types', 'claude-code', 'index.d.ts'))
 
 if (!hasUpstream) {
-  console.error('The source snapshot is missing: run `node scripts/setup.mjs` first, or point AH_UPSTREAM at an Academic Harness checkout.')
+  console.error('The dependencies in core/ are not installed: run `node scripts/setup.mjs` first.')
   process.exit(2)
 }
 
 const steps = [
   { name: 'Node suites', command: process.execPath, args: ['--test', 'tests/scripts/*.test.mjs', 'tests/server/*.test.mjs'] },
-  { name: 'plugin.json matches the snapshot', command: process.execPath, args: ['scripts/build-manifest.mjs', '--check'] },
+  { name: 'plugin.json matches the core', command: process.execPath, args: ['scripts/build-manifest.mjs', '--check'] },
   { name: 'the served tool surface', command: process.execPath, args: ['scripts/measure-surface.mjs'] },
 ]
 if (args.has('--types')) {

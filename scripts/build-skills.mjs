@@ -3,11 +3,11 @@
 //
 //   node scripts/build-skills.mjs [--include-restricted]
 //
-// Reads upstream/skills-core.json (92 names) and upstream/skills/<name>/. Copies each
+// Reads core/skills-core.json (92 names) and core/skills/<name>/. Copies each
 // skill folder whole into skills/<name>/ unless its licence is restricted (decision D5):
 // non-commercial (CC-BY-NC*), GPL, "Unknown", or any other label that is not a clear
 // permissive licence. A skill with no `license:` line is the source's own text and is
-// kept. The other 700 or so skills stay in upstream/skills/ for on-demand lookup.
+// kept. The other 700 or so skills stay in core/skills/ for on-demand lookup.
 //
 // `--include-restricted` (or AH_INCLUDE_RESTRICTED=1) keeps everything: a local build for
 // personal use. Do not commit or share the result of such a build; skills/.build-info.json
@@ -73,10 +73,10 @@ export function adaptFolder(dir, name, rel = '') {
   }
 }
 
-export async function build({ upstream = join(root, 'upstream'), out = join(root, 'skills'), includeRestricted = false } = {}) {
+export async function build({ upstream = join(root, 'core'), out = join(root, 'skills'), includeRestricted = false } = {}) {
   const lic = await import(join(upstream, 'skill-licenses.js'))
   const core = JSON.parse(readFileSync(join(upstream, 'skills-core.json'), 'utf8'))
-  const lock = JSON.parse(readFileSync(join(root, 'UPSTREAM.lock.json'), 'utf8'))
+  const coreVersion = JSON.parse(readFileSync(join(upstream, 'package.json'), 'utf8')).version
 
   mkdirSync(out, { recursive: true })
   for (const entry of readdirSync(out, { withFileTypes: true })) {
@@ -114,7 +114,7 @@ export async function build({ upstream = join(root, 'upstream'), out = join(root
   if (problems.length) throw new Error('skill problems:\n  ' + problems.join('\n  '))
 
   const info = {
-    commit: lock.commit,
+    core: coreVersion,
     restricted: includeRestricted,
     coreListed: core.length,
     included: included.map(s => ({ name: s.name, license: s.license })),

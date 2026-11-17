@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Rebuild every generated output from upstream/: skills/, hooks/generated/ (the prompt, the task catalogue, the fold), agents/.
-//   node scripts/sync-upstream.mjs      first, to take or refresh the snapshot
+// Rebuild every generated output from core/: skills/, hooks/generated/ (the prompt, the task catalogue, the fold), agents/.
+//   (the core is committed in core/; nothing to take first)
 //   node scripts/build-all.mjs          then this
 // Pass --include-restricted for a local build that keeps non-commercial and GPL skills (never commit it).
 import { execFileSync } from 'node:child_process'

@@ -14,11 +14,11 @@ import { bootstrap } from '../src/bootstrap.mjs'
 import { findManaged, isDevMode, resolveLaunch, say, serverEnv, installDir, vendorDir } from '../src/papermemory.mjs'
 
 const arg = process.argv[2]
-// The first install builds from the source snapshot. On a first start the `ah` server is fetching it at the same moment: join in (bootstrap.mjs
-// coordinates), so this server does not fail for a snapshot that is a minute away.
+// The first install builds from the core's PaperMemory source. On a first start the `ah` server is copying the core at the same moment: join in
+// (bootstrap.mjs coordinates), so this server does not fail for a copy that is a minute away.
 if (!process.env.PAPERMEMORY_CLI?.trim() && !isDevMode() && !findManaged() && !existsSync(join(vendorDir(), 'pyproject.toml')) && process.env.AH_BOOTSTRAP?.trim() !== '0') {
-  say('the source snapshot is not here yet: fetching it first')
-  try { await bootstrap() } catch (error) { say(`could not fetch it: ${error.message}`) }
+  say('the core is not set up yet: setting it up first')
+  try { await bootstrap() } catch (error) { say(`could not set it up: ${error.message}`) }
 }
 const launch = await resolveLaunch()
 if (!launch) {

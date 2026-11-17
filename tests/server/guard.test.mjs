@@ -1,5 +1,4 @@
-// The guard bridge (server/bin/ah-hook.mjs) and the engine's place in the snapshot (server/src/engine.mjs,
-// the sync's keep rule). Scratch under ~/.cache; the fake engine is upstream's own helper where it is staged,
+// The guard bridge (server/bin/ah-hook.mjs) and the engine's place in the snapshot (server/src/engine.mjs). Scratch under ~/.cache; the fake engine is upstream's own helper where it is staged,
 // else a small stand-in written here.
 import assert from 'node:assert/strict'
 import { execFileSync, spawn } from 'node:child_process'
@@ -8,12 +7,11 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { after, before, describe, test } from 'node:test'
 import { engineDir, engineHash, engineStatus, STAMP_FILE, venvBin } from '../../server/src/engine.mjs'
-import { upstreamDir } from '../../server/src/paths.mjs'
-import { sync } from '../../scripts/sync-upstream.mjs'
+import { coreDir } from '../../server/src/paths.mjs'
 
 const root = join(homedir(), '.cache', 'ah-cc-p3', `unit-${process.pid}`)
 const HOOK = join(import.meta.dirname, '..', '..', 'server', 'bin', 'ah-hook.mjs')
-const UP = upstreamDir()
+const UP = coreDir()
 const REAL = engineStatus({}, engineDir(UP), { verify: false }).ok
 const AH = venvBin(engineDir(UP))
 
@@ -139,15 +137,15 @@ describe('ah-hook with no engine', () => {
     const dir = project('f')
     const empty = join(root, 'empty-upstream')
     mkdirSync(empty, { recursive: true })
-    const r = await hook('pre', { cwd: dir, tool_name: 'Write', tool_input: {} }, { AH_UPSTREAM: empty, ACADEMIC_HARNESS_CLI: '', AH_CMD: '' })
+    const r = await hook('pre', { cwd: dir, tool_name: 'Write', tool_input: {} }, { AH_CORE: empty, ACADEMIC_HARNESS_CLI: '', AH_CMD: '' })
     assert.equal(r.code, 3)
     assert.match(r.err, /no engine to run/)
-    assert.match(r.err, /sync-upstream/)
+    assert.match(r.err, /scripts\/setup\.mjs/)
   })
   test('AH_NO_ENFORCE=1, the way on that the refusal names, lets pre, post and stop pass with no engine', async () => {
     const dir = project('g')
     const empty = join(root, 'empty-upstream')
-    const env = { AH_UPSTREAM: empty, ACADEMIC_HARNESS_CLI: '', AH_CMD: '', AH_NO_ENFORCE: '1' }
+    const env = { AH_CORE: empty, ACADEMIC_HARNESS_CLI: '', AH_CMD: '', AH_NO_ENFORCE: '1' }
     for (const event of ['pre', 'post', 'stop']) {
       const r = await hook(event, { cwd: dir, tool_name: 'Write', tool_input: {} }, env)
       assert.equal(r.code, 0, event)
@@ -163,7 +161,7 @@ describe('engine status', () => {
     const up = join(root, 'status-upstream')
     const dir = engineDir(up)
     mkdirSync(join(dir, 'ah'), { recursive: true })
-    assert.match(engineStatus({}, dir).why, /not in the snapshot/)
+    assert.match(engineStatus({}, dir).why, /not in the core/)
     writeFileSync(join(dir, 'pyproject.toml'), '[project]\nname = "x"\n')
     writeFileSync(join(dir, 'ah', '__init__.py'), '')
     assert.match(engineStatus({}, dir).why, /no virtual environment/)
@@ -190,42 +188,6 @@ describe('engine status', () => {
     assert.equal(engineHash(dir), before)
     writeFileSync(join(dir, 'ah', '__init__.py'), '# changed')
     assert.notEqual(engineHash(dir), before)
-  })
-})
-
-describe('sync keeps the engine venv when the engine is unchanged', () => {
-  const src = join(root, 'src-repo')
-  const git = (...args) => execFileSync('git', ['-C', src, ...args], { encoding: 'utf8' })
-  const out = join(root, 'snap')
-  const lock = join(root, 'snap.lock.json')
-  const run = () => sync({ source: src, commit: 'HEAD', outDir: out, lockFile: lock, allow: ['package.json', 'vendor/academic-harness'] })
-
-  before(() => {
-    mkdirSync(join(src, 'vendor', 'academic-harness', 'ah'), { recursive: true })
-    execFileSync('git', ['init', '-q', src])
-    git('config', 'user.email', 't@example.invalid')
-    git('config', 'user.name', 't')
-    writeFileSync(join(src, 'package.json'), '{"name":"x","version":"1.0.0"}')
-    writeFileSync(join(src, 'vendor', 'academic-harness', 'pyproject.toml'), '[project]\nname = "x"\n')
-    writeFileSync(join(src, 'vendor', 'academic-harness', 'ah', '__init__.py'), '')
-    git('add', '-A')
-    git('commit', '-qm', 'one')
-  })
-
-  test('same engine: the venv and its stamps survive; changed engine: they go', async () => {
-    await run()
-    const dir = engineDir(out)
-    mkdirSync(join(dir, '.venv', 'bin'), { recursive: true })
-    writeFileSync(join(dir, '.venv', 'bin', 'ah'), 'venv')
-    writeFileSync(join(dir, STAMP_FILE), `${engineHash(dir)}\n`)
-    await run()
-    assert.equal(readFileSync(join(dir, '.venv', 'bin', 'ah'), 'utf8'), 'venv', 'kept')
-    assert.equal(engineStatus({}, dir).ok, true)
-
-    writeFileSync(join(src, 'vendor', 'academic-harness', 'ah', '__init__.py'), '# v2')
-    git('commit', '-qam', 'two')
-    await run()
-    assert.equal(existsSync(join(dir, '.venv')), false, 'a changed engine gets no stale venv')
   })
 })
 

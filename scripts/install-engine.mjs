@@ -13,7 +13,7 @@ import { installEngine } from '../server/src/engine-install.mjs'
 import { engineDir, engineStatus } from '../server/src/engine.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const upstream = join(root, 'upstream')
+const upstream = join(root, 'core')
 
 try {
   if (process.argv.includes('--check')) {

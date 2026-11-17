@@ -64,7 +64,7 @@ export async function createHost({ upstream, areas = 'all', env = process.env, c
   const { restore, unknown: unknownRestore } = restoreList(`${env.AH_RESTORE_TOOLS ?? ''},${env.AH_RESTORE_TOOLS_SETTING ?? ''}`)
   if (unknownRestore.length) logger(`restore_tools names no tool that can come back, ignored: ${unknownRestore.join(', ')}`)
   const { load, missing } = plan(upstream, wanted, { restore })
-  if (missing.length) logger(`expected modules not in the snapshot (upstream drift?): ${missing.join(', ')}`)
+  if (missing.length) logger(`expected modules not in the core: ${missing.join(', ')}`)
 
   // Before any upstream module loads: the first limiter made for a provider is the one every tool shares (pacing.mjs).
   const paced = await seedPacing(upstream, process.env)

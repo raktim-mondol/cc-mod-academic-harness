@@ -8,10 +8,9 @@ flowchart TB
   end
   H -->|"process.run"| BIN["Node helpers<br/>ah-hook, ah-approve, ah-ui, ah-doctor"]
   BIN --> ENG["Writing engine<br/>Python, ah_* tools"]
-  AH -->|"loads tool modules"| UP[("Academic Harness snapshot<br/>pinned by UPSTREAM.lock.json")]
+  AH -->|"loads tool modules"| UP[("Bundled core<br/>tools, skills, writing engine<br/>committed in core/")]
   AH -->|"long tools run as"| JOBS["Background jobs"]
   AH -->|"model route"| CLI["claude -p"]
-  UP -.->|"fetched on first start"| GH["github.com/raktim-mondol/academic-harness"]
   ENG --- UP
   PM --> LIB[("PaperMemory library")]
 
@@ -26,5 +25,5 @@ flowchart TB
   class SK content
   class ENG engine
   class UP,LIB store
-  class CLI,GH outside
+  class CLI outside
   style CC fill:#f8fafc,stroke:#94a3b8,stroke-width:2px,color:#334155

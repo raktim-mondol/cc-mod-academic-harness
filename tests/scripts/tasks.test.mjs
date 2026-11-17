@@ -8,9 +8,9 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { after, before, describe, test } from 'node:test'
 import { pathToFileURL } from 'node:url'
-import { upstreamDir } from '../../server/src/paths.mjs'
+import { coreDir } from '../../server/src/paths.mjs'
 
-const UP = upstreamDir()
+const UP = coreDir()
 const HAVE_UP = existsSync(join(UP, 'node_modules', 'ah-dsh-tools'))
 const core = await import('../../hooks/tasks-core.ts')
 const root = join(homedir(), '.cache', 'ah-cc-p5', `unit-${process.pid}`)

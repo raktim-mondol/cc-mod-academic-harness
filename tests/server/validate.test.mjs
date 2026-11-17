@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, test } from 'node:test'
 import { recordUpstream } from '../../scripts/measure-surface.mjs'
-import { upstreamDir } from '../../server/src/paths.mjs'
+import { coreDir } from '../../server/src/paths.mjs'
 import { toInputSchema } from '../../server/src/schema.mjs'
 import { describeIssues, issuePaths, validateArgs, validationMode } from '../../server/src/validate.mjs'
 
@@ -102,7 +102,7 @@ describe('the setting', () => {
   })
 })
 
-describe('the served surface', { skip: !existsSync(join(upstreamDir(), 'node_modules', 'ah-dsh-tools')) }, () => {
+describe('the served surface', { skip: !existsSync(join(coreDir(), 'node_modules', 'ah-dsh-tools')) }, () => {
   const tools = recordUpstream().perEntry.flatMap(e => e.tools)
   test('there are tools to look at', () => assert.ok(tools.length >= 100))
   test('every schema can be checked without throwing, and a call with no arguments fails only on what it requires', () => {

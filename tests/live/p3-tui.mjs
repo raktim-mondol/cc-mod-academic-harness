@@ -23,7 +23,7 @@ import { fileURLToPath } from 'node:url'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const base = join(homedir(), '.cache', 'ah-cc-p3', 'tui-tests')
-const engine = join(root, 'upstream', 'vendor', 'academic-harness')
+const engine = join(root, 'core', 'vendor', 'academic-harness')
 const testPython = join(homedir(), '.cache', 'ah-cc-p3', 'engine-test', 'venv', 'bin', 'python')
 const SOCK = 'ahp3'
 const PREFIX = 'mcp__plugin_academic-harness_ah__'

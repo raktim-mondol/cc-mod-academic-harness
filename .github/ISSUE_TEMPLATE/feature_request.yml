@@ -45,5 +45,5 @@ body:
   - type: markdown
     attributes:
       value: |
-        The mod is a port of Academic Harness. A request that belongs upstream (a research tool's behaviour, a skill's content) is
-        better raised there; say so if you are not sure, and the owner can move it.
+        The research tools, skills and writing engine are in `core/` of this repository, so a request about a tool's behaviour or a
+        skill's content belongs here too.

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Snapshot integrity: run upstream's own test scripts for the tier-1 modules against upstream/.
+// Snapshot integrity: run upstream's own test scripts for the tier-1 modules against core/.
 //
 //   node scripts/test-upstream.mjs            the tier-1 set
 //   node scripts/test-upstream.mjs --all      every upstream test except the ones for DSH's own client and packaging (about 2 minutes; needs the engine venv)
@@ -23,13 +23,13 @@ export const TIER1_TESTS = [
 /** Tests about DSH itself: the React client (needs dev dependencies) and the release tarball (needs the whole tree). None touches a tool. */
 export const DSH_ONLY_TESTS = ['test-reply-fold', 'test-secret-settings', 'test-task-modes', 'test-task-modes-browser', 'test-package-files', 'test-noncommercial-exclusion']
 
-export function allTests(dir = join(root, 'upstream', 'scripts')) {
+export function allTests(dir = join(root, 'core', 'scripts')) {
   return readdirSync(dir).filter(n => /^test-.*\.mjs$/.test(n)).map(n => n.slice(0, -4)).filter(n => !DSH_ONLY_TESTS.includes(n)).sort()
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const all = process.argv.includes('--all')
-  const args = [join(root, 'upstream', 'scripts', 'run-tests.mjs'), '--jobs', '4', '--timeout', '300', ...(all ? allTests() : ['--no-prepare', ...TIER1_TESTS])]
-  const r = spawnSync(process.execPath, args, { cwd: join(root, 'upstream'), stdio: 'inherit' })
+  const args = [join(root, 'core', 'scripts', 'run-tests.mjs'), '--jobs', '4', '--timeout', '300', ...(all ? allTests() : ['--no-prepare', ...TIER1_TESTS])]
+  const r = spawnSync(process.execPath, args, { cwd: join(root, 'core'), stdio: 'inherit' })
   process.exit(r.status ?? 1)
 }

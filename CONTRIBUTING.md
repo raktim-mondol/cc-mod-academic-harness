@@ -15,7 +15,7 @@ node scripts/setup.mjs
 claude --plugin-dir "$PWD"
 ```
 
-There is no `npm install` at the repository root: the only dependencies are installed inside `upstream/` by setup. Node.js 22 or newer is required (`.nvmrc` names 22, the version CI tests alongside 24).
+There is no `npm install` at the repository root: the only dependencies are installed inside `core/` by setup. Node.js 22 or newer is required (`.nvmrc` names 22, the version CI tests alongside 24).
 
 ## Before you send a change
 
@@ -33,12 +33,12 @@ A change to the argument check (`server/src/validate.mjs`) needs a unit test in 
 
 ## Ground rules
 
-- **Never edit generated output:** `upstream/`, `skills/`, `agents/` and `hooks/generated/`. Change the build script and regenerate (`npm run build`), then review the diff.
-- **Never edit the Academic Harness checkout.** The snapshot is taken with `git archive` and is read-only; `node scripts/check-upstream-clean.mjs` proves the checkout and `~/.dsh` were untouched.
+- **Never edit generated output:** `skills/`, `agents/` and `hooks/generated/`. Change the build script (or the source in `core/` it reads) and regenerate (`npm run build`), then review the diff.
+- **`core/` is this repository's own source.** Edit it like any other, with a test where there is one to write. A change to a skill, a vendored project or anything with its own licence keeps `NOTICE` in step, and a new third-party file brings its licence with it. Nothing follows the Academic Harness repository any more.
 - **Keep keys out of output.** The doctor and the build may name a key, never print its value. A test that needs a key uses a stand-in.
 - **A fix comes with a test** and a line in [CHANGELOG.md](CHANGELOG.md) when someone using the mod would notice it. A bug fixes the cause, not the symptom.
 - **A new documentation page goes in the index of its folder.** `tests/scripts/docs.test.mjs` fails when a link breaks or a page is unreachable from the [README](README.md).
-- **A change to upstream's text goes through `scripts/adapt.mjs`.** A rewrite rule that no longer finds its passage fails the build on purpose: review the rule rather than loosening it.
+- **A change to how the core's text reads in Claude Code goes through `scripts/adapt.mjs`.** A rewrite rule that no longer finds its passage fails the build on purpose: review the rule rather than loosening it.
 - **Stop processes by PID, never by name pattern.** Scratch and test folders live under `~/.cache`.
 
 ## Where to change what

@@ -4,13 +4,11 @@ A release is a tagged commit of the repository, which is public: a tag and a Git
 
 ## Before a tag
 
-1. `node scripts/update-upstream.mjs` reports nothing you have not decided (or you chose to hold at the commit in the lock).
-2. The checks in [Testing](testing.md): types, `validate`, `plugin test`, the node suites, the parity check.
-3. **The live scripts**: the whole matrix in [Testing](testing.md), on the final code. They are the only checks that see a real session. Rerun a failure once before calling it a defect, and fix a defect in its own change; a `BLOCKED` run (no login, usage limit, the model declined to exercise the guard) is not a failure and does not count as either run. The evidence goes in the release notes, not in a commit: the Claude Code version, the Node version, the scripts run and what each said. No live output is committed; it can hold paths and prompts.
-4. `node scripts/check-upstream-clean.mjs`.
-5. A secret scan of the files that would be committed: copy `git ls-files -co --exclude-standard` to a scratch folder and scan that (the snapshot would otherwise be scanned too). No personal address in committed files.
-6. `CHANGELOG.md` has the entry; `.claude-plugin/plugin.json` has the version.
-7. The CI workflow is green on the commit to tag ([Testing](testing.md)), and `TESTED_VERSIONS` in `server/src/compat.mjs` lists the Claude Code versions the live scripts were run on for this release. A version added to or removed from `TESTED_VERSIONS` renames a CI check (`Claude Code <version>`), so update the required status checks of `main` (below) in the same step; otherwise a pull request waits on a check that never reports.
+1. The checks in [Testing](testing.md): types, `validate`, `plugin test`, the node suites, the parity check.
+2. **The live scripts**: the whole matrix in [Testing](testing.md), on the final code. They are the only checks that see a real session. Rerun a failure once before calling it a defect, and fix a defect in its own change; a `BLOCKED` run (no login, usage limit, the model declined to exercise the guard) is not a failure and does not count as either run. The evidence goes in the release notes, not in a commit: the Claude Code version, the Node version, the scripts run and what each said. No live output is committed; it can hold paths and prompts.
+3. A secret scan of the files that would be committed, `core/` included: copy `git ls-files -co --exclude-standard` to a scratch folder and scan that. No personal address in committed files. A change to `core/` that adds or changes a skill or a vendored project also needs `NOTICE` kept in step (the licence of what is added, named).
+4. `CHANGELOG.md` has the entry; `.claude-plugin/plugin.json`, `package.json` and the README have the version.
+5. The CI workflow is green on the commit to tag ([Testing](testing.md)), and `TESTED_VERSIONS` in `server/src/compat.mjs` lists the Claude Code versions the live scripts were run on for this release. A version added to or removed from `TESTED_VERSIONS` renames a CI check (`Claude Code <version>`), so update the required status checks of `main` (below) in the same step; otherwise a pull request waits on a check that never reports.
 
 ## Repository settings
 
@@ -37,7 +35,7 @@ A GitHub release for the tag: `gh release create v0.4.0 --notes-file <the notes>
 /plugin install academic-harness --marketplace raktim-mondol/cc-mod-academic-harness
 ```
 
-The installed copy has no snapshot; its first start fetches the one in `UPSTREAM.lock.json` ([Getting started](../guide/getting-started.md)). Changing what the repository ships means changing the lock too, which `sync-upstream` and `update-upstream` do.
+The installed copy holds the whole source (`core/`); its first start copies it to the mod's home and installs its dependencies ([Getting started](../guide/getting-started.md)). Nothing is fetched from another repository.
 
 ## What CI does not run
 

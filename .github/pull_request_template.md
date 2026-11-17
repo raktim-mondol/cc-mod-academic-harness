@@ -11,7 +11,7 @@
 
 ## Notes
 
-- [ ] No generated file was edited by hand (`upstream/`, `skills/`, `agents/`, `hooks/generated/`); `npm run build` produced any change there.
+- [ ] No generated file was edited by hand (`skills/`, `agents/`, `hooks/generated/`); `npm run build` produced any change there.
 - [ ] A user-visible change has a line in `CHANGELOG.md`.
 - [ ] A new documentation page is linked from the index of its folder.
 - [ ] Nothing in this change prints a key, a token or a private file.

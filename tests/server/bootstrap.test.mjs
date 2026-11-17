@@ -1,72 +1,80 @@
-// The first start of an installed copy: where the snapshot is looked for, the fetch (with a throw-away repository standing in for GitHub and a stand-in
-// for npm), two servers starting together, the doctor's view of it, and a host that is swapped for the full one while the server is running.
+// The first start of an installed copy: where the core is looked for, the copy of the plugin's core into the mod's home (with a stand-in for npm),
+// two servers starting together, the doctor's view of it, and a host that is swapped for the full one while the server is running.
 import assert from 'node:assert/strict'
-import { execFileSync, spawnSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { PassThrough } from 'node:stream'
 import { after, before, describe, test } from 'node:test'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { sync } from '../../scripts/sync-upstream.mjs'
-import { bootstrap, bootstrapInWorker, pruneOldSnapshots } from '../../server/src/bootstrap.mjs'
+import { bootstrap, bootstrapInWorker, pruneOldSnapshots, READY } from '../../server/src/bootstrap.mjs'
 import { claim, clearState, readState, stateFile, writeState } from '../../server/src/bootstrap-state.mjs'
 import { Registry } from '../../server/src/context.mjs'
 import { diagnose } from '../../server/src/doctor.mjs'
 import { hostOver, serve } from '../../server/src/host.mjs'
 import { lateHost } from '../../server/src/late-host.mjs'
-import { fetchedUpstreamDir, upstreamDir } from '../../server/src/paths.mjs'
-import { checkSnapshot } from '../../server/src/snapshot.mjs'
+import { coreDir, coreId, workingCoreDir } from '../../server/src/paths.mjs'
 
 const scratch = join(homedir(), '.cache', 'ah-test-homes')
 mkdirSync(scratch, { recursive: true })
 const root = mkdtempSync(join(scratch, 'boot-'))
 after(() => rmSync(root, { recursive: true, force: true }))
 
-const src = join(root, 'src-repo')
-const git = (...args) => execFileSync('git', ['-C', src, ...args], { encoding: 'utf8' })
-let sha
-let lockText
-const plugin = join(root, 'plugin') // an installed copy: a lock, and no upstream/
-
-/** What GitHub serves for the commit: a tar.gz under one top-level folder. */
-const tarball = async (_url, file) => {
-  const tar = execFileSync('git', ['-C', src, 'archive', '--format=tar', `--prefix=academic-harness-${sha}/`, sha], { maxBuffer: 1 << 28 })
-  writeFileSync(file, execFileSync('gzip', ['-c'], { input: tar, maxBuffer: 1 << 28 }))
-}
 const envFor = name => ({ AH_MOD_HOME: join(root, name) })
 
-before(async () => {
-  mkdirSync(join(src, 'vendor', 'academic-harness'), { recursive: true })
-  execFileSync('git', ['init', '-q', src])
-  git('config', 'user.email', 't@example.invalid')
-  git('config', 'user.name', 't')
-  writeFileSync(join(src, 'package.json'), '{"name":"x","version":"3.1.4"}')
-  writeFileSync(join(src, 'package-lock.json'), '{"lockfileVersion":3}')
-  writeFileSync(join(src, 'index.js'), 'export const a = 1\n')
-  writeFileSync(join(src, 'vendor', 'academic-harness', 'pyproject.toml'), '[project]\nname = "x"\n')
-  git('add', '-A')
-  git('commit', '-qm', 'one')
-  sha = git('rev-parse', 'HEAD').trim()
-  // the lock a release would carry: made by a sync from the repository
-  const lock = await sync({ source: src, commit: sha, outDir: join(root, 'reference'), lockFile: join(root, 'reference.lock.json') })
-  mkdirSync(plugin, { recursive: true })
-  lockText = `${JSON.stringify(lock, null, 2)}\n`
-  writeFileSync(join(plugin, 'UPSTREAM.lock.json'), lockText)
-})
+/** A plugin folder as an installed copy has it: a manifest and a core. The core holds what an install generates too, which a copy must leave behind. */
+function makePlugin(name, version = '1.0.0') {
+  const plugin = join(root, name)
+  mkdirSync(join(plugin, '.claude-plugin'), { recursive: true })
+  writeFileSync(join(plugin, '.claude-plugin', 'plugin.json'), JSON.stringify({ name: 'x', version }))
+  const core = join(plugin, 'core')
+  mkdirSync(join(core, 'vendor', 'academic-harness', '.venv', 'bin'), { recursive: true })
+  mkdirSync(join(core, 'node_modules', 'left-behind'), { recursive: true })
+  mkdirSync(join(core, 'skills', 'one'), { recursive: true })
+  writeFileSync(join(core, 'package.json'), '{"name":"x","version":"3.1.4"}')
+  writeFileSync(join(core, 'package-lock.json'), '{"lockfileVersion":3}')
+  writeFileSync(join(core, 'index.js'), 'export const a = 1\n')
+  writeFileSync(join(core, 'skills', 'one', 'SKILL.md'), '# one\n')
+  writeFileSync(join(core, 'vendor', 'academic-harness', 'pyproject.toml'), '[project]\nname = "x"\n')
+  writeFileSync(join(core, 'vendor', 'academic-harness', '.venv', 'bin', 'python'), 'not a python')
+  writeFileSync(join(core, 'node_modules', 'left-behind', 'index.js'), 'x')
+  return plugin
+}
+const plugin = makePlugin('plugin') // an installed copy: a core with nothing installed in it
 
-describe('where the snapshot is', () => {
-  test('a set-up clone first, then the folder in the mod\'s home named for the commit; AH_UPSTREAM beats both', () => {
+describe('where the core is', () => {
+  test('a set-up clone first, then the folder in the mod\'s home named for the plugin\'s core; AH_CORE beats both', () => {
     const env = envFor('home-paths')
-    const clone = join(root, 'clone')
-    mkdirSync(plugin, { recursive: true })
-    assert.equal(upstreamDir(env, plugin), join(root, 'home-paths', 'upstream', sha.slice(0, 12)))
-    assert.equal(fetchedUpstreamDir(env, plugin), join(root, 'home-paths', 'upstream', sha.slice(0, 12)))
-    mkdirSync(join(clone, 'upstream'), { recursive: true })
-    writeFileSync(join(clone, 'upstream', 'package.json'), '{}')
-    assert.equal(upstreamDir(env, clone), join(clone, 'upstream'))
-    assert.equal(upstreamDir({ ...env, AH_UPSTREAM: '/a/checkout' }, clone), '/a/checkout')
-    assert.equal(upstreamDir(env, join(root, 'no-lock')), join(root, 'home-paths', 'upstream', 'unlocked'))
+    const clone = makePlugin('clone')
+    const id = coreId(plugin)
+    assert.match(id, /^1\.0\.0-[0-9a-f]{10}$/)
+    assert.equal(coreDir(env, plugin), join(root, 'home-paths', 'core', id))
+    assert.equal(workingCoreDir(env, plugin), join(root, 'home-paths', 'core', id))
+    mkdirSync(join(clone, 'core', 'node_modules', 'ah-dsh-tools'), { recursive: true })
+    assert.equal(coreDir(env, clone), join(clone, 'core'), 'dependencies installed in place: it runs where it is')
+    assert.equal(coreDir({ ...env, AH_CORE: '/a/folder' }, clone), '/a/folder')
+  })
+  test('the name changes when the plugin\'s version or one of its core\'s files does, and not otherwise', () => {
+    const one = makePlugin('id-one')
+    const same = makePlugin('id-same')
+    const newer = makePlugin('id-newer', '1.1.0')
+    const edited = makePlugin('id-edited')
+    writeFileSync(join(edited, 'core', 'index.js'), 'export const a = 22222\n')
+    const added = makePlugin('id-added')
+    writeFileSync(join(added, 'core', 'skills', 'one', 'extra.md'), 'x')
+    assert.equal(coreId(one).split('-')[1], coreId(same).split('-')[1], 'the same files, the same fingerprint')
+    assert.notEqual(coreId(newer), coreId(one))
+    assert.notEqual(coreId(edited), coreId(one))
+    assert.notEqual(coreId(added), coreId(one))
+  })
+  test('what an install generates is not part of the name: a clone that was set up is the same core', () => {
+    const a = makePlugin('gen-a')
+    const b = makePlugin('gen-b')
+    mkdirSync(join(b, 'core', 'node_modules', 'more'), { recursive: true })
+    writeFileSync(join(b, 'core', 'node_modules', 'more', 'x.js'), 'x')
+    writeFileSync(join(b, 'core', 'vendor', 'academic-harness', 'installed-version'), '1\n')
+    assert.equal(coreId(a).split('-')[1], coreId(b).split('-')[1])
   })
 })
 
@@ -83,76 +91,96 @@ describe('the state file', () => {
     assert.equal(claim({ pid: process.pid, step: 'd', startedAt: 3 }, env), true)
     writeState({ pid: process.ppid, step: 'failed here', startedAt: 1, error: 'boom' }, env)
     assert.equal(readState(env).error, 'boom')
-    assert.equal(claim({ pid: process.pid, step: 'e', startedAt: 4 }, env), true, 'a failed fetch is retried')
+    assert.equal(claim({ pid: process.pid, step: 'e', startedAt: 4 }, env), true, 'a failed setup is retried')
     clearState(env)
     assert.equal(existsSync(stateFile(env)), false)
   })
 })
 
-describe('the fetch', () => {
-  test('downloads the locked commit into the home, checks it against the lock, installs dependencies, and clears its state', async () => {
+describe('the copy', () => {
+  test('copies the plugin\'s core into the home without what an install generates, installs dependencies there, and clears its state', async () => {
     const env = envFor('home-a')
     const installed = []
-    const r = await bootstrap({ env, root: plugin, fetchTarball: tarball, install: async dir => { installed.push(dir); return { installed: true } } })
-    assert.equal(r.dir, join(root, 'home-a', 'upstream', sha.slice(0, 12)))
-    assert.equal(r.fetched, true)
+    const r = await bootstrap({ env, root: plugin, install: async dir => { installed.push(dir); return { installed: true } } })
+    assert.equal(r.dir, join(root, 'home-a', 'core', coreId(plugin)))
+    assert.equal(r.copied, true)
     assert.deepEqual(installed, [r.dir])
-    assert.equal(checkSnapshot(r.dir, JSON.parse(lockText)).state, 'ok')
+    assert.equal(readFileSync(join(r.dir, 'index.js'), 'utf8'), 'export const a = 1\n')
+    assert.equal(readFileSync(join(r.dir, 'skills', 'one', 'SKILL.md'), 'utf8'), '# one\n')
+    assert.ok(existsSync(join(r.dir, 'vendor', 'academic-harness', 'pyproject.toml')))
+    assert.equal(existsSync(join(r.dir, 'node_modules')), false, 'a dependency folder is never copied: it is installed')
+    assert.equal(existsSync(join(r.dir, 'vendor', 'academic-harness', '.venv')), false, 'neither is a virtual environment, which cannot be moved')
+    assert.equal(readFileSync(join(r.dir, READY), 'utf8').trim(), coreId(plugin))
+    assert.equal(existsSync(`${r.dir}.staging`), false)
     assert.equal(readState(env), null)
-    assert.equal(readFileSync(join(plugin, 'UPSTREAM.lock.json'), 'utf8'), lockText, 'the plugin\'s own lock is not rewritten')
-    assert.equal(existsSync(join(root, 'home-a', 'bootstrap-lock.json')), false)
+    assert.ok(existsSync(join(plugin, 'core', 'node_modules', 'left-behind')), 'the plugin\'s own core is untouched')
   })
-  test('a second start finds it there and fetches nothing', async () => {
+  test('a second start finds it there and copies nothing', async () => {
     const env = envFor('home-a')
-    let downloads = 0
-    const r = await bootstrap({ env, root: plugin, fetchTarball: async (u, f) => { downloads++; return tarball(u, f) }, install: async () => ({ installed: false }) })
-    assert.equal(r.fetched, false)
-    assert.equal(downloads, 0)
+    const dir = workingCoreDir(env, plugin)
+    writeFileSync(join(dir, 'index.js'), 'changed in the copy')
+    const r = await bootstrap({ env, root: plugin, install: async () => ({ installed: false }) })
+    assert.equal(r.copied, false)
+    assert.equal(readFileSync(join(dir, 'index.js'), 'utf8'), 'changed in the copy', 'a copy that is whole is left as it is')
   })
-  test('a download that is not the locked bytes is refused, and the reason is left for the doctor', async () => {
+  test('a copy that was cut short is made again, and a staging folder left by one is cleared', async () => {
+    const env = envFor('home-cut')
+    const dir = workingCoreDir(env, plugin)
+    mkdirSync(`${dir}.staging`, { recursive: true })
+    writeFileSync(join(`${dir}.staging`, 'half'), 'x')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'package.json'), '{"name":"x","version":"0.0.1"}') // no READY: not a whole copy
+    const r = await bootstrap({ env, root: plugin, install: async () => ({ installed: true }) })
+    assert.equal(r.copied, true)
+    assert.equal(JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')).version, '3.1.4')
+    assert.equal(existsSync(`${dir}.staging`), false)
+    assert.ok(existsSync(join(dir, READY)))
+  })
+  test('a plugin folder without its core is refused, and the reason is left for the doctor', async () => {
     const env = envFor('home-b')
-    const other = join(root, 'other-plugin')
-    mkdirSync(other, { recursive: true })
-    writeFileSync(join(other, 'UPSTREAM.lock.json'), JSON.stringify({ ...JSON.parse(lockText), treeSha256: '0'.repeat(64) }))
-    await assert.rejects(bootstrap({ env, root: other, fetchTarball: tarball, install: async () => ({}) }), /does not match the lock/)
-    const s = readState(env)
-    assert.match(s.error, /does not match the lock/)
-    assert.match(s.step, /fetching Academic Harness 3\.1\.4/)
-    const report = await diagnose({ env, root: other, upstream: upstreamDir(env, other), home: join(root, 'home-b') })
-    const snap = report.checks.find(c => c.id === 'snapshot')
-    assert.equal(snap.state, 'missing')
-    assert.match(snap.detail, /first-start fetch failed at "fetching Academic Harness 3\.1\.4/)
+    const bare = join(root, 'bare-plugin')
+    mkdirSync(bare, { recursive: true })
+    await assert.rejects(bootstrap({ env, root: bare, install: async () => ({}) }), /is missing: this is not the plugin's folder/)
+    const report = await diagnose({ env, root: bare, core: coreDir(env, bare), home: join(root, 'home-b') })
+    assert.equal(report.checks.find(c => c.id === 'snapshot').state, 'missing')
   })
-  test('a failed download is retried by the next start', async () => {
-    const env = envFor('home-c')
-    await assert.rejects(bootstrap({ env, root: plugin, fetchTarball: async () => { throw new Error('HTTP 503') }, install: async () => ({}) }), /HTTP 503/)
-    assert.match(readState(env).error, /HTTP 503/)
-    const r = await bootstrap({ env, root: plugin, fetchTarball: tarball, install: async () => ({ installed: true }) })
-    assert.equal(r.fetched, true)
+  test('a clone that was set up runs its own core in place: nothing is copied, and dependencies are checked there', async () => {
+    const env = envFor('home-inplace')
+    const clone = makePlugin('clone-inplace')
+    mkdirSync(join(clone, 'core', 'node_modules', 'ah-dsh-tools'), { recursive: true })
+    const seen = []
+    const r = await bootstrap({ env, root: clone, install: async dir => { seen.push(dir); return { installed: false } } })
+    assert.equal(r.dir, join(clone, 'core'))
+    assert.equal(r.copied, false)
+    assert.deepEqual(seen, [join(clone, 'core')])
+    assert.equal(existsSync(join(root, 'home-inplace', 'core')), false)
+  })
+  test('a failing install is reported and leaves its step in the state; the next start copies nothing again and tries the install again', async () => {
+    const env = envFor('home-d')
+    await assert.rejects(bootstrap({ env, root: plugin, install: async () => { throw new Error('npm ci failed (exit 1)') } }), /npm ci failed/)
+    assert.match(readState(env).step, /installing the tool dependencies/)
+    assert.match(readState(env).error, /npm ci failed/)
+    const again = await bootstrap({ env, root: plugin, install: async () => ({ installed: true }) })
+    assert.equal(again.copied, false, 'the copy was whole')
     assert.equal(readState(env), null)
   })
-  test('a failing install is reported and leaves its step in the state', async () => {
-    const env = envFor('home-d')
-    await assert.rejects(bootstrap({ env, root: plugin, fetchTarball: tarball, install: async () => { throw new Error('npm ci failed (exit 1)') } }), /npm ci failed/)
-    assert.match(readState(env).step, /installing the tool dependencies/)
-  })
-  test('while another server is fetching this one waits, and uses what it fetched', async () => {
+  test('while another server is setting up this one waits, and uses what it made', async () => {
     const env = envFor('home-e')
-    const first = await bootstrap({ env, root: plugin, fetchTarball: tarball, install: async dir => { mkdirSync(join(dir, 'node_modules', 'ah-dsh-tools'), { recursive: true }); return { installed: true } } })
-    writeState({ pid: process.ppid, step: 'fetching', startedAt: Date.now() }, env)
+    const first = await bootstrap({ env, root: plugin, install: async dir => { mkdirSync(join(dir, 'node_modules', 'ah-dsh-tools'), { recursive: true }); return { installed: true } } })
+    writeState({ pid: process.ppid, step: 'copying the core', startedAt: Date.now() }, env)
     setTimeout(() => clearState(env), 150)
-    const second = await bootstrap({ env, root: plugin, fetchTarball: async () => { throw new Error('must not download again') }, install: async () => ({ installed: false }), waitMs: 5000 })
-    assert.deepEqual([second.dir, second.fetched], [first.dir, false])
+    const second = await bootstrap({ env, root: plugin, install: async () => { throw new Error('must not install again') }, waitMs: 5000 })
+    assert.deepEqual([second.dir, second.copied], [first.dir, false])
   })
   test('an other server that never finishes is not waited for for ever', async () => {
     const env = envFor('home-f')
-    writeState({ pid: process.ppid, step: 'fetching', startedAt: Date.now() }, env)
-    await assert.rejects(bootstrap({ env, root: plugin, fetchTarball: tarball, install: async () => ({}), waitMs: 100 }), /too long/)
+    writeState({ pid: process.ppid, step: 'copying the core', startedAt: Date.now() }, env)
+    await assert.rejects(bootstrap({ env, root: plugin, install: async () => ({}), waitMs: 100 }), /too long/)
   })
   test('the doctor says it is being set up while the state is live', async () => {
     const env = envFor('home-g')
     writeState({ pid: process.pid, step: 'installing the tool dependencies (npm ci)', startedAt: Date.now() - 12_000 }, env)
-    const report = await diagnose({ env, root: plugin, upstream: join(root, 'nothing-here'), home: join(root, 'home-g') })
+    const report = await diagnose({ env, root: plugin, core: join(root, 'nothing-here'), home: join(root, 'home-g') })
     const snap = report.checks.find(c => c.id === 'snapshot')
     assert.equal(snap.state, 'info')
     assert.match(snap.detail, /being set up by the server \(started 1\d s ago\): installing the tool dependencies/)
@@ -218,35 +246,33 @@ describe('a host that is swapped while the server runs', () => {
   })
 })
 
-describe('what the fetch must never do', () => {
-  test('with AH_UPSTREAM set it refuses: the folder it would replace is a checkout', async () => {
+describe('what the setup must never do', () => {
+  test('with AH_CORE set it refuses: the folder is somebody\'s own', async () => {
     const checkout = join(root, 'a-checkout')
     mkdirSync(checkout, { recursive: true })
     writeFileSync(join(checkout, 'package.json'), '{"name":"x","version":"9.9.9"}')
-    const env = { ...envFor('home-dev'), AH_UPSTREAM: checkout }
-    let downloads = 0
-    await assert.rejects(bootstrap({ env, root: plugin, fetchTarball: async (u, f) => { downloads++; return tarball(u, f) }, install: async () => ({}) }), /development mode/)
-    assert.equal(downloads, 0)
-    assert.ok(existsSync(join(checkout, 'package.json')), 'the checkout is untouched')
-    assert.equal(readState(env), null, 'and no fetch is recorded')
+    const env = { ...envFor('home-dev'), AH_CORE: checkout }
+    await assert.rejects(bootstrap({ env, root: plugin, install: async () => ({}) }), /development mode/)
+    assert.ok(existsSync(join(checkout, 'package.json')), 'the folder is untouched')
+    assert.equal(readState(env), null, 'and no setup is recorded')
   })
 })
 
-describe('the doctor after a failed fetch was repaired by hand', () => {
-  test('an old fetch error is not reported once the snapshot is usable', async () => {
+describe('the doctor after a failed setup was repaired by hand', () => {
+  test('an old setup error is not reported once the core is usable', async () => {
     const env = envFor('home-stale')
     const up = join(root, 'repaired')
     mkdirSync(join(up, 'node_modules', 'ah-dsh-tools'), { recursive: true })
     writeFileSync(join(up, 'package.json'), '{"name":"x","version":"3.1.4"}')
-    writeState({ pid: 1, step: 'fetching', startedAt: Date.now() - 60_000, error: 'HTTP 503' }, env)
-    const broken = await diagnose({ env, root: plugin, upstream: join(root, 'not-there'), home: join(root, 'home-stale') })
-    assert.match(broken.checks.find(c => c.id === 'snapshot').detail, /first-start fetch failed/)
-    const repaired = await diagnose({ env, root: plugin, upstream: up, home: join(root, 'home-stale') })
-    assert.doesNotMatch(repaired.checks.find(c => c.id === 'snapshot').detail, /fetch failed/)
+    writeState({ pid: 1, step: 'copying the core', startedAt: Date.now() - 60_000, error: 'ENOSPC' }, env)
+    const broken = await diagnose({ env, root: plugin, core: join(root, 'not-there'), home: join(root, 'home-stale') })
+    assert.match(broken.checks.find(c => c.id === 'snapshot').detail, /first-start setup failed/)
+    const repaired = await diagnose({ env, root: plugin, core: up, home: join(root, 'home-stale') })
+    assert.doesNotMatch(repaired.checks.find(c => c.id === 'snapshot').detail, /setup failed/)
   })
 })
 
-describe('snapshots an update left behind', () => {
+describe('copies an update left behind', () => {
   const day = 24 * 60 * 60 * 1000
   const made = (base, name, days) => {
     const dir = join(base, name)
@@ -257,10 +283,10 @@ describe('snapshots an update left behind', () => {
     return dir
   }
 
-  test('an old folder that is not the locked commit goes; the locked one, the one in use and recent ones stay', async () => {
+  test('an old folder that is not this plugin\'s core goes; this one, the one in use and recent ones stay', async () => {
     const env = envFor('home-prune')
-    const base = join(root, 'home-prune', 'upstream')
-    const locked = fetchedUpstreamDir(env, plugin)
+    const base = join(root, 'home-prune', 'core')
+    const locked = workingCoreDir(env, plugin)
     mkdirSync(base, { recursive: true })
     const lockedDir = made(base, locked.split('/').pop(), 40)
     const oldDir = made(base, 'aaaaaaaaaaaa', 20)
@@ -270,44 +296,55 @@ describe('snapshots an update left behind', () => {
     const gone = await pruneOldSnapshots({ env, root: plugin })
     assert.deepEqual(gone.sort(), ['aaaaaaaaaaaa', 'bbbbbbbbbbbb.staging'])
     assert.equal(existsSync(oldDir), false)
-    assert.equal(existsSync(staging), false, 'an interrupted fetch\'s staging folder goes the same way')
+    assert.equal(existsSync(staging), false, 'an interrupted copy\'s staging folder goes the same way')
     assert.equal(existsSync(recentDir), true, 'used inside the keep time')
-    assert.equal(existsSync(lockedDir), true, 'the locked commit is never removed, however old')
+    assert.equal(existsSync(lockedDir), true, 'this core\'s copy is never removed, however old')
     assert.ok(existsSync(join(base, 'a-stray-file')), 'only folders are considered')
     assert.ok(Date.now() - statSync(lockedDir).mtimeMs < 60_000, 'a server running from its folder marks it used')
   })
 
+  test('the folder earlier releases fetched the snapshot into goes the same way, once it has not been used for the keep time', async () => {
+    const env = envFor('home-legacy')
+    const legacy = join(root, 'home-legacy', 'upstream')
+    mkdirSync(legacy, { recursive: true })
+    const old = made(legacy, 'a3f17eb8ae15', 30)
+    const recent = made(legacy, 'b3f17eb8ae15', 1)
+    assert.deepEqual(await pruneOldSnapshots({ env, root: plugin }), ['a3f17eb8ae15'])
+    assert.equal(existsSync(old), false)
+    assert.equal(existsSync(recent), true)
+  })
+
   test('0 keeps everything; a development checkout and a missing folder are left alone', async () => {
     const env = envFor('home-prune-2')
-    const base = join(root, 'home-prune-2', 'upstream')
+    const base = join(root, 'home-prune-2', 'core')
     mkdirSync(base, { recursive: true })
     const oldDir = made(base, 'dddddddddddd', 60)
     assert.deepEqual(await pruneOldSnapshots({ env: { ...env, AH_SNAPSHOT_KEEP_DAYS: '0' }, root: plugin }), [])
-    assert.deepEqual(await pruneOldSnapshots({ env: { ...env, AH_UPSTREAM: root }, root: plugin }), [])
+    assert.deepEqual(await pruneOldSnapshots({ env: { ...env, AH_CORE: root }, root: plugin }), [])
     assert.equal(existsSync(oldDir), true)
     assert.deepEqual(await pruneOldSnapshots({ env: envFor('home-never-made'), root: plugin }), [])
     assert.deepEqual(await pruneOldSnapshots({ env: { ...env, AH_SNAPSHOT_KEEP_DAYS: '30' }, root: plugin }), ['dddddddddddd'])
   })
 })
 
-describe('the fetch in a process of its own', () => {
+describe('the setup in a process of its own', () => {
   const dir = join(root, 'worker')
   const until = async (cond, ms = 8000) => { const end = Date.now() + ms; while (!cond() && Date.now() < end) await new Promise(r => setTimeout(r, 50)); return cond() }
   before(() => mkdirSync(dir, { recursive: true }))
 
-  test('the worker runs first; when it has ended the snapshot is confirmed here, and that result is the answer', async () => {
+  test('the worker runs first; when it has ended the core is confirmed here, and that result is the answer', async () => {
     const mark = join(dir, 'ran')
     const worker = join(dir, 'ok.mjs')
     writeFileSync(worker, `import { writeFileSync } from 'node:fs'\nwriteFileSync(${JSON.stringify(mark)}, process.env.AH_MOD_HOME)\n`)
     let sawMark = null
     const env = { ...process.env, AH_MOD_HOME: join(dir, 'home-ok') }
-    const started = bootstrapInWorker({ env, worker, run: async ({ env }) => { sawMark = existsSync(mark); return { dir: env.AH_MOD_HOME, fetched: false, installed: false } } })
+    const started = bootstrapInWorker({ env, worker, run: async ({ env }) => { sawMark = existsSync(mark); return { dir: env.AH_MOD_HOME, copied: false, installed: false } } })
     const early = readState(env)
     assert.ok(early && early.pid !== process.pid && /starting/.test(early.step), 'the state names the worker at once, for a doctor asked straight away')
     const r = await started
     assert.equal(sawMark, true, 'the worker had finished before the check ran')
     assert.equal(readFileSync(mark, 'utf8'), env.AH_MOD_HOME, 'the worker gets the server\'s environment')
-    assert.deepEqual(r, { dir: env.AH_MOD_HOME, fetched: false, installed: false })
+    assert.deepEqual(r, { dir: env.AH_MOD_HOME, copied: false, installed: false })
     assert.equal(existsSync(stateFile(env)), false, 'a worker that left no word leaves no state behind')
   })
   test('a worker that fails, or cannot be started, leaves the work and its error to this process', async () => {
@@ -331,11 +368,11 @@ describe('the fetch in a process of its own', () => {
     assert.equal(existsSync(mark), false, 'the server was gone before the worker finished')
     assert.equal(await until(() => existsSync(mark)), true, 'the worker finished without it')
   })
-  test('the real worker says nothing, exits 1 when the fetch is refused, and leaves nothing behind', () => {
+  test('the real worker says nothing, exits 1 when the setup is refused, and leaves nothing behind', () => {
     const home = join(root, 'worker-home')
-    const r = spawnSync(process.execPath, [fileURLToPath(new URL('../../server/bin/ah-bootstrap.mjs', import.meta.url))], { encoding: 'utf8', timeout: 20_000, env: { ...process.env, AH_MOD_HOME: home, AH_UPSTREAM: join(root, 'a-checkout') } })
+    const r = spawnSync(process.execPath, [fileURLToPath(new URL('../../server/bin/ah-bootstrap.mjs', import.meta.url))], { encoding: 'utf8', timeout: 20_000, env: { ...process.env, AH_MOD_HOME: home, AH_CORE: join(root, 'a-checkout') } })
     assert.equal(r.status, 1)
     assert.equal(r.stdout + r.stderr, '')
-    assert.equal(existsSync(join(home, 'upstream')), false)
+    assert.equal(existsSync(join(home, 'core')), false)
   })
 })

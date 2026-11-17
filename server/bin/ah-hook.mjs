@@ -14,7 +14,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { engineDir, engineStatus } from '../src/engine.mjs'
-import { upstreamDir } from '../src/paths.mjs'
+import { coreDir } from '../src/paths.mjs'
 
 export const EXIT_NO_ENGINE = 3
 export const EXIT_TIMEOUT = 124
@@ -52,14 +52,14 @@ export async function main(argv = process.argv.slice(2), env = process.env, stdi
   const status = engineStatus(env, undefined, { verify: false })
   if (!status.ok) {
     const { installing } = await import('../src/engine-install.mjs')
-    const building = installing(engineDir(upstreamDir(env)))
+    const building = installing(engineDir(coreDir(env)))
     process.stderr.write(`ah-hook: no engine to run: ${building ? 'the engine is being installed (it takes under a minute); try again shortly' : status.why}\n`)
     return EXIT_NO_ENGINE
   }
-  const upstream = upstreamDir(env)
+  const upstream = coreDir(env)
   const cliFile = join(upstream, 'academic-harness-cli.js')
   if (!existsSync(cliFile)) {
-    process.stderr.write(`ah-hook: ${cliFile} is missing; run node scripts/sync-upstream.mjs\n`)
+    process.stderr.write(`ah-hook: ${cliFile} is missing; run node scripts/setup.mjs\n`)
     return EXIT_NO_ENGINE
   }
   const cli = await import(pathToFileURL(cliFile).href)

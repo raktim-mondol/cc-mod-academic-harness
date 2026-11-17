@@ -1,16 +1,17 @@
 #!/usr/bin/env node
-// Live checks of the first start of an installed copy: no snapshot in the plugin folder, so the server fetches it (server/src/bootstrap.mjs).
+// Live checks of the first start of an installed copy: the plugin folder holds the source (core/) with nothing installed in it, so the server copies
+// it to the mod's home and installs its dependencies there (server/src/bootstrap.mjs). Nothing is fetched from another repository.
 //
 //   node tests/live/install.mjs                 all
 //   node tests/live/install.mjs first_start     one by name
 //
-// first_start   The server on its own, no Claude Code: a copy of the repository's files with no upstream/ and an empty home. It answers
-//               `initialize` and lists the `doctor` tool at once, fetches the pinned commit from GitHub, installs the dependencies, and
-//               then sends tools/list_changed; the new list holds the whole surface, and the doctor says the snapshot matches the lock.
-//               Network: GitHub and npm. About a minute. No account, no cost.
+// first_start   The server on its own, no Claude Code: a copy of the repository's files (core/ with no node_modules) and an empty home. It
+//               answers `initialize` and lists the `doctor` tool at once, copies core/ to the home, installs the dependencies, and then
+//               sends tools/list_changed; the new list holds the whole surface, and the doctor names the working copy.
+//               Network: npm. About a minute. No account, no cost.
 // marketplace   Claude Code: the same copy as a local marketplace (`claude plugin marketplace add`, `claude plugin install`) in a scratch
-//               CLAUDE_CONFIG_DIR, so the real configuration is untouched. The first session answers `/academic doctor` while the fetch is
-//               running or done; a second session, once the fetch has finished, has every tool and `/ah-papers` finds papers.
+//               CLAUDE_CONFIG_DIR, so the real configuration is untouched. The first session answers `/academic doctor` while the setup is
+//               running or done; a second session, once the setup has finished, has every tool and `/ah-papers` finds papers.
 //               Needs a working `claude` login (no model call is made: both commands answer by themselves). About two minutes.
 import assert from 'node:assert/strict'
 import { spawn, spawnSync } from 'node:child_process'
@@ -29,7 +30,8 @@ function copyPlugin(to) {
     mkdirSync(dirname(join(to, f)), { recursive: true })
     cpSync(join(root, f), join(to, f))
   }
-  assert.equal(existsSync(join(to, 'upstream')), false, 'a copy of the repository has no snapshot')
+  assert.equal(existsSync(join(to, 'core', 'package.json')), true, 'a copy of the repository holds the source')
+  assert.equal(existsSync(join(to, 'core', 'node_modules')), false, 'and nothing installed in it')
 }
 
 /** A stdio client for the server: send requests, collect everything it says. */
@@ -62,19 +64,19 @@ const scenarios = {
       assert.equal(init.result.capabilities.tools.listChanged, true)
       c.notify('notifications/initialized')
       const first = (await c.send('tools/list')).result.tools.map(t => t.name)
-      assert.deepEqual(first, ['doctor'], 'before the fetch is done the doctor is the only tool')
+      assert.deepEqual(first, ['doctor'], 'before the setup is done the doctor is the only tool')
       const early = (await c.send('tools/call', { name: 'doctor', arguments: {} })).result.content[0].text
-      assert.match(early, /Source snapshot: (being set up by the server|Academic Harness)/)
-      await c.until(() => c.lines.some(l => l.method === 'notifications/tools/list_changed'), 240_000, 'the fetch to finish and the list to change')
+      assert.match(early, /Core: (being set up by the server|Academic Harness|not set up yet)/)
+      await c.until(() => c.lines.some(l => l.method === 'notifications/tools/list_changed'), 240_000, 'the setup to finish and the list to change')
       const full = (await c.send('tools/list')).result.tools.map(t => t.name)
       assert.ok(full.length >= 126, `${full.length} tools`)
       for (const name of ['literature_search', 'paper_get', 'deep_research', 'ah_state', 'job_wait', 'doctor']) assert.ok(full.includes(name), name)
       const after = (await c.send('tools/call', { name: 'doctor', arguments: {} })).result.content[0].text
-      assert.match(after, /Source snapshot: Academic Harness \d+\.\d+\.\d+, commit [0-9a-f]{7}, \d+ files, digest matches the lock/)
-      assert.ok(existsSync(join(home, 'upstream')), 'the snapshot is in the mod\'s home, not in the plugin folder')
-      assert.equal(existsSync(join(plugin, 'upstream')), false, 'the plugin folder is left alone')
+      assert.match(after, /Core: Academic Harness \d+\.\d+\.\d+, a working copy at /)
+      assert.ok(existsSync(join(home, 'core')), 'the working copy is in the mod\'s home')
+      assert.equal(existsSync(join(plugin, 'core', 'node_modules')), false, 'the plugin folder is left alone')
       assert.equal(existsSync(join(home, 'bootstrap.json')), false, 'the state file is cleared')
-      return `answered at once with the doctor alone, fetched and installed, then listed ${full.length} tools after list_changed`
+      return `answered at once with the doctor alone, copied the core and installed it, then listed ${full.length} tools after list_changed`
     } finally {
       c.close()
     }
@@ -97,14 +99,14 @@ const scenarios = {
     Object.assign(process.env, env)
     const first = session('/academic doctor')
     assert.equal(first.status, 0, first.stderr)
-    assert.match(first.stdout, /Source snapshot|Node\.js/)
-    // the fetch runs in the server of that session; give it time, then ask again
+    assert.match(first.stdout, /Core:|Node\.js/)
+    // the setup runs in the server of that session; give it time, then ask again
     const end = Date.now() + 240_000
     let second
     do {
       second = session('/academic doctor')
-    } while (!/digest matches the lock/.test(second.stdout) && Date.now() < end)
-    assert.match(second.stdout, /digest matches the lock/, second.stdout.slice(0, 600))
+    } while (!/a working copy at/.test(second.stdout) && Date.now() < end)
+    assert.match(second.stdout, /a working copy at/, second.stdout.slice(0, 600))
     const papers = session('/ah-papers --effort low sparse autoencoders')
     assert.match(papers.stdout, /Literature search: "sparse autoencoders"/)
     return 'installed from a local marketplace into a scratch configuration; the first session set itself up, the next had every tool'

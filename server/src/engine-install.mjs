@@ -2,17 +2,17 @@
 //
 //   installEngine({ upstream })   resolves { built, how } once the venv is built and stamped; rejects with the reason
 //
-// The venv goes to upstream/vendor/academic-harness/.venv (upstream's own layout). uv when present, else python -m venv
+// The venv goes to core/vendor/academic-harness/.venv (upstream's own layout). uv when present, else python -m venv
 // and pip. A marker file (.ah-installing) holds the build's pid while it runs, so the guard can say "being installed"
 // instead of "missing", and two servers do not build at once. The server builds through `installEngineInWorker`: a detached
-// process, so the build outlives a short session. Nothing is ever built in a checkout (AH_UPSTREAM).
+// process, so the build outlives a short session. Nothing is ever built in a checkout (AH_CORE).
 import { spawn } from 'node:child_process'
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { delimiter, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { runDetached } from './detached.mjs'
 import { engineDir, engineHash, engineStatus, INSTALLING_FILE, STAMP_FILE, venvBin, venvPython } from './engine.mjs'
-import { isDevMode, upstreamDir } from './paths.mjs'
+import { isDevMode, coreDir } from './paths.mjs'
 
 export { INSTALLING_FILE }
 
@@ -57,7 +57,7 @@ const WORKER = fileURLToPath(new URL('../bin/ah-engine-install.mjs', import.meta
  * here, in the worker's name, as soon as it exists, so the guard says "being installed" from the first moment. Resolves `{ ok, why? }` when the
  * worker has ended: `ok` is whether the environment is usable now. Never rejects. `worker` is a seam for tests.
  */
-export async function installEngineInWorker({ env = process.env, upstream = upstreamDir(env), worker = WORKER } = {}) {
+export async function installEngineInWorker({ env = process.env, upstream = coreDir(env), worker = WORKER } = {}) {
   const dir = engineDir(upstream)
   const marker = join(dir, INSTALLING_FILE)
   let pid = null
@@ -73,10 +73,10 @@ export async function installEngineInWorker({ env = process.env, upstream = upst
   return status.ok ? { ok: true } : { ok: false, why: code === null ? 'the build could not be started' : status.why }
 }
 
-export async function installEngine({ force = false, upstream = upstreamDir(), quiet = false } = {}) {
-  if (isDevMode()) throw new Error('AH_UPSTREAM is set (development mode): the engine is never built inside a checkout. Use ACADEMIC_HARNESS_CLI to point at one.')
+export async function installEngine({ force = false, upstream = coreDir(), quiet = false } = {}) {
+  if (isDevMode()) throw new Error('AH_CORE is set (development mode): the engine is never built inside a checkout. Use ACADEMIC_HARNESS_CLI to point at one.')
   const dir = engineDir(upstream)
-  if (!existsSync(join(dir, 'pyproject.toml'))) throw new Error(`no engine at ${dir}: run node scripts/sync-upstream.mjs first`)
+  if (!existsSync(join(dir, 'pyproject.toml'))) throw new Error(`no engine at ${dir}: run node scripts/setup.mjs first`)
   if (!force && engineStatus({}, dir).ok) return { built: false, how: 'venv already matches the engine files' }
   if (installingElsewhere(dir)) return { built: false, how: 'another build is running' }
   const marker = join(dir, INSTALLING_FILE)

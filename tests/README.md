@@ -3,7 +3,7 @@
 | Where | What | Run |
 |---|---|---|
 | `*.test.ts`, `*.test.tsx` | Plugin tests of the hooks module, with the engine stood in for | `claude plugin test .` |
-| `scripts/*.test.mjs` | The builds, the task mapping against upstream's, the interface's pure parts, what is left out, the snapshot, the doctor, the update report, the documentation | `node --test "tests/scripts/*.test.mjs"` |
+| `scripts/*.test.mjs` | The builds, the task mapping against the core's, the interface's pure parts, what is left out, the doctor, the documentation | `node --test "tests/scripts/*.test.mjs"` |
 | `server/*.test.mjs` | The tool host, the surface parity, the guard bridge, jobs, PaperMemory's launcher, the first start | `node --test "tests/server/*.test.mjs"` |
 | `live/*.mjs` | Scripts that drive a real Claude Code, tmux, the network. They cost cents and are run by choice | `node tests/live/p5.mjs [scenario ...]` |
 | `helpers/` | `ts-resolve.mjs` lets node import the hooks' `.ts` files | |

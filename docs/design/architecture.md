@@ -2,7 +2,7 @@
 
 The plugin gives Claude Code the Academic Harness research toolkit: its tools, skills, a writing engine and a library of papers. A Claude Code mod's hooks module has no Node and no DOM and reaches the outside only through the engine interface `$`, so the plugin has two halves that talk through processes and MCP.
 
-![How the plugin is built: the hooks module, the ah and papermemory MCP servers, skills and agents, the pinned Academic Harness snapshot and the writing engine](../assets/architecture.svg)
+![How the plugin is built: the hooks module, the ah and papermemory MCP servers, skills and agents, the bundled core and the writing engine](../assets/architecture.svg)
 
 Blue is code that runs inside Claude Code's hooks, green the MCP servers and background jobs, purple the writing engine, orange stored data, yellow skills and agents, and grey what is outside the plugin. The source is `docs/assets/architecture.mmd`, rendered with Pele.
 
@@ -16,7 +16,7 @@ Blue is code that runs inside Claude Code's hooks, green the MCP servers and bac
 
 ## The engine code
 
-The tool modules, the prompt the skills and guides come from, the skills, the vendored writing engine (Python), PaperMemory and the deep-review engine live in `upstream/`, a snapshot of an allow-listed part of the Academic Harness source at one exact version (`UPSTREAM.lock.json`). It is not committed. `scripts/sync-upstream.mjs` takes it from a local checkout (`git archive`) or from GitHub and checks a digest of its files against the lock; the server fetches it itself on first start when it is missing. The plugin never edits it. See [Building](../maintain/building.md) and [Updating](../maintain/updating-upstream.md).
+The tool modules, the prompt the skills and guides come from, the skills, the vendored writing engine (Python), PaperMemory and the deep-review engine are in `core/`, committed in this repository (about 3,300 files, 44 MB). It began as a copy of Academic Harness at one commit (0.54.1) and is this repository's own source now: nothing follows that project, and nothing is fetched. What is built from it (`node_modules`, the engine's Python environment) is not committed; `scripts/setup.mjs` installs it in place, and an installed copy of the plugin gets a working copy of `core/` in the mod's home on first start (`server/src/bootstrap.mjs`), so an update of the plugin replaces the code and leaves the installed dependencies alone when the core did not change. See [Building](../maintain/building.md).
 
 ## The tool server (`server/`)
 
@@ -32,7 +32,7 @@ The research tool modules register tools against a `ctx` object. The server give
 | `jobs.mjs`, `jobtools.mjs` | Long tools (`deep_research`, `deep_review`, `analysis_run`) detach after a foreground window and run as jobs kept on disk; `job_status/wait/log/kill` |
 | `llm.mjs` | The model route: `ctx.llm` answered by a headless `claude -p --safe-mode --tools ""`, no key, capped |
 | `engine*.mjs` | Where the writing engine's environment is, whether it is ready, how it is built |
-| `bootstrap*.mjs`, `late-host.mjs`, `snapshot.mjs` | The first start without the engine code: answer at once, fetch, swap the tool list |
+| `bootstrap*.mjs`, `late-host.mjs`, `snapshot.mjs` | The first start with nothing installed: answer at once, copy the core and install its dependencies, swap the tool list |
 | `doctor.mjs`, `doctortool.mjs` | What is ready, as a report and as a tool |
 | `usage.mjs` | Usage counts: a recorder per writer, the files added up, the report. Names and numbers only |
 | `compat.mjs` | The Claude Code versions the mod was seen working on; reads the record the hooks module leaves at session start, so the doctor can say whether that module loaded and on which version |
@@ -74,15 +74,15 @@ It adds what only Claude Code has: commands, a pane and a status line, the guard
 
 ## Licences
 
-Code written for the plugin is MIT (`LICENSE`). The research engine, tools and skills it runs come from Academic Harness, a public MIT repository (Copyright 2026 Academic Harness, formerly ResearchCraft); the plugin fetches the pinned commit on first start, so none of that code is committed here, and upstream's own `NOTICE` travels with the download.
+Code written for the plugin is MIT (`LICENSE`), and so is Academic Harness's own code in `core/` (Copyright 2026 Academic Harness, formerly ResearchCraft, the same author). **`core/` is not all MIT.** It carries the third-party material that Academic Harness bundles, each under its own licence, and `NOTICE` and `core/NOTICE` list it. Decision, 2026-11-17: the repository stands alone and commits all of `core/`, including the skills and vendored projects whose licences are non-commercial or GPL, with that said in the README and `NOTICE` and not by leaving them out. The consequence to know: someone who uses this repository commercially has to read `NOTICE` and leave out what its licence does not allow.
 
-What is committed is `skills/` and `agents/`, generated from the snapshot. The review of their licences was settled on 2026-11-16, when the repository was made public:
+What the build lets into `skills/` (the 54 core skills, plus the guides, that Claude Code lists) is narrower, and unchanged from the review settled on 2026-11-16:
 
-- Skills under non-commercial, GPL or unknown licences are left out by the build (decision D5), and `skills/.build-info.json` records each with its licence. The 54 that are copied name MIT (36), CC-BY-4.0 (3) or nothing (15, the source's own text).
+- Skills under non-commercial, GPL or unknown licences are left out of `skills/` by the build (decision D5), and `skills/.build-info.json` records each with its licence. The 54 that are copied name MIT, CC-BY-4.0 or nothing (the source's own text).
 - Eight skills come from K-Dense (MIT): their copyright lines are in `NOTICE`.
-- Three come from Supervisor-Skills with `license: CC-BY-4.0` in their own frontmatter and are credited in `NOTICE` with their changes. That repository as a whole is CC BY-NC-SA 4.0, and the per-skill line is what lets these three in; if a reader of the licence disagrees, `ON_DEMAND_SKILLS` in `server/src/fit.mjs` is where they would be moved out.
+- Three come from Supervisor-Skills with `license: CC-BY-4.0` in their own frontmatter and are credited in `NOTICE` with their changes. That repository as a whole is CC BY-NC-SA 4.0, and `core/vendor/supervisor-skills` holds it.
 - `remove-ai-signs/references/signs.md` is adapted from a Wikipedia essay (CC BY-SA 4.0), and `NOTICE` says it is not under the MIT licence.
-- A skill the model loads on demand from the snapshot can be under a non-commercial licence; that is upstream's distribution, and each skill's `license:` line says.
+- A skill the model loads on demand from `core/skills` can be under a non-commercial licence; each skill's `license:` line says.
 
 `tests/scripts/repo.test.mjs` fails when a skill is copied whose licence is not one the build allows, or when a licence other than MIT has no entry in `NOTICE`.
 

@@ -55,7 +55,7 @@ try {
 
   const report = join(base, 'keys.json')
   const run = spawnSync('claude', ['-p', 'hi', '--output-format', 'stream-json', '--verbose', '--model', 'haiku'], {
-    env: { ...env, AH_UPSTREAM: join(root, 'upstream'), AH_MOD_HOME: join(base, 'home'), AH_KEYS_REPORT: report, AH_MANAGED_INSTALLS: '0', AH_AUTO_INSTALL: '0' },
+    env: { ...env, AH_CORE: join(root, 'core'), AH_MOD_HOME: join(base, 'home'), AH_KEYS_REPORT: report, AH_MANAGED_INSTALLS: '0', AH_AUTO_INSTALL: '0' },
     cwd: base, encoding: 'utf8', input: '', timeout: 120_000,
   })
   all += run.stdout + run.stderr
