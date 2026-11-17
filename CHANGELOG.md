@@ -1,7 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.5.0 (2026-11-17)
 
+- **A model router.** `/model-router on` (or the `model_router` setting) picks the model for each prompt: planning goes to Opus, coding to Sonnet, academic writing to Haiku, everything else and anything uncertain to Sonnet. One Jev request (TypeSafe) gives the probabilities and the plugin's own thresholds pick the model; without a TypeSafe key, or when Jev is slow, refusing or malformed, keyword rules decide. It routes the main conversation only and keeps a turn on one model; leaves subagents, non-Claude sessions and `[1m]` windows alone; follows plan mode; keeps the route through a go-ahead or a job's notice; and `[opus]`, `[sonnet]` or `[haiku]` at the start of a prompt overrides it. Off by default (it changes what a prompt costs: the first request to each model in a session writes the whole prompt prefix to that model's cache, $0.54 on Opus with 687 tools). `router_engine rules` keeps every prompt on the machine. See `docs/guide/model-router.md`.
 - **One place for every key.** Each credential a tool can read is a plugin option, saved with `claude plugin configure` and kept in Claude Code's secure store; `docs/guide/keys.md` says how to save one, where it is stored, what wins over what, and what every key unlocks, and a test keeps the page in step with `plugin.json`. The keys of the restorable left-out tools (Brave, Tavily, Exa, Perplexity, Elicit) and three the engine's list did not name (`GITHUB_TOKEN`, `OSF_TOKEN`, `IMAGE_API_KEY`) are now offered too.
 - Semantic Scholar requests are paced at one every two seconds across all tools when a key is set, under the key's one per second (`AH_S2_MIN_INTERVAL_MS` raises the gap). Before, the first tool to call Semantic Scholar set the gap, and three of them asked for exactly the limit.
 - Fixed: `tests/live/p2-config.mjs` failed for anyone with a key exported in the shell.

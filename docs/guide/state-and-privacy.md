@@ -23,6 +23,10 @@ So that the next review of what the plugin leaves out can start from what is use
 
 The server counts its tools. The hooks module counts this plugin's skills and agents as Claude starts them, and the commands you run. A skill you start yourself by typing its name, and a skill that Claude Code loads without the `Skill` tool, are not seen. Turn it off with the `usage_counts` setting or `AH_USAGE=0`.
 
+## The model router
+
+Off by default. When it is on and a TypeSafe key is saved, each prompt it classifies sends TypeSafe the start (1,200 characters) and the end (400) of the prompt, with the key, over HTTPS; nothing else, and nothing is kept by the mod. With no key, or with `router_engine` set to `rules`, nothing leaves the machine. The last decision (route, model, reason) is held in Claude Code's plugin state for the session. [The page](model-router.md) has the rest.
+
 ## What it reads
 
 - **A local Academic Harness checkout**, if there is one, only at setup or update, only with `git archive` against its object database, and never written. `node scripts/check-upstream-clean.mjs` proves it untouched (its HEAD, its working-tree status and `~/.dsh`).

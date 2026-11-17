@@ -71,7 +71,7 @@ Option names are lower case; the environment variable of the same name in upper 
 | `firecrawl_api_key` | `firecrawl` as a source of `literature_search` |
 | `parallel_api_key` | `parallel` as a source of `literature_search` |
 | `jina_api_key` | `jina_read`: higher limits for reading pages and PDFs |
-| `typesafe_api_key` | Routing a query to the right sources, and reranking results |
+| `typesafe_api_key` | Routing a query to the right sources, reranking results, and choosing the model for each prompt ([the model router](model-router.md)) |
 | `cohere_api_key` | Reranking with Cohere |
 | `futurehouse_api_key` | The FutureHouse research agents |
 

@@ -20,6 +20,10 @@ Start with `/academic doctor` (outside a session: `node server/bin/ah-doctor.mjs
 | The doctor says the Claude Code version "has not been tried with the mod" | Only the versions it lists were seen working. Others are expected to work; if a command, the status line or the guard misbehaves, report it with the version |
 | A tool the guidance names is not found | It is one of the 15 left out ([fit review](../design/fit-review.md)); `restore_tools` brings back most of them |
 | The doctor says the snapshot "is not what the lock says" | It was edited or came from another commit. `node scripts/setup.mjs` restores the locked one |
+| The router is on but every prompt stays on one model | `/model-router status` says why. The session may be on a model that is not Claude's (the router leaves it alone), the request may already be on the model the router chose, or the router is off (`/model-router on`) |
+| `/model-router status` says Jev did not decide: `no TypeSafe key`, `auth_failed`, `timeout`, `http_5xx` or `malformed_response` | The keyword rules decided instead, and the route is still sound but coarser. Save a valid `typesafe_api_key`; after a failure Jev is left alone for a minute (ten after a refused key), then asked again |
+| A prompt is sent to the wrong model | `/model-router explain <prompt>` shows what it would get and why. Start the prompt with `[opus]`, `[sonnet]` or `[haiku]` to choose, or change the thresholds ([the model router](model-router.md#checking-and-tuning-it)) |
+| A prompt fails after the router chose a model | The model may not be on your plan. Set that route's model (`router_plan_model` and the others) to one you can use |
 | A skill names a tool you do not have | Skills loaded on demand are written generally and may name a tool this plugin leaves out. Claude says so and uses the nearest one |
 
 Still stuck: `claude --debug` shows plugin and hook problems; the server's own messages go to its stderr, prefixed `[academic-harness]`; the guard logs each decision to `<project>/.ah/claude-hooks.jsonl`.

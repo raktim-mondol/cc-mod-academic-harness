@@ -28,6 +28,16 @@ The effort comes first: `--effort low|medium|high` (also `--effort=`, `-e`, `eff
 
 A long task goes on as a background job: the command waits about 30 seconds per step, then says the job id, and you are told when it ends (`job_notices`).
 
+## `/model-router`
+
+| Command | What it does |
+|---|---|
+| `/model-router on`, `off` | The [model router](model-router.md) for this session: planning on Opus, coding on Sonnet, academic writing on Haiku, anything else on Sonnet. The setting `model_router` changes the default (off) |
+| `/model-router` or `status` | Whether it is on, the model for each kind of prompt, what reads the prompts (Jev or keyword rules), and what the last prompt got and why |
+| `/model-router explain <prompt>` | What a prompt would get, without sending it to the model (with a TypeSafe key, the prompt goes to Jev; the answer says so) |
+
+A prompt that starts with `[opus]`, `[sonnet]` or `[haiku]` uses that model whatever the router would choose.
+
 ## `/ah-watch`
 
 Runs the saved literature searches that are due (`literature_watch`) and prints what is new since the last digest. `--all` runs every watch, `--preview` leaves the digest's "since" cut where it was. Watches are saved by asking for one (`literature_watch`, action `add`). To make it regular while a session is open: `/loop 1d /ah-watch`.
@@ -42,6 +52,6 @@ Folds your last reply for you to read: `full`, `brief` (the default), `points`, 
 
 ## The status line
 
-One line under the prompt, `research mode on · 1 job running · gate FAIL (5 blocking)`: the mode, this session's running jobs, and in an `ah.yaml` project the engine's gate (read again after each turn). Claude Code shows it as `⚠ academic-harness: ...`.
+One line under the prompt, `research mode on · 1 job running · gate FAIL (5 blocking)`: the mode, this session's running jobs, and in an `ah.yaml` project the engine's gate (read again after each turn). While the [model router](model-router.md) is on, the line ends with `router on`, and after a prompt with the model it chose, `router → opus`. Claude Code shows it as `⚠ academic-harness: ...`.
 
 Next: [Tools, skills and agents](tools-skills-agents.md).

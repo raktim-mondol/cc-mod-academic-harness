@@ -27,7 +27,8 @@ export type PanelState = {
 export const EMPTY_PANEL: PanelState = { at: 0, cwd: '', project: null, library: null, jobs: [], notes: [] }
 
 /** What the status line is made of besides the mode: kept here so mode.ts (which writes the line) and ui.tsx (which refreshes it) agree. */
-export const live: { jobs: number; gate: Gate | null; shownKey: string } = { jobs: 0, gate: null, shownKey: '' }
+// `router` is not reset with the rest: hooks/router.ts owns it and sets it at session start, before the interface starts.
+export const live: { jobs: number; gate: Gate | null; router: string | null; shownKey: string } = { jobs: 0, gate: null, router: null, shownKey: '' }
 
 export function resetLive(): void {
   live.jobs = 0
@@ -37,16 +38,17 @@ export function resetLive(): void {
 
 // ---- the status line ----
 
-export function composeStatus(isOn: boolean, jobs: number, gate: Gate | null): string {
+export function composeStatus(isOn: boolean, jobs: number, gate: Gate | null, router: string | null = null): string {
   const parts = [`research mode ${isOn ? 'on' : 'off'}`]
   if (jobs > 0) parts.push(`${jobs} job${jobs === 1 ? '' : 's'} running`)
   if (gate) parts.push(gate.status === 'FAIL' ? `gate FAIL (${gate.blocking} blocking)` : 'gate PASS')
+  if (router) parts.push(router)
   return parts.join(' · ')
 }
 
 /** Changes whenever the line would read differently, so a timer redraws it only then. */
-export function statusKey(jobs: number, gate: Gate | null): string {
-  return `${jobs}|${gate ? `${gate.status}${gate.blocking}` : '-'}`
+export function statusKey(jobs: number, gate: Gate | null, router: string | null = null): string {
+  return `${jobs}|${gate ? `${gate.status}${gate.blocking}` : '-'}${router ? `|${router}` : ''}`
 }
 
 // ---- reading what the bridge, the job folder and the notebook say ----

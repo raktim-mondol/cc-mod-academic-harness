@@ -11,6 +11,7 @@ The Claude Code side of the mod: a hooks module the engine loads from `hooks.jso
 | `notices.ts`, `jobs-core.ts` | Job completion notices: a timer reads the job records and notifies, and prompts the model |
 | `tasks.ts`, `tasks-core.ts` | `/ah-research` and the other task commands, `/ah-watch`, `/fold` |
 | `ui.tsx`, `ui-core.ts` | The pane, and the parts of the status line |
+| `router.ts`, `router-core.ts` | The model router: `turn.start` decides the model of a prompt, `turn.step` puts it on every request of the turn; `/model-router`. The core holds the policy, the keyword rules and the Jev request |
 | `doctor.ts` | `/academic doctor` |
 | `usage.ts` | Usage counts of the plugin's skills, agents and commands, for `/academic usage` |
 | `seen.ts` | At session start, leaves a record that this module loaded, with the Claude Code version, for the doctor |
