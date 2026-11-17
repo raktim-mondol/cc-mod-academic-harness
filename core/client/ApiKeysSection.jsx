@@ -1,0 +1,352 @@
+import { useEffect, useState } from 'react'
+import { IndexProgressPanel } from './ZvecIndexProgress.jsx'
+import { secretPresence } from './secret-presence.js'
+
+const IMAGE_MODEL_OPTIONS = [
+  { value: 'gemini-2.5-flash-image', label: 'gemini-2.5-flash-image — nano banana' },
+  { value: 'gemini-3.1-flash-image', label: 'gemini-3.1-flash-image — nano banana 2' },
+  { value: 'gemini-3-pro-image', label: 'gemini-3-pro-image — nano banana pro' },
+]
+const ZVEC_GREP_EMBEDDING_OPTIONS = [
+  { value: 'local/potion-retrieval-32m', label: 'local/potion-retrieval-32m — papers / notes (default)' },
+  { value: 'local/potion-code-16m-v2', label: 'local/potion-code-16m-v2 — code' },
+  { value: 'local/potion-multilingual-128m', label: 'local/potion-multilingual-128m — multilingual docs' },
+]
+const ZVEC_GREP_AUTO_INDEX_OPTIONS = [
+  { value: 'no', label: 'No — ask in chat when semantic search would help (default)' },
+  { value: 'yes', label: 'Yes — index this workspace when an Academic Harness session opens' },
+]
+const CUSTOM_MODEL = '__custom__'
+
+/** The settings fields this section manages, grouped for display. */
+const KEYS = [
+  { field: 'PARALLEL_API_KEY', label: 'Parallel', group: 'Literature search', hint: 'Required for parallel_search and parallel_extract — native REST tools, read per call, no restart.' },
+  { field: 'FIRECRAWL_API_KEY', label: 'Firecrawl', group: 'Literature search', hint: 'Required to mount Firecrawl (search/scrape/parse); the connector stays disabled without it. Restart dsh after saving.' },
+  { field: 'CONSENSUS_API_KEY', label: 'Consensus', group: 'Literature search', hint: 'Required for consensus_search, a native REST tool — read per call, no restart.' },
+  { field: 'SCITE_API_KEY', label: 'Scite', group: 'Literature search', hint: 'Required to enable the Scite MCP connector. Restart dsh after saving.' },
+  { field: 'BRAVE_API_KEY', label: 'Brave Search', group: 'Web search', hint: 'Optional — enables brave_search as an independent web-index fallback (not a literature index). Read per call, no restart.' },
+  { field: 'TAVILY_API_KEY', label: 'Tavily', group: 'Web search', hint: 'Required for tavily_search — AI-native web search with chunked content and topic modes.' },
+  { field: 'EXA_API_KEY', label: 'Exa', group: 'Web search', hint: 'Required for exa_search — neural/entity web search with optional content extraction.' },
+  { field: 'PERPLEXITY_API_KEY', label: 'Perplexity', group: 'Web search', hint: 'Required for perplexity_search — raw ranked web results (not the synthesized-answer API).' },
+  { field: 'JINA_API_KEY', label: 'Jina', group: 'Web search', hint: 'Optional for jina_read (keyless Reader is 20 RPM); required for jina_read mode=search.' },
+  { field: 'UNPAYWALL_EMAIL', label: 'Unpaywall contact email', group: 'Literature search', hint: 'Recommended for paper_download: enables the Unpaywall lookup, and the other open-access fallbacks still run without it. Unpaywall asks API callers to identify themselves with a real email.' },
+  { field: 'OPENALEX_API_KEY', label: 'OpenAlex', group: 'Academic databases', hint: 'Optional — a free key raises the daily budget and rate limit (10 → 30 RPS) and enables cursor paging. Used by openalex_search, openalex_citations, paper_resolve, integrity_check, and funder_policy.' },
+  { field: 'S2_API_KEY', label: 'Semantic Scholar', group: 'Academic databases', hint: 'Optional — a free key gives s2_search and paper_resolve a dedicated 1 RPS bucket. Unkeyed traffic shares a heavily throttled pool.' },
+  { field: 'CROSSREF_MAILTO', label: 'Crossref contact email', group: 'Academic databases', hint: 'Optional — moves crossref_lookup, citation DOI checks, paper_resolve, and coscientist_verify into the polite pool. Falls back to the Unpaywall email.' },
+  { field: 'NCBI_API_KEY', label: 'NCBI API key', group: 'Academic databases', hint: 'Optional — raises pubmed_search source="ncbi" from 3 to 10 requests per second.' },
+  { field: 'NCBI_EMAIL', label: 'NCBI contact email', group: 'Academic databases', hint: 'Optional — NCBI asks API callers for a contact email. Falls back to the Unpaywall email.' },
+  { field: 'CORE_API_KEY', label: 'CORE', group: 'Academic databases', hint: 'Optional — keyless CORE is limited to ~10 requests/minute; a registered key gives more stable access and is required for include_fulltext.' },
+  { field: 'ADS_API_TOKEN', label: 'NASA ADS', group: 'Domain sources', hint: 'Required for ADS results in literature_search (sources=ads) and domain_search ADS actions. Create a token in your ADS account; a daily quota applies. Read per call, no restart.' },
+  { field: 'SCOPUS_API_KEY', label: 'Scopus / Elsevier', group: 'Domain sources', hint: 'Required for Scopus results in literature_search (sources=scopus), domain_search Scopus actions, journal_search CiteScore/SJR/SNIP, and paper_context ScienceDirect FULL. Key from dev.elsevier.com; access follows institutional IP/VPN, so 401/403 means not entitled. Read per call, no restart.' },
+  { field: 'ELSEVIER_INSTTOKEN', label: 'Elsevier institutional token', group: 'Domain sources', hint: 'Optional — needed for subscriber-gated ScienceDirect FULL views in paper_context. Sent as X-ELS-Insttoken alongside SCOPUS_API_KEY. Read per call, no restart.' },
+  { field: 'WOS_API_KEY', label: 'Web of Science / JCR', group: 'Domain sources', hint: 'Required for Web of Science results in literature_search (sources=wos), domain_search WoS actions, and journal_search JIF/JCI/quartile metrics. Key from the Clarivate Developer Portal; Starter has a low daily quota and field limits. Read per call, no restart.' },
+  { field: 'WILEY_TDM_TOKEN', label: 'Wiley TDM', group: 'Academic databases', hint: 'Optional — enables the Wiley TDM full-text PDF tier in paper_context. Requires Wiley TDM entitlement. Read per call, no restart.' },
+  { field: 'SPRINGER_API_KEY', label: 'Springer Nature', group: 'Academic databases', hint: 'Optional — enables literature_search (sources=springer) and the Springer JATS full-text tier in paper_context. Free developer keys have a daily quota. Read per call, no restart.' },
+  { field: 'IEEE_API_KEY', label: 'IEEE Xplore', group: 'Academic databases', hint: 'Optional — enables literature_search (sources=ieee) through the IEEE Xplore metadata API. Free developer keys have a daily quota. Read per call, no restart.' },
+  { field: 'ELICIT_API_KEY', label: 'Elicit', group: 'Academic databases', hint: 'Required for elicit_search — Elicit Pro plan or above. 100 requests/minute per IP, then a 5-minute block.' },
+  { field: 'TYPESAFE_API_KEY', label: 'TypeSafe (Jev)', group: 'Literature search', hint: 'Optional — TypeSafe API key for Jev, which picks the literature_search sources for a query (PubMed, arXiv, bioRxiv, INSPIRE) instead of keyword rules. Without it, search falls back to the rules. The query text is sent to api.typesafe.ai. Key from console.typesafe.ai/keys. Read per call, no restart.' },
+  { field: 'COHERE_API_KEY', label: 'Cohere (Rerank)', group: 'Literature search', hint: 'Optional — Cohere API key for the literature_search reranker, an alternative to Jev for ordering merged results by relevance. The query and public abstracts are sent to api.cohere.com. A trial key is rate limited (about 10 rerank calls a minute). Key from dashboard.cohere.com/api-keys. Read per call, no restart.' },
+  { field: 'FUTUREHOUSE_API_KEY', label: 'FutureHouse / Edison', group: 'Research agents', hint: 'Required for futurehouse_agent (Crow/Falcon/Owl on the Edison Scientific platform). Tasks are asynchronous: start, then poll status in a later turn.' },
+  { field: 'OPENFDA_API_KEY', label: 'openFDA', group: 'Regulatory data', hint: 'Optional — openFDA works keyless at a low shared daily limit; a free key raises the quota. Used by the openfda tool.' },
+  { field: 'SHERPA_ROMERO_API_KEY', label: 'Sherpa Romeo', group: 'Data and compliance', hint: 'Optional — without it journal_policy returns DOAJ data only and notes that Sherpa Romeo was not checked. A free key adds per-version self-archiving policy.' },
+  { field: 'DATACITE_API_KEY', label: 'DataCite', group: 'Data and compliance', hint: 'Optional — public DataCite reads need no key; set this only if your gateway requires a bearer token. Used by dataset_search.' },
+  { field: 'ZENODO_API_KEY', label: 'Zenodo', group: 'Data and compliance', hint: 'Optional — a Zenodo personal access token (sent as a Bearer token) lets dataset_search files list restricted records you can access. Public records work keyless.' },
+  { field: 'FIGSHARE_API_KEY', label: 'Figshare', group: 'Data and compliance', hint: 'Optional — a Figshare personal token (sent as "token …") lets dataset_search files access records available to your account. Public records work keyless.' },
+  { field: 'PATENTSVIEW_API_KEY', label: 'PatentsView', group: 'Patents', hint: 'Required for patent_search (optional tool). Free key from search.patentsview.org; without it the tool returns a clear error.' },
+  { field: 'ORCID_TOKEN', label: 'ORCID', group: 'Identity', hint: 'Optional — used by the optional author_lookup tool as a Bearer token for higher ORCID rate limits. Public reads work without it; ROR needs no key.' },
+  { field: 'GEMINI_API_KEY', label: 'Gemini', group: 'Image generation', hint: 'Enables image_generate and coscientist embed.' },
+  { field: 'IMAGE_MODEL', label: 'Image model', group: 'Image generation', type: 'select', options: IMAGE_MODEL_OPTIONS, hint: 'Which Gemini model image_generate uses by default. Defaults to nano banana if unset.' },
+  { field: 'SUBAGENT_PRO_BASE_URL', label: 'Pro endpoint URL', group: 'Subagent model routing', type: 'text', hint: 'Endpoint root, for example https://api.deepseek.com/anthropic or https://api.openai.com/v1. Anthropic-style URLs use the Anthropic Messages protocol; other URLs use OpenAI Chat Completions.' },
+  { field: 'SUBAGENT_PRO_MODEL', label: 'Pro model', group: 'Subagent model routing', type: 'text', hint: 'Model id sent to this endpoint. Set endpoint, model, and API key to activate the route; leave all three blank to inherit the session model.' },
+  { field: 'SUBAGENT_PRO_API_KEY', label: 'Pro API key', group: 'Subagent model routing', hint: 'Stored in the DSH credential store and used only for this route. Required with the endpoint and model.' },
+  { field: 'SUBAGENT_VISION_BASE_URL', label: 'Vision endpoint URL', group: 'Subagent model routing', type: 'text', hint: 'Endpoint root for the image-reading route, for example https://api.deepseek.com/anthropic or https://api.openai.com/v1. Anthropic-style URLs use the Anthropic Messages protocol; other URLs use OpenAI Chat Completions.' },
+  { field: 'SUBAGENT_VISION_MODEL', label: 'Vision model', group: 'Subagent model routing', type: 'text', hint: 'Image-capable model id sent to this endpoint. Set endpoint, model, and API key to activate the route; leave all three blank to inherit the session model.' },
+  { field: 'SUBAGENT_VISION_API_KEY', label: 'Vision API key', group: 'Subagent model routing', hint: 'Stored in the DSH credential store and used only for this route. Required with the endpoint and model.' },
+  { field: 'MODAL_TOKEN_ID', label: 'Modal — token ID', group: 'Remote compute', hint: 'From modal.com/settings.' },
+  { field: 'MODAL_TOKEN_SECRET', label: 'Modal — token secret', group: 'Remote compute', hint: 'From modal.com/settings.' },
+  { field: 'RUNPOD_API_KEY', label: 'Runpod', group: 'Remote compute', hint: 'From console.runpod.io/user/settings.' },
+  { field: 'VAST_API_KEY', label: 'Vast.ai', group: 'Remote compute', hint: 'From cloud.vast.ai/manage-keys.' },
+  { field: 'CO_SCIENTIST_MAX_HYPOTHESES', label: 'Hypotheses per tournament', group: 'Hypothesis tournament', hint: 'Default cap for `coscientist` action=start (5). Chosen so one review veto plus one dual-use withholding still leaves three ideas competing — at 3 the tournament stalls. Past 5 the extra ideas buy breadth while each pair meets less than twice. Debate matches are the expensive part. A per-call max_hypotheses wins; read per call, no restart.' },
+  { field: 'CO_SCIENTIST_STEP_BUDGET', label: 'Dispatch steps per tournament', group: 'Hypothesis tournament', hint: 'Default cap on dispatch rounds (36) — sized for the 5-hypothesis default: ~8 generations + 5 reviews + 15 matches ≈ 31, with slack. It is also the smallest budget where the Elo plateau can fire at all (needs 20 samples and 10 matches). Raise both together, or a bigger pool ends on budget instead of converged rankings. A per-call step_budget wins.' },
+  { field: 'CO_SCIENTIST_DUP_THRESHOLD', label: 'Duplicate gate', group: 'Hypothesis tournament', hint: 'Similarity (0-1) at which `coscientist` add discards a near-duplicate hypothesis. Leave empty for the measure default (0.70 lexical, 0.92 cosine); set 1 to turn the gate off.' },
+  { field: 'CO_SCIENTIST_SEED', label: 'Schedule seed', group: 'Hypothesis tournament', hint: 'Number that makes a tournament\'s sampled task schedule reproducible. Leave empty for a non-deterministic run.' },
+  { field: 'CO_SCIENTIST_EMBED_MODEL', label: 'Embedding model', group: 'Hypothesis tournament', hint: 'Optional. Model for `coscientist embed`, which switches the duplicate gate to cosine. Defaults to text-embedding-004 and needs GEMINI_API_KEY; leave empty to keep the lexical gate, which needs no key and no network.' },
+  { field: 'DEEP_REVIEW_DEFAULT_RUBRIC', label: 'Default score rubric', group: 'Deep review', type: 'text', hint: 'Rubric for `deep_review action=score`. Include a declared numeric range such as "1–5" or "1–10"; otherwise the default 1–5 scale applies. The rubric source is recorded in score.json. Leave empty for the built-in rubric.' },
+  { field: 'DEEP_REVIEW_MAX_ROUNDS', label: 'Max review rounds', group: 'Deep review', type: 'text', hint: 'Optional. Refuse a new `review` once this many rounds are stored for one manuscript. Leave empty or 0 for no limit. A round after a revision is what makes `compare` meaningful.' },
+  { field: 'DEEP_REVIEW_COST_CEILING_USD', label: 'Per-review cost ceiling (USD)', group: 'Deep review', type: 'text', hint: 'Optional. Before a review, ask the engine for its median cost estimate and refuse if it exceeds this amount. Leave empty or 0 for no ceiling. This is a user preference, not an autonomy gate.' },
+  { field: 'ZVEC_GREP_AUTO_INDEX', label: 'Index at session start', group: 'Workspace search (zvec-grep)', type: 'select', options: ZVEC_GREP_AUTO_INDEX_OPTIONS, hideCustom: true, hint: 'Default is No. When No, you can still ask in chat to index, and the agent will ask first when semantic search would help. When Yes, an Academic Harness session indexes that workspace in the background if no index exists yet. Applies to the next session — no restart. While indexing, a progress bar with estimated time and Cancel appear here and in the session header. There is no timeout.' },
+  { field: 'ZVEC_GREP_EMBEDDING', label: 'zvec-grep embedding', group: 'Workspace search (zvec-grep)', type: 'select', options: ZVEC_GREP_EMBEDDING_OPTIONS, hint: 'Default local model for new zg indexes (potion-retrieval-32m, ~130 MB download, no API key). Existing indexes keep their stored model. A new index run uses the current value; restart dsh so the search daemon uses it too.' },
+  { field: 'ZVEC_GREP_API_KEY', label: 'zvec-grep remote embedding key', group: 'Workspace search (zvec-grep)', hint: 'Leave empty. Only needed for a remote (Qwen) embedding model, not for the default local Potion models.' },
+]
+
+const GROUPS = [...new Set(KEYS.map((k) => k.group))]
+
+const errorText = { color: 'var(--color-danger, #c0392b)', margin: 0, fontSize: '0.85em' }
+const hintText = { margin: 0, opacity: 0.6, fontSize: '0.8em' }
+const fieldLabel = { fontSize: '0.85em' }
+
+/** A non-secret select field: shows and applies its current value immediately on change. */
+function SelectField({ k, scope, snapshot, writable }) {
+  const stored = snapshot.value?.[k.field] || ''
+  const known = k.options.some((o) => o.value === stored)
+  const [customMode, setCustomMode] = useState(Boolean(stored) && !known)
+  const [customDraft, setCustomDraft] = useState(known ? '' : stored)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState()
+
+  const apply = async (value) => {
+    setBusy(true)
+    setError(undefined)
+    try {
+      if (value) await scope.set(k.field, value)
+      else await scope.unset(k.field)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const onSelectChange = (e) => {
+    const value = e.target.value
+    if (value === CUSTOM_MODEL) {
+      setCustomMode(true)
+      return
+    }
+    setCustomMode(false)
+    apply(value)
+  }
+
+  return (
+    <div key={k.field} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+      <label style={fieldLabel}>
+        {k.label}
+        {' — '}
+        {stored || (k.options[0].value ? `default (${k.options[0].value})` : k.options[0].label)}
+      </label>
+      <select
+        value={customMode ? CUSTOM_MODEL : (stored || k.options[0].value)}
+        disabled={busy || !writable}
+        onChange={onSelectChange}
+        style={{ flex: 1 }}
+      >
+        {k.options.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+        {!k.hideCustom && <option value={CUSTOM_MODEL}>Custom…</option>}
+      </select>
+      {customMode && (
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <input
+            type="text"
+            autoComplete="off"
+            placeholder="model id, e.g. gemini-2.0-flash-exp"
+            value={customDraft}
+            disabled={busy || !writable}
+            onChange={(e) => setCustomDraft(e.target.value)}
+            style={{ flex: 1 }}
+          />
+          <button type="button" disabled={busy || !writable || !customDraft.trim()} onClick={() => apply(customDraft.trim())}>
+            Apply
+          </button>
+        </div>
+      )}
+      {error && <p style={errorText}>{error}</p>}
+      {k.hint && <p style={hintText}>{k.hint}</p>}
+    </div>
+  )
+}
+
+/** A secret field: write-only draft input, never populated from the stored value. */
+function SecretField({ k, scope, snapshot, writable, presence }) {
+  const [draft, setDraft] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState()
+  // The sidecar is authoritative when it names this field; otherwise (a host that does not
+  // redact this field) the value itself says whether it is set.
+  const fromSidecar = presence?.get(k.field)
+  const configured = fromSidecar !== undefined ? fromSidecar : Boolean(snapshot.value?.[k.field])
+
+  const save = async () => {
+    const value = draft.trim()
+    if (!value) return
+    setBusy(true)
+    setError(undefined)
+    try {
+      await scope.set(k.field, value)
+      setDraft('')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const clear = async () => {
+    setBusy(true)
+    setError(undefined)
+    try {
+      await scope.unset(k.field)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div key={k.field} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+      <label style={fieldLabel}>
+        {k.label}
+        {' — '}
+        {configured ? 'configured' : 'not set'}
+      </label>
+      <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <input
+          type="password"
+          autoComplete="off"
+          placeholder={configured ? 'leave blank to keep' : 'not set'}
+          value={draft}
+          disabled={busy || !writable}
+          onChange={(e) => setDraft(e.target.value)}
+          style={{ flex: 1 }}
+        />
+        <button type="button" disabled={busy || !writable || !draft.trim()} onClick={save}>
+          Save
+        </button>
+        <button type="button" disabled={busy || !writable || !configured} onClick={clear}>
+          Clear
+        </button>
+      </div>
+      {error && <p style={errorText}>{error}</p>}
+      {k.hint && <p style={hintText}>{k.hint}</p>}
+    </div>
+  )
+}
+
+/** A non-secret text field that shows its stored value and saves on demand. */
+function TextField({ k, scope, snapshot, writable }) {
+  const stored = snapshot.value?.[k.field] || ''
+  const [draft, setDraft] = useState(stored)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState()
+
+  useEffect(() => { setDraft(stored) }, [stored])
+
+  const save = async () => {
+    const value = draft.trim()
+    setBusy(true)
+    setError(undefined)
+    try {
+      await scope.set(k.field, value)
+      setDraft(value)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const clear = async () => {
+    setBusy(true)
+    setError(undefined)
+    try {
+      await scope.unset(k.field)
+      setDraft('')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div key={k.field} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+      <label style={fieldLabel}>
+        {k.label}
+        {' — '}
+        {stored || 'not set'}
+      </label>
+      <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <input
+          type="text"
+          autoComplete="off"
+          value={draft}
+          disabled={busy || !writable}
+          onChange={(e) => setDraft(e.target.value)}
+          style={{ flex: 1 }}
+        />
+        <button type="button" disabled={busy || !writable || !draft.trim() || draft.trim() === stored} onClick={save}>
+          Save
+        </button>
+        <button type="button" disabled={busy || !writable || !stored} onClick={clear}>
+          Clear
+        </button>
+      </div>
+      {error && <p style={errorText}>{error}</p>}
+      {k.hint && <p style={hintText}>{k.hint}</p>}
+    </div>
+  )
+}
+
+/** Props supplied by our own client/index.js registration: { scope, describe }. */
+export function ApiKeysSection(props) {
+  const { scope, describe } = props
+  const [snapshot, setSnapshot] = useState(() => scope.getSnapshot())
+  const [described, setDescribed] = useState(() => describe?.getSnapshot?.())
+
+  useEffect(() => scope.subscribe(() => setSnapshot(scope.getSnapshot())), [scope])
+  useEffect(() => {
+    if (!describe?.subscribe) return undefined
+    setDescribed(describe.getSnapshot())
+    return describe.subscribe(() => setDescribed(describe.getSnapshot()))
+  }, [describe])
+  const presence = secretPresence(described?.view)
+
+  if (snapshot.status === 'loading') {
+    return (
+      <div style={{ padding: '4px 0' }}>
+        <p style={{ margin: 0, opacity: 0.75, fontSize: '0.9em' }}>Connecting…</p>
+      </div>
+    )
+  }
+  if (snapshot.status === 'unavailable') {
+    return (
+      <div style={{ padding: '4px 0' }}>
+        <p style={{ margin: 0, opacity: 0.75, fontSize: '0.9em' }}>
+          Settings storage is unavailable in this browser session (non-loopback connections don't get durable
+          settings). Set the matching environment variables before starting DSH instead.
+        </p>
+      </div>
+    )
+  }
+
+  const writable = snapshot.writable !== false
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '4px 0' }}>
+      <p style={{ margin: 0, opacity: 0.75, fontSize: '0.9em' }}>
+        API keys for Academic Harness's academic- and web-search connectors, image generation, remote-compute tools, optional zvec-grep remote embeddings, and the deep-review score preferences.
+        A key set here is used only when the matching environment variable isn't already set when DSH starts.
+      </p>
+      {!writable && (
+        <p style={errorText}>Settings storage is read-only in this session.</p>
+      )}
+      {GROUPS.map((group) => (
+        <div key={group} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <h3 style={{ margin: 0, fontSize: '0.95em' }}>{group}</h3>
+          {KEYS.filter((k) => k.group === group).map((k) => (
+            k.type === 'select'
+              ? <SelectField key={k.field} k={k} scope={scope} snapshot={snapshot} writable={writable} />
+              : k.type === 'text'
+                ? <TextField key={k.field} k={k} scope={scope} snapshot={snapshot} writable={writable} />
+                : <SecretField key={k.field} k={k} scope={scope} snapshot={snapshot} writable={writable} presence={presence} />
+          ))}
+          {group === 'Workspace search (zvec-grep)' && (
+            <IndexProgressPanel scope={scope} />
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}

@@ -1,0 +1,68 @@
+flowchart TD
+  question[Research question] --> known{Known paper?}
+  known -->|yes - DOI, PMID, PMCID, or arXiv ID| resolve[paper_resolve]
+  resolve --> get[paper_get<br/>merged record + BibTeX]
+  get --> integrity[integrity_check]
+  get --> context[paper_context<br/>focused sections/snippets]
+  get --> citations[openalex_citations<br/>OpenAlex + OpenCitations]
+  context --> next[Full-text and evidence pipeline<br/>see Papers and evidence]
+  citations --> next
+  integrity --> next
+  known -->|no| need{Literature, venue, or web?}
+
+  need -->|literature| router[literature_search router<br/>Jev picks sources and reorders<br/>see Jev routing diagram]
+  router --> openalex[OpenAlex]
+  router --> s2[Semantic Scholar]
+  router --> pubmed[PubMed / Europe PMC]
+  router --> arxiv[arXiv]
+  router --> crossref[Crossref]
+  router --> biorxiv[bioRxiv / medRxiv]
+  router --> inspire[INSPIRE-HEP]
+  router --> ads[NASA ADS<br/>only with token]
+  router --> scopus[Scopus<br/>explicit + key]
+  router --> wos[Web of Science<br/>explicit + key]
+
+  need -->|keyed scholarly APIs| keyed[core_search · elicit_search<br/>futurehouse_agent]
+  keyed --> next
+
+  need -->|venue metrics| journal[journal_search<br/>OpenAlex · DOAJ · Crossref]
+  journal --> next
+
+  need -->|source-specific action| domain[domain_search]
+  domain -.-> biorxiv
+  domain -.-> inspire
+  domain -.-> ads
+  domain -.-> scopus
+  domain -.-> wos
+
+  need -->|source/key check| catalog[database_catalog]
+  catalog -.-> router
+  catalog -.-> domain
+
+  need -->|peer-reviewed filters| consensus[Consensus]
+  need -->|web or current facts| parallel[parallel_search]
+  parallel --> web[brave_search · tavily_search<br/>exa_search · perplexity_search · jina_read]
+  need -->|broad web reading| fetch[Parallel Extract<br/>Firecrawl · Jina Reader]
+
+  openalex --> next
+  s2 --> next
+  pubmed --> next
+  arxiv --> next
+  crossref --> next
+  biorxiv --> next
+  inspire --> next
+  ads --> next
+  scopus --> next
+  wos --> next
+  consensus --> next
+  web --> next
+  fetch --> next
+
+  classDef entry fill:#ecfdf5,stroke:#059669,color:#064e3b
+  classDef decision fill:#eef2ff,stroke:#6366f1,color:#312e81
+  classDef source fill:#f8fafc,stroke:#94a3b8,color:#0f172a
+  classDef next fill:#fff7ed,stroke:#f97316,color:#7c2d12
+  class question entry
+  class known,need decision
+  class resolve,get,integrity,context,citations,journal,router,domain,catalog,keyed,openalex,s2,pubmed,arxiv,crossref,biorxiv,inspire,ads,scopus,wos,consensus,parallel,web,fetch source
+  class next next
