@@ -1,6 +1,6 @@
 // Run one of the mod's own scripts as a process that outlives this one.
 //
-// Why: the server does two long jobs on a first start (fetching the source snapshot, building the writing engine's environment). A session can be
+// Why: the server does two long jobs on a first start (setting up the core, building the writing engine's environment). A session can be
 // over in seconds (`claude -p`), and work that lives in the server is cut short when the session ends; a run of such sessions would never finish
 // it. A detached worker goes on, and the next server finds it running (each job leaves its pid in a file) or finds the work done.
 import { spawn } from 'node:child_process'

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// The `ah` MCP server: the Academic Harness tools, run from the snapshot in upstream/.
+// The `ah` MCP server: the Academic Harness tools, run from the core (core/ in the plugin, or its working copy in the mod's home).
 //
 //   node server/bin/ah-mcp.mjs            serve over stdio
 //   node server/bin/ah-mcp.mjs --list     print the tools that would be served, then exit
@@ -9,11 +9,11 @@
 //   AH_TOOL_AREAS      comma list of search,papers,notebook,skills, or "all" (default)
 //   AH_KEY_<NAME>      a key from the plugin's userConfig; copied to <NAME> only when <NAME> is unset or empty,
 //                      so a variable exported in the shell keeps winning (credential-env.js reads process.env first)
-//   AH_UPSTREAM        development mode: read a checkout, install nothing
-//   AH_BOOTSTRAP=0     do not fetch the source snapshot on first start (the server then exits, saying what to run)
+//   AH_CORE            development mode: run a core folder of your own, read-only, install nothing
+//   AH_BOOTSTRAP=0     do not set up the core on first start (the server then exits, saying what to run)
 //
-// On first start without a snapshot the server answers at once with its doctor tool alone, fetches the snapshot into <home>/upstream/<sha>
-// (server/src/bootstrap.mjs), then swaps in the full tool list and tells the client it changed.
+// On first start without installed dependencies the server answers at once with its doctor tool alone, copies the plugin's core to
+// <home>/core/<id> and installs its dependencies there (server/src/bootstrap.mjs), then swaps in the full tool list and tells the client it changed.
 import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -23,7 +23,7 @@ import { prepareEnv } from '../src/env.mjs'
 import { createHost, hostOver, missingDependencies, serve } from '../src/host.mjs'
 import { lateHost } from '../src/late-host.mjs'
 import { parseAreas } from '../src/manifest.mjs'
-import { isDevMode, modRoot, upstreamDir } from '../src/paths.mjs'
+import { isDevMode, modRoot, coreDir } from '../src/paths.mjs'
 
 // `--list` only reads: no installer may start for it.
 const keysSet = prepareEnv(process.env, { areas: process.argv.includes('--list') ? undefined : parseAreas(process.env.AH_TOOL_AREAS).areas })
@@ -50,38 +50,26 @@ async function buildEngineInBackground() {
     .catch(error => say(`the writing engine could not be installed: ${error.message}`))
 }
 
-/** A pull of the plugin can move the lock to a new commit while upstream/ still holds the old snapshot, dependencies and all, and the server
- *  would load it without a word. Comparing versions costs two small reads (the doctor compares every byte); say so on stderr. */
-function warnIfSnapshotIsOld() {
-  if (isDevMode() || listing) return
-  try {
-    const lock = JSON.parse(readFileSync(join(modRoot(), 'UPSTREAM.lock.json'), 'utf8'))
-    const held = JSON.parse(readFileSync(join(upstreamDir(), 'package.json'), 'utf8')).version
-    if (lock.version && held && lock.version !== held) say(`the snapshot is Academic Harness ${held}, the lock says ${lock.version}: run \`node scripts/setup.mjs\` in the plugin folder to take the locked one`)
-  } catch { /* no lock or no snapshot: the doctor says so */ }
-}
-
 const open = async () => {
-  warnIfSnapshotIsOld()
-  return createHost({ upstream: upstreamDir(), areas: process.env.AH_TOOL_AREAS, cwd: process.cwd() })
+  return createHost({ upstream: coreDir(), areas: process.env.AH_TOOL_AREAS, cwd: process.cwd() })
 }
-// The snapshot is fetched on first start (bootstrap.mjs) unless this is development mode, `--list`, or AH_BOOTSTRAP=0.
-const needsFetch = !isDevMode() && !listing && process.env.AH_BOOTSTRAP?.trim() !== '0' && missingDependencies(upstreamDir()) !== null
+// The core is copied and its dependencies installed on first start (bootstrap.mjs) unless this is development mode, `--list`, or AH_BOOTSTRAP=0.
+const needsFetch = !isDevMode() && !listing && process.env.AH_BOOTSTRAP?.trim() !== '0' && missingDependencies(coreDir()) !== null
 
-// Snapshots an update left behind in the mod's home (bootstrap.mjs): removed in the background, a week after their last use.
-if (!listing) void pruneOldSnapshots().then(gone => { if (gone.length) say(`removed ${gone.length} old source snapshot${gone.length === 1 ? '' : 's'}: ${gone.join(', ')}`) })
+// Working copies an update left behind in the mod's home (bootstrap.mjs): removed in the background, a week after their last use.
+if (!listing) void pruneOldSnapshots().then(gone => { if (gone.length) say(`removed ${gone.length} old working cop${gone.length === 1 ? 'y' : 'ies'} of the core: ${gone.join(', ')}`) })
 
 let host
 if (needsFetch) {
-  // Answer now with the doctor alone; the full tool list follows when the fetch is done.
-  say('the source snapshot is not here yet: fetching it (the doctor tool says how far it has got)')
+  // Answer now with the doctor alone; the full tool list follows when the setup is done.
+  say('the core is not set up yet: copying it and installing its dependencies (the doctor tool says how far it has got)')
   const placeholder = hostOver(new Registry(), { env: process.env, cwd: process.cwd() })
   const late = lateHost(placeholder)
   host = late
-  // In a process of its own, so that a session that ends before the download does (a headless run) does not end the download with it.
+  // In a process of its own, so that a session that ends before the setup does (a headless run) does not end the setup with it.
   bootstrapInWorker()
     .then(async () => {
-      say('snapshot ready')
+      say('core ready')
       late.swap(await open())
       await buildEngineInBackground()
     })

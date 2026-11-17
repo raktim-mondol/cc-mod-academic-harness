@@ -66,7 +66,7 @@ test('the plugin folder replaces the placeholder in the section text', async ($,
   const text = (await compose($)).sections.find((s: { id: string }) => s.id === 'academic-harness:research')?.text ?? ''
   expect(text.length).toBeGreaterThan(8_000)
   expect(text).not.toContain('{{PLUGIN_ROOT}}')
-  expect(text).toContain('/upstream/skills/')
+  expect(text).toContain('/core/skills/')
 })
 
 test('/academic on adds the section anywhere, off removes it, auto goes back to following ah.yaml', async ($, on) => {

@@ -1,0 +1,90 @@
+# Skills
+
+Academic Harness bundles **791 skills** in `skills/`. They are shipped with the plugin, seeded for filesystem discovery, and loaded through DSH's `skill` tool — no separate checkout or setup.
+
+![Skill sources](assets/diagrams/skills-map.svg)
+
+## What is in the catalogue
+
+Scientific skills are vendored into `skills/` from open-source catalogues, bundled with the plugin like the specialist briefs. See [NOTICE](../NOTICE) for exactly what was changed vs. each source.
+
+| Source | Count | What it covers |
+|---|---|---|
+| [`scientific-agent-skills`](https://github.com/K-Dense-AI/scientific-agent-skills) | 140 domain skills | Chemistry, genomics/bioinformatics, imaging, statistics, ML, writing, and more |
+| [`science-superpowers`](https://github.com/K-Dense-AI/science-superpowers) | 16 research-discipline/methodology skills | Question framing, pre-registration, verification-before-claiming, red-team review, … |
+| [`scientific-agents`](https://github.com/K-Dense-AI/scientific-agents) | 503 profession-specific expert-reasoning skills | Accelerator-physicist, zoologist, actuarial-scientist, … — converted from AGENTS.md profiles |
+| [`drug-discovery-agent-skills`](https://github.com/K-Dense-AI/drug-discovery-agent-skills) | 23 small-molecule/protein-therapeutics skills | Autodock Vina, retrosynthesis, protein-binder design, … |
+| [`claude-scientific-writer`](https://github.com/K-Dense-AI/claude-scientific-writer) | 1 adapted skill | `docx-editor-zotero` — edit `.docx` files without breaking Zotero citations |
+| [`agentic-data-scientist`](https://github.com/K-Dense-AI/agentic-data-scientist) | 1 adapted skill | `agentic-data-science-pipeline` — plan/review/implement/verify/reflect loop for large multi-stage tasks |
+| [`karpathy`](https://github.com/K-Dense-AI/karpathy) | 1 adapted skill | `hyperparameter-optimization` — pre-registered, verify-before-claiming search loop for tuning a DL/LLM model |
+| [`figures4papers`](https://github.com/ChenLiu-1996/figures4papers) | 1 adapted skill | `scientific-figure-making` — publication matplotlib house style + helpers for bars/trends/heatmaps |
+| [`diagram-design`](https://github.com/cathrynlavery/diagram-design) | 1 vendored skill | `diagram-design` — 39 editorial HTML+SVG diagram types; no Mermaid slop |
+| [`pele-skill`](https://github.com/jpmanson/pele-skill) | 1 vendored skill | `pele` — render Mermaid diagrams to SVG or HTML without a browser; Node.js 20+ and npm required |
+| First-party, distilled from Gottweis et al. / Ghareeb et al. 2026 | 1 skill | `generating-scientific-hypotheses` — literature-grounded hypothesis generation: search-checked novelty, ranked falsifiable cards (see [NOTICE](../NOTICE)) |
+| [`Paper2Agent`](https://github.com/jmiao24/Paper2Agent) | 3 vendored skills | `paper2agent` (router), `paper2skill`, and `paper2mcp` — turn a paper and/or its code repo into a reviewed paper skill and a tested FastMCP server. See [Paper agents](PAPERS.md#paper-agents-paper2agent) |
+| [`Supervisor-Skills`](https://github.com/HKUSTDial/Supervisor-Skills) | 12 research-lifecycle skills | Idea evaluation, paper planning and drafting, polishing, figure design, Draw.io reconstruction, pre-submission review, rebuttal guidance, deep research, benchmark papers, and the Vibe Research workflow. Licences are mixed: six CC BY 4.0, five CC BY-NC-SA 4.0 (non-commercial), one MIT — see [NOTICE](../NOTICE) |
+| [`AER-Skills`](https://github.com/brycewang-stanford/AER-Skills) | 16 vendored skills (MIT) | `aer-skills` (router, plus shared docs, examples and templates) and 15 `aer-*` sub-skills covering the AER / AER:Insights / AEJ manuscript lifecycle: topic selection, causal identification (DiD, IV, RDD, SCM, shift-share), pre-registration, robustness, drafting, AER-style tables, consistency audit, referee simulation, AEA replication deposits, submission preflight, and R&R rebuttals. Economics-specific; for other fields use `causal-inference-scientist` or the writing skills |
+| Local, adapted from Wikipedia's "Signs of AI writing" | 1 adapted skill | `remove-ai-signs` — density-based prose style editing: AI-ish vocabulary clusters, formulaic rhythm, hedging boilerplate; preserves meaning, numbers, and citations. A style pass, not a detector-evasion tool |
+
+The remaining first-party workflow, tool, notebook, compute, and specialist-brief skills bring the total on disk to 791.
+
+## Workflow and tool skills
+
+| Skill | What it is for |
+|---|---|
+| `academic-harness` | Router for the writing engine |
+| `ah-write-unit`, `ah-plan-section`, `ah-draft-from-plan`, `ah-fix-findings`, `ah-audit-section`, `ah-revise-from-review` | The writing engine's unit-level workflows; see [Writing](WRITING.md#academic-harness-engine) |
+| `ah-rsi` | Inspecting and steering the local RSI loop; see [RSI](RSI.md) |
+| `academic-harness-notebook` | Lab-notebook discipline for research sessions; see [Lab notebook](WORKSPACE.md#lab-notebook) |
+| `academic-search` | Routing across discovery, journal metrics, merged paper/BibTeX, and focused full-text context; see [Search](SEARCH.md) |
+| `systematic-review-ledger` | Full `review` tool workflow; see [Systematic reviews](RESEARCH.md#systematic-reviews) |
+| `deep-review` | `deep_review` multi-pass critique, the round ladder read with `compare`, and the four advisory evaluation-validity checks; see [Deep review](PAPERS.md#deep-review) |
+| `meta-analysis` | Pairwise pooling, heterogeneity, subgroup/meta-regression, publication-bias diagnostics, diagnostic accuracy, and forest/funnel/SROC plots; see [Meta-analysis](RESEARCH.md#meta-analysis) |
+| `reproducible-analysis` | Plan freeze, auditable `analysis_run` executions, `dataset_get` provenance downloads, `data_profile` leakage review, and `repro_package` shipping; see [Reproducible analysis](ANALYSIS.md) |
+| `submission-package` | `submission_pack` planning/building/status/export, journal requirements, drafts, and hashed manifests; see [Writing](WRITING.md#submission-package) |
+| `manuscript-revision` | `manuscript_diff` diffs, changed blocks, DOCX tracked changes/comments, and response letters; see [Writing](WRITING.md#revision-diffs-and-response-letters) |
+| `numbers-audit` | `numbers_audit` numerical-reporting candidates and `not_checked` handling; see [Writing](WRITING.md#numbers-audit) |
+| `presentation-build` | `presentation_build` posters/slides plus the `subagent_vision` QA step; see [Writing](WRITING.md#posters-and-slides) |
+| `authorship-credit` | `authorship` CRediT/ICMJE records, statements, and unresolved disagreements; see [Writing](WRITING.md#authorship-and-credit) |
+| `experiment-tracking` | `experiment_log` sweeps and staged comparison contracts (baseline/variant, stages, protocol drift, verdicts, Pareto best), links, and exports; see [Reproducible analysis](ANALYSIS.md#experiment_log) |
+| `subset-first-eval` | Freeze the benchmark, verify a named baseline, and record subset-to-full evaluation without mixing references |
+| `limitation-mining` | Record source-quoted flaws, distinct remedy families, sufficiency, and coverage |
+| `novelty-triage` | Inspect grounded prior-art readings, references, quote spans, and inconclusive searches |
+| `method-code-alignment` | Map method anchors to code locations and review them before binding claims |
+| `integrity-audit` | Advisory four-column audit across reruns, protocols, references, and method–code alignment |
+| `ablation-attribution` | `ablation` component removal grids, records linked to experiment/analysis runs, paired deltas, advisory attribution readings, verdicts, and pruning; see [Reproducible analysis](ANALYSIS.md#ablation) |
+| `rebuttal-experiments` | `rebuttal` reviewer-response coverage ledger — import stored reviews, plan capped supplementary stubs, link existing runs, record answers and declines, read coverage, draft the letter handoffs; see [Writing](WRITING.md#reviewer-response-ledger) |
+| `provenance-audit` | Reading and acting on the read-only cross-ledger index — the eleven states, coverage, unsupported, stale, impact, the four-column `arms` readiness roll-up, the report-only `rollup` loop record, and graph exports; see [Provenance audit](PROVENANCE.md) |
+| `grade-certainty` | GRADE domain judgements, derived suggestion, human overall certainty, evidence profile, and summary-of-findings exports; see [GRADE certainty](RESEARCH.md#grade-certainty) |
+| `risk-of-bias-appraisal` | `review` risk-of-bias workflow (RoB 2, ROBINS-I, QUADAS-2, Newcastle-Ottawa, AMSTAR 2, PROBAST, QUIPS, SYRCLE, CASP checklists), reconciliation, agreement, and rob exports; see [Risk-of-bias appraisal](RESEARCH.md#risk-of-bias-appraisal) |
+| `co-scientist-tournament` | The tournament loop, subagent briefs, budget defaults, limitation mining, trace-informed evolution, and champion selection; see [Hypothesis tournaments](RESEARCH.md#hypothesis-tournaments) |
+| `power-and-sample-size` | Study-planning workflow for `power_analysis`; see [Study planning](RESEARCH.md#study-planning) |
+| `causal-dag` | Drawing assumptions, reading adjustment/front-door sets, instruments, colliders, and E-values; see [Causal DAGs](RESEARCH.md#causal-dags) |
+| `experimental-design` | Randomized allocation, balance diagnostics, and DOE choices; see [Randomization and DOE](RESEARCH.md#randomization-and-doe) |
+| `research-ethics` | Ethics protocol, consent, concept checklist, and local de-identification; see [Ethics protocols and de-identification](RESEARCH.md#ethics-protocols-and-de-identification) |
+| `data-management-plan` | Funder-shaped DMP drafting and checklist review; see [Data-management plans](RESEARCH.md#data-management-plans) |
+| `grant-budget` | Multi-year budget building, checks, and export; see [Grant budgets](RESEARCH.md#grant-budgets) |
+| `reporting-guidelines` | `reporting_check` workflow, evidence rules, and subagent item batches; see [Reporting checklists](WRITING.md#reporting-checklists) |
+| `papermemory` | The PaperMemory workflow; see [Paper memory](PAPERS.md#paper-memory) |
+| `zvec-grep` | Install, index, and routing details for workspace search; see [Workspace search](WORKSPACE.md#workspace-search) |
+| `agent-browser` | Driving a real browser through the agent-browser CLI; see [Browsing the web](AGENTS.md#browsing-the-web) |
+| `pele` | Render Mermaid to SVG or HTML using the skill's pinned Pele dependency; installs that dependency in the skill directory on first use |
+| `runpod`, `modal`, `vastai` | The rest of each CLI: Serverless, volumes, secrets, Hub templates, GPU availability, Vast.ai bids/volumes; see [Remote compute](COMPUTE.md#beyond-the-tools) |
+| `paper2agent`, `paper2skill`, `paper2mcp` | Turning a paper or repo into a skill and an MCP server; see [Paper agents](PAPERS.md#paper-agents-paper2agent) |
+| `remove-ai-signs` | Style editing for machine-sounding prose; it does not evade detection or remove provenance |
+| `scientific-figure-making`, `diagram-design`, `generating-scientific-hypotheses` | Figure and ideation workflows; see [Writing](WRITING.md#figures) and [Research](RESEARCH.md) |
+| `deep-research`, `idea-evaluator`, `tech-paper-template`, `benchmark-paper-template`, `intro-drafter`, `paper-writer`, `paper-polish`, `figure-designer`, `drawio-reconstruction`, `pre-submission-reviewer`, `rebuttal-guidance`, `vibe-research-workflow` | Supervisor-Skills paper lifecycle; see [Writing](WRITING.md#supervisor-skills-paper-lifecycle) and the [vendor source](../vendor/supervisor-skills/SOURCE.txt) |
+
+The remaining specialist briefs are single-purpose skills for the `subagent` tool — abstract-writer, citation-checker, code-reviewer, data-validator, experiment-designer, paper-agent-builder, statistical-reviewer, and the rest of the roster listed in the system prompt.
+
+Each Supervisor-Skills entry carries a **Routing in Academic Harness** section that names the skill or tool to use when a task crosses a stage boundary. The related existing skills carry a reciprocal note, so the catalogue hands off instead of duplicating work.
+
+## Loading a skill
+
+The agent calls the `skill` tool with a skill name when a task matches. Skills are also discoverable through the preset's filesystem skill row, and are seeded on first install.
+
+To use a different catalogue instead, set `ACADEMIC_HARNESS_SKILLS_DIR` (or keep a `~/scientific-agent-skills/skills` checkout). The override applies to the Academic Harness preset, whose `skill-filesystem` row reads it.
+
+## Attribution
+
+Skills are vendored or adapted from several open-source catalogues; [NOTICE](../NOTICE) records exactly what was copied, renamed, or adapted from each. The plugin itself is MIT (see [LICENSE](../LICENSE)). The Supervisor-Skills bundle is mixed-license: six skills are CC BY 4.0, five are CC BY-NC-SA 4.0 (non-commercial, share-alike), and `drawio-reconstruction` is MIT; those terms apply to those skill files, not to the plugin as a whole. See [vendor/supervisor-skills/SOURCE.txt](../vendor/supervisor-skills/SOURCE.txt).

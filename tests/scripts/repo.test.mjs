@@ -38,7 +38,8 @@ describe('the developer commands', () => {
   test('CI runs the same gate as npm run check', () => {
     const ci = read('.github/workflows/ci.yml')
     assert.equal(pkg.scripts.check, 'node scripts/check.mjs')
-    assert.match(ci, /node scripts\/setup\.mjs --github/)
+    assert.match(ci, /node scripts\/setup\.mjs\s*\n/)
+    assert.doesNotMatch(ci, /setup\.mjs --github/, 'the source is in the repository: nothing is downloaded')
     assert.match(ci, /npm run check/)
   })
 })
@@ -99,5 +100,36 @@ describe('the licences of what is copied', () => {
     const cc = info.included.filter(s => s.license === 'CC-BY-4.0').length
     const none = info.included.filter(s => s.license === null).length
     assert.ok(notice.replace(/\s+/g, ' ').includes(`Of the ${n} skills copied, ${mit} name MIT, ${cc} name CC-BY-4.0, and ${none} name no licence`), 'the counts in NOTICE are out of date')
+  })
+})
+
+describe('the licences of core/, which is committed whole', () => {
+  const notice = read('NOTICE')
+  const skills = readdirSync(join(root, 'core', 'skills')).filter(n => existsSync(join(root, 'core', 'skills', n, 'SKILL.md')))
+  const licenceOf = name => /^license:\s*(.*)$/m.exec(read(join('core', 'skills', name, 'SKILL.md')))?.[1]?.trim().replace(/^["']|["']$/g, '') ?? null
+  /** A skill whose licence is not one of the permissive ones NOTICE can leave to its summary line: it has to be named. */
+  const needsNaming = l => l !== null && !/^(MIT|BSD-3-Clause|BSD-2-Clause|BSD license|Apache-2\.0|CC-BY-4\.0)$/.test(l)
+
+  test('every skill in core/ with a licence that is not plainly permissive is named in NOTICE', () => {
+    const missing = skills.filter(n => needsNaming(licenceOf(n)) && !new RegExp(`(^|[^\\w-])${n.replace(/[-]/g, '\\-')}([^\\w-]|$)`).test(notice))
+    assert.deepEqual(missing, [], 'add these to the right group in NOTICE (core/: Academic Harness, and what it bundles)')
+  })
+  test('every vendored project is named in NOTICE, with its licence', () => {
+    for (const dir of readdirSync(join(root, 'core', 'vendor'))) assert.ok(notice.includes(dir), `core/vendor/${dir} is not in NOTICE`)
+    assert.match(notice, /supervisor-skills:[^\n]*Creative Commons Attribution-NonCommercial/)
+  })
+  test('the README says core/ is not all MIT, and where to look', () => {
+    const readme = read('README.md')
+    assert.match(readme, /`core\/` also bundles other projects' material under their own licences/)
+    assert.match(readme, /AH_EXCLUDE_NONCOMMERCIAL=1/)
+  })
+  test('the counts NOTICE gives are the counts there are', () => {
+    const tally = {}
+    for (const n of skills) { const l = licenceOf(n) ?? '(none)'; tally[l] = (tally[l] ?? 0) + 1 }
+    assert.equal(skills.length, 791)
+    assert.equal(tally['MIT'], 634)
+    assert.equal(tally['CC-BY-NC-SA-4.0'], 6)
+    assert.equal(tally['Unknown'], 12)
+    assert.match(notice, /Of the 791 skills in core\/skills: 634 name MIT/)
   })
 })

@@ -39,8 +39,8 @@ test('without a key or without the module it seeds nothing and does not throw', 
   assert.deepEqual(await seedPacing(root, {}), {})
 })
 
-test('against the real upstream: paper_resolve\'s 1000 ms request no longer sets the gap', { skip: !existsSync(join(root, 'upstream', 'search-http.js')) }, async () => {
-  const up = join(root, 'upstream')
+test('against the real core: paper_resolve\'s 1000 ms request no longer sets the gap', { skip: !existsSync(join(root, 'core', 'search-http.js')) }, async () => {
+  const up = join(root, 'core')
   await seedPacing(up, { S2_API_KEY: 'k' })
   const { getLimiter } = await import(pathToFileURL(join(up, 'search-http.js')).href)
   assert.equal(getLimiter('s2', { minIntervalMs: 1000 }).minIntervalMs, 2000)

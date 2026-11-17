@@ -1,0 +1,226 @@
+# Configuration
+
+Academic Harness reads credentials and preferences from two places:
+
+1. **Settings → Academic Harness API keys** in the DSH web UI. DSH 0.2.x stores these as volatile fields on the plugin's Loader row, persisted in the profile's `cordis.patch.yml` — not in a separate `settings.yaml`.
+2. **Shell environment variables.** A non-empty env var wins over the stored value.
+
+No credential is required to install or boot. Each connector or tool stays disabled or returns a clear "key not set" error until its key is present. PaperMemory, notebook, `fold_text`, `paper_fold` local levels, `latex_compile`, and the academic databases' keyless tiers need no key.
+
+## Settings fields
+
+### Search and literature
+
+| Field | Required for | Notes |
+|---|---|---|
+| `PARALLEL_API_KEY` | `parallel_search`, `parallel_extract`, `literature_search` (`sources=parallel`) | Native REST calls; takes effect on the next call. |
+| `FIRECRAWL_API_KEY` | Firecrawl MCP connector, `literature_search` (`sources=firecrawl`) | The agent-facing MCP mount needs a `dsh` restart; `literature_search` reads the key per call. |
+| `CONSENSUS_API_KEY` | `consensus_search`, `literature_search` (`sources=consensus`) | Required; the tool returns a clear error when unset. |
+| `SCITE_API_KEY` | Scite MCP connector, `literature_search` (`sources=scite`) | An `mcp`-scoped key from <https://scite.ai/users/me/api>; sent as a bearer token to `https://api.scite.ai/mcp`. `literature_search` reads it per call; the agent-facing mount needs a `dsh` restart. |
+| `BRAVE_API_KEY` | `brave_search` | Independent web index; not a literature index. |
+| `TAVILY_API_KEY` | `tavily_search` | AI-native chunks and filters. |
+| `EXA_API_KEY` | `exa_search` | Neural/entity search. |
+| `PERPLEXITY_API_KEY` | `perplexity_search` | Raw ranked results. |
+| `JINA_API_KEY` | `jina_read` | Optional; keyless Reader is 20 RPM, search needs a key. |
+| `CORE_API_KEY` | `core_search` | Optional; keyless CORE is capped at ~10 requests/minute. |
+| `ADS_API_TOKEN` | `literature_search` (`sources=ads`), `domain_search` ADS actions | Required for ADS; create a token in your ADS account. A daily quota applies. Read per call, no restart. |
+| `SCOPUS_API_KEY` | `literature_search` (`sources=scopus`), `domain_search` Scopus actions, `journal_search` CiteScore/SJR/SNIP, `paper_context` ScienceDirect FULL | Required for Scopus; also used as the Elsevier API key. Key from <https://dev.elsevier.com>. Access follows the institution's IP/VPN, so a 401/403 means not entitled. Read per call, no restart. |
+| `ELSEVIER_INSTTOKEN` | `journal_search`, `paper_context` subscriber-gated Elsevier views | Optional `X-ELS-Insttoken` paired with `SCOPUS_API_KEY`. Read per call, no restart. |
+| `WOS_API_KEY` | `literature_search` (`sources=wos`), `domain_search` Web of Science actions, `journal_search` JCR JIF/JCI/quartile | Required for Web of Science; key from the Clarivate Developer Portal. Starter has a low daily quota and field limits. Read per call, no restart. |
+| `WILEY_TDM_TOKEN` | `paper_context` Wiley TDM PDF tier | Optional; requires Wiley TDM entitlement. Read per call, no restart. |
+| `SPRINGER_API_KEY` | `literature_search` (`sources=springer`), `paper_context` Springer JATS tier | Optional; free developer keys have a daily quota. Read per call, no restart. |
+| `IEEE_API_KEY` | `literature_search` (`sources=ieee`) | Optional; free developer keys have a daily quota. Read per call, no restart. |
+| `ELICIT_API_KEY` | `elicit_search` | Elicit Pro+ required. |
+| `FUTUREHOUSE_API_KEY` | `futurehouse_agent` | Edison Scientific API key. |
+| `TYPESAFE_API_KEY` | `literature_search` source routing (Jev) | Optional. Key from <https://console.typesafe.ai/keys>. With it, Jev chooses which domain sources to add to a query; without it the keyword rules apply. The query text is sent to `api.typesafe.ai`. Read per call, no restart. |
+| `COHERE_API_KEY` | `literature_search` reranking (Cohere Rerank) | Optional. Key from <https://dashboard.cohere.com/api-keys>. Used only when you pass `rerank: "cohere"`; `auto` never uses it (Jev, or a local BM25 ranking without a Jev key). The query and public title/abstract text are sent to `api.cohere.com`. A trial key allows about 10 rerank calls a minute. Read per call, no restart. |
+| `OPENALEX_API_KEY` | `openalex_search`, `openalex_citations`, `paper_get`, `journal_search`, `paper_context`, `integrity_check`, `funder_policy` | Optional; raises the keyless budget. |
+| `S2_API_KEY` | `s2_search`, `paper_get`, `paper_context` | Optional; raises Semantic Scholar limits, including paper-scoped snippet search. |
+| `CROSSREF_MAILTO` | `crossref_lookup`, `coscientist_verify`, `journal_search`, `paper_get`, publisher Crossref search | Puts requests in Crossref's polite pool; falls back to `UNPAYWALL_EMAIL`. |
+| `UNPAYWALL_EMAIL` | `paper_download`, `paper_get` OA enrichment, `paper_context` PDF fetch | Recommended but not required; enables the Unpaywall lookup. The tool never invents an email. |
+| `NCBI_API_KEY` | `pubmed_search` with `source: "ncbi"` | Raises E-utilities from 3 to 10 RPS. |
+| `NCBI_EMAIL` | `pubmed_search` with `source: "ncbi"` | Contact email for NCBI. |
+
+Keyed journal metrics and publisher full-text tiers are implemented but intentionally not exercised by the automated or live test suite; they return `key_missing`/skip when unset and warnings when a configured key fails. Test them with your own entitlements.
+
+### Datasets, policy, and regulatory records
+
+| Field | Required for | Notes |
+|---|---|---|
+| `DATACITE_API_KEY` | `dataset_search` | Optional; public DataCite data works without it. |
+| `ZENODO_API_KEY` | `dataset_search` Zenodo file listings | Optional. |
+| `FIGSHARE_API_KEY` | `dataset_search` Figshare file listings | Optional. |
+| `SHERPA_ROMERO_API_KEY` | `journal_policy`, `funder_policy` policy half | Without it, `journal_policy` is DOAJ-only with `key_not_set`, and `funder_policy` returns identity only. |
+| `OPENFDA_API_KEY` | `openfda` | Optional; raises the low shared daily quota. A 429 means the quota is exhausted. |
+| `ORCID_TOKEN` | `author_lookup` | Optional; only raises ORCID limits. ROR is keyless. |
+| `PATENTSVIEW_API_KEY` | `patent_search` | **Required on every call**; without it the tool returns a clear error. |
+
+### Models and images
+
+| Field | Meaning | Applies |
+|---|---|---|
+| `GEMINI_API_KEY` | Gemini API key. `IMAGE_API_KEY` (env only) overrides it | Next call |
+| `IMAGE_MODEL` | Image model id. Default `gemini-2.5-flash-image` ("nano banana"); also `gemini-3.1-flash-image`, `gemini-3-pro-image`, or a custom id | Immediate on selection — no Save |
+| `SUBAGENT_PRO_BASE_URL`, `SUBAGENT_PRO_MODEL`, `SUBAGENT_PRO_API_KEY` | Optional custom route for `subagent_pro`; all three required | Needs a `dsh` restart |
+| `SUBAGENT_VISION_BASE_URL`, `SUBAGENT_VISION_MODEL`, `SUBAGENT_VISION_API_KEY` | Optional custom route for `subagent_vision`; all three required | Needs a `dsh` restart |
+
+Set all three fields to register the route; with none set the tool inherits the session model (a partial set is ignored). The endpoint URL selects Anthropic Messages when it contains `anthropic` (for example `https://api.deepseek.com/anthropic`) and OpenAI Chat Completions otherwise. The plugin writes the route onto the host's pi-ai adapter and stores the API key in the credential service. The legacy ids `deepseek-v4-flash` and `deepseek-v4-flash-vision-exp` are still accepted by the API, but those models have been retired and their requests are served by Flash.
+
+An image-capable session model can inspect images directly with the host's `read_image`; the host checks the active model's declared image support. Use `subagent_vision` for a focused or multi-image visual inspection, or for an optional separately configured vision route; the child must use native `read_image`. If no usable image tool is available, the visual check is not performed; OCR, metadata, or source-code reconstruction must not be presented as a vision reading. Each `subagent_pro`/`subagent_vision` call automatically writes a routing-tagged `decision` entry and, when the child settles, an `observation` entry to the session notebook.
+
+`IMAGE_PROVIDER`, `IMAGE_BASE_URL`, and `IMAGE_API_KEY` select an OpenAI-compatible Images API instead of Gemini. `IMAGE_API_KEY` is also accepted as a Gemini override. These are environment variables.
+
+The bundled launcher (`scripts/dsh-launch`, installed as `academic-harness`) forces `DEEPSEEK_BASE_URL=https://api.deepseek.com/anthropic`. That is the Messages-compatible root DSH expects; the bare `https://api.deepseek.com` host returns 404 for chat requests.
+
+### Remote compute
+
+| Field | Required for | Get credentials |
+|---|---|---|
+| `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET` | `modal_run` | <https://modal.com/settings> |
+| `RUNPOD_API_KEY` | `runpod_run` | <https://console.runpod.io/user/settings> |
+| `VAST_API_KEY` | `vastai_run` | <https://cloud.vast.ai/manage-keys/> |
+
+### Hypothesis tournaments
+
+These are optional numbers, not credentials. An explicit argument to `coscientist start` always wins over the stored value.
+
+| Field | Default | Meaning |
+|---|---|---|
+| `CO_SCIENTIST_MAX_HYPOTHESES` | `5` | Cap for one tournament. Five is the smallest pool that survives a review veto and a withholding without stalling. |
+| `CO_SCIENTIST_STEP_BUDGET` | `36` | Steps one tournament may spend. A five-pool needs about 8 generations + 5 reviews + 15 matches to converge rather than end on the budget. |
+| `CO_SCIENTIST_DUP_THRESHOLD` | auto: `0.70` lexical, `0.92` cosine | Similarity at which `coscientist add` discards a near-duplicate. An explicit value overrides the measure's default; `1` turns the gate off. |
+| `CO_SCIENTIST_SEED` | unset | Makes a tournament's sampled task schedule reproducible. |
+| `CO_SCIENTIST_EMBED_MODEL` | `text-embedding-004` | Model used by `coscientist embed`; reuses `GEMINI_API_KEY`. |
+| `CO_SCIENTIST_LIMITATION_ROUNDS` | `16` | Verification rounds one limitation may spend before it is reported `exhausted`. The cap in force is stored with each verification; an explicit `max_rounds` argument wins. |
+
+### Deep review
+
+Optional preferences for `deep_review`. They are read per call; an explicit tool argument wins where one exists.
+
+| Field | Default | Meaning |
+|---|---|---|
+| `DEEP_REVIEW_DEFAULT_RUBRIC` | built-in 1–5 rubric | Rubric text for `score`; a declared range such as `1–5` or `1–10` sets the numeric scale. A per-call `rubric` argument overrides it. |
+| `DEEP_REVIEW_MAX_ROUNDS` | unset (no limit) | Refuse a new `review` once that many rounds are stored for one manuscript. Raise it or review a different path to continue. |
+| `DEEP_REVIEW_COST_CEILING_USD` | unset (no ceiling) | Before a review, check the engine's median cost estimate and refuse if it exceeds this amount. This is a user preference, not an autonomy gate. |
+
+### Reviewer response ledger
+
+Optional preference for `rebuttal`. It is read per call and applies to the next call with no restart.
+
+| Field | Default | Meaning |
+|---|---|---|
+| `REBUTTAL_MAX_TASKS` | `20` | Cap on supplementary task stubs one rebuttal slug may plan (integer 1–200). A non-integer or out-of-range value falls back to 20 and the call says so in a warning. No tool argument overrides it — an override would defeat the cap that replaces the paper's `N_t`, which this ledger never instantiates. |
+
+### Remote compute spend cap
+
+Optional preference for `modal_run`, `runpod_run` and `vastai_run`. It is read per call and applies to the next call with no restart.
+
+| Field | Default | Meaning |
+|---|---|---|
+| `COMPUTE_SESSION_CAP_USD` | `10` | Most one session (a sub-agent shares its parent's budget) may spend on rented compute, in US dollars. Each run reserves an estimated ceiling first (price x time limit, plus 10 minutes for provisioning and transfers) and is refused, with nothing rented, if it would pass the cap; it is then settled at its actual cost. `0` blocks all paid compute, `off` removes the cap. A non-number falls back to 10 with a warning. Runs whose price is unknown up front (Vast.ai with no `max_price_dph`, or a pinned `offer_id`) are recorded as unpriced and counted once they finish. The ledger is `$DSH_HOME/compute-ledger/spend.jsonl`. |
+
+### Workspace index
+
+| Field | Default | Meaning |
+|---|---|---|
+| `ZVEC_GREP_AUTO_INDEX` | `no` | Index this workspace when an Academic Harness session opens. Live for the next session, no restart. |
+| `ZVEC_GREP_EMBEDDING` | `local/potion-retrieval-32m` | Default model for *new* indexes. Existing indexes keep their stored model. A new index run reads the current value; restart `dsh` so the search daemon, which takes the value at mount, uses the same model. |
+| `ZVEC_GREP_API_KEY` | unset | Not used with local Potion models; only for an opt-in remote (Qwen) embedding provider. |
+
+## When a change takes effect
+
+The Academic Harness preset mounts once as a **standing composition** for the life of the running `dsh` process. A new chat on the same process is not a remount.
+
+| Change | When it applies |
+|---|---|
+| API keys read by `resolveEnv()` per invocation | The next tool call, no restart |
+| `IMAGE_MODEL` | Immediately on dropdown selection, no Save |
+| Tournament numbers | New tournaments; explicit arguments win |
+| `ZVEC_GREP_AUTO_INDEX` | The next Academic Harness session, no restart |
+| `DEEP_REVIEW_DEFAULT_RUBRIC`, `DEEP_REVIEW_MAX_ROUNDS`, `DEEP_REVIEW_COST_CEILING_USD` | The next `deep_review` call, no restart |
+| MCP connector keys (Firecrawl, Scite) | After stopping and restarting `dsh` |
+| `SUBAGENT_PRO_*`, `SUBAGENT_VISION_*` | After a `dsh` restart |
+| `ZVEC_GREP_EMBEDDING`, `ZVEC_GREP_API_KEY` | New index runs read the current value; a `dsh` restart also hands it to `zg server on` for the search daemon |
+| Modal SDK | No restart: the first `modal_run` call installs it into `$DSH_HOME/modal-sdk` (unless `ACADEMIC_HARNESS_MODAL_SKIP_INSTALL=1`); a manual profile install still needs a restart |
+| `PAPERMEMORY_CLI`, `TEXTFOLD_*`, `ACADEMIC_HARNESS_CLI` | After a `dsh` restart (the MCP/runtime mount is standing) |
+| `paper_mcp` server registrations | Tools appear as `mcp__<serverName>__*`; if a mount does not appear, restart `dsh` |
+
+The tools that call `resolveEnv()` per invocation are: `image_generate`, `modal_run`, `runpod_run`, `vastai_run`, `consensus_search`, `parallel_search`, `parallel_extract`, `brave_search`, `tavily_search`, `exa_search`, `perplexity_search`, `jina_read`, `core_search`, `elicit_search`, `futurehouse_agent`, `paper_download`, `openalex_search`, `openalex_citations`, `s2_search`, `crossref_lookup`, `arxiv_search`, `pubmed_search`, `paper_resolve`, `integrity_check`, `citation`, `openfda`, `dataset_search`, `journal_policy`, `funder_policy`, `author_lookup`, `coscientist`, `pdf_references`, and `patent_search`.
+
+## Environment-only variables
+
+| Variable | Effect |
+|---|---|
+| `ACADEMIC_HARNESS_SKILLS_DIR` | Use a different skills catalogue. `~/scientific-agent-skills/skills` is the default checkout path. |
+| `AH_SKILLS_SEED` | `core` (default) seeds only the core skills into `$DSH_HOME/skills`; `all` seeds every bundled skill, as before this change. See [Skills on demand](#skills-on-demand). |
+| `AH_EXCLUDE_NONCOMMERCIAL` | `1` hides CC-BY-NC bundled skills from `skill_search` and `skill_load`. |
+| `AH_SECRET_SETTINGS` | `0` turns off the secret role on credential fields in Settings (see [Credential fields](#credential-fields-in-settings)). |
+| `ACADEMIC_HARNESS_HELPERS_DIR` | Use a different `python-helpers` checkout. |
+| `ACADEMIC_HARNESS_PYTHON` | Python interpreter for the helpers. |
+| `ACADEMIC_HARNESS_CLI` / `AH_CMD` | Override the writing-engine CLI. |
+| `ACADEMIC_HARNESS_SKIP_INSTALL=1` | Skip creating the plugin-local engine venv. |
+| `ACADEMIC_HARNESS_MODAL_SKIP_INSTALL=1` | Skip the managed Modal SDK install; use a profile-installed SDK instead. |
+| `ZVEC_GREP_CLI` | Absolute path to `zg` or to `@zvec/zvec-grep`'s `dist/cli/index.js`. |
+| `ZVEC_GREP_HOME` | zg state directory (daemon state, token, model cache); defaults to `~/.zvec-grep`. |
+| `ZVEC_GREP_SKIP_INSTALL=1` | Skip the managed `zg` npm install (with `ZVEC_GREP_CLI`, use an existing binary). |
+| `ZVEC_GREP_SERVER_URL` | Point the MCP mount at an already-running zg server; that endpoint is not torn down when `dsh` exits. |
+| `ZVEC_GREP_SERVER_TOKEN` / `ZVEC_GREP_SERVER_TOKEN_FILE` | Bearer token (inline or file) for the zg MCP server. |
+| `TEXTFOLD_SKIP_INSTALL=1` | Never install the managed TextFold runtime. |
+| `TEXTFOLD_PYTHON=/path/to/python` | Use an interpreter that already has `textfold`. |
+| `TEXTFOLD_CLI=/path/to/textfold` | Use a TextFold executable directly. |
+| `TEXTFOLD_DATA=/path` | A different document store (absolute path recommended). |
+| `DEEPSEEK_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY` | Forwarded to TextFold for `paper_fold` `generate: true`; `GEMINI_API_KEY` from Settings is forwarded too. |
+| `PAPERMEMORY_CLI` | Absolute path to a `papermemory` binary. |
+| `PAPERMEMORY_DB` / `PAPERMEMORY_DATA_DIR` | Override the SQLite store location. |
+| `PAPERMEMORY_EVIDENCE_DIR` | Evidence directory, automatically excluded from workspace indexing. |
+| `XDG_DATA_HOME` | Base for the default PaperMemory store when neither `PAPERMEMORY_DB` nor `PAPERMEMORY_DATA_DIR` is set. |
+| `PAPERMEMORY_PROJECT` | Override the project for auto-ingest (slugified). |
+| `PAPERMEMORY_SKIP_INSTALL=1` | Skip installing the bundled PaperMemory venv. |
+| `PAPERMEMORY_BACKFILL_DIR` | Where `paper_backfill` keeps downloaded PDFs, converted markdown and `ledger.jsonl`. Default `$DSH_HOME/papermemory-backfill`. |
+| `PAPERMEMORY_DREAM` | `apply` (default), `report` (dry run, log only) or `off`: whether `papermemory dream` runs at session end. See [Papers](PAPERS.md#notes-recap-and-dreaming). |
+| `AH_RSI`, `AH_RSI_STORE`, `AH_RSI_*` | Control the local RSI loop; see [RSI](RSI.md#configuration). |
+| `IMAGE_PROVIDER`, `IMAGE_BASE_URL`, `IMAGE_API_KEY` | Use an OpenAI-compatible Images API instead of Gemini. |
+| `GROBID_BASE_URL` | Required for `pdf_references`; the tool is not registered without it. |
+| `GITHUB_TOKEN` | Optional API metadata for `repo_audit` (env only). |
+| `PDFIUM_LIB_PATH`, `ORT_DYLIB_PATH` | OCR shared-library paths for `pdf_to_markdown`. |
+| `DSH_HOME` | DSH home; defaults to `~/.dsh`. |
+| `OPENFDA_API_KEY`, `SHERPA_ROMERO_API_KEY`, `DATACITE_API_KEY`, `ZENODO_API_KEY`, `FIGSHARE_API_KEY`, `ORCID_TOKEN`, `PATENTSVIEW_API_KEY` | Same fields as Settings; environment wins. |
+
+## Credential behavior
+
+- A blank Settings field means **keep the current value**; **Clear** removes it.
+- Keys are write-only in the UI: the page never populates a stored value into the input.
+- A shell variable with the same name wins over the stored value.
+- Settings values live in the profile's `cordis.patch.yml` (the `academic-harness` Loader row); there is no separate keychain integration.
+- Keys entered in Settings reach per-call tools without a restart; MCP connectors and model-id mounts do not. Check the matrix above before concluding a key "doesn't work".
+
+### Where a key travels
+
+A key in a URL is kept by proxies, server access logs and error messages, so keys go in a header wherever the provider's documentation allows it:
+
+| Provider | How the key is sent |
+|---|---|
+| OpenAlex | `Authorization: Bearer <key>` |
+| openFDA | `Authorization: Basic` with the key as the username |
+| Firecrawl (hosted MCP, `mcp.firecrawl.dev/v2/mcp`) | `Authorization: Bearer <key>` |
+| Scite, Exa, Consensus, CORE, ADS and others | already a header |
+| NCBI PubMed, Springer Nature | **query string** (no header is documented); redacted from this plugin's logs, but visible to anything between you and the provider that records URLs |
+
+The relocation for OpenAlex and openFDA happens in the shared fetcher just before a request leaves, so it covers every tool that calls them. Researchers who must not put a key in any URL can leave the PubMed and Springer keys unset; both work without one at a lower rate.
+
+See [Search](SEARCH.md), [Papers](PAPERS.md), [Compute](COMPUTE.md), and [Identity and audit tools](IDENTITY-AND-AUDIT-TOOLS.md) for what each key unlocks.
+
+## Skills on demand
+
+The host publishes every skill under `$DSH_HOME/skills` to the model as a catalogue message on every step. With all 790 bundled skills seeded that was about 290,000 characters. Only the **core** skills are seeded now (`skills-core.json`: the skills the system prompt, workflows or preset name, and the skills those load; 87 at this commit), and their catalogue entries are capped at 240 characters: about 20,000 characters.
+
+The rest stay inside the package. The model finds them with `skill_search` (describe the task; results are ranked name and description summaries) and reads one with `skill_load` (exact name). `/name` invocation and the host `skill` tool are unchanged for the core and for anything you install yourself.
+
+- Earlier versions copied every bundled skill into `$DSH_HOME/skills`. On first start the non-core copies are removed **only when byte-identical to the bundled skill**; a skill you edited, and any skill of your own, stays. A marker file `$DSH_HOME/skills/.ah-skill-seed.json` records that the clean-up ran.
+- To keep every bundled skill in the catalogue, set `AH_SKILLS_SEED=all` (and accept the context cost).
+- `node scripts/build-skills-core.mjs` regenerates `skills-core.json`; `--check` fails when it is stale.
+
+## Credential fields in Settings
+
+API keys and tokens (39 fields, `SECRET_FIELDS` in `settings-keys.js`) are declared `role('secret')`. The host removes them from every client-facing settings snapshot, so a stored key is never sent to the browser; it reports a `secrets: [{ path, set }]` sidecar instead, and the Settings page shows "configured" from that. Tools still read the stored key in-process. Emails, model ids, endpoint URLs and preferences stay plain and show their stored values. `AH_SECRET_SETTINGS=0` restores plain fields. Checked against the host's redaction code on 0.2.1-rc.5 and 0.2.2-rc.1; the page itself has not yet been clicked through on a live host.
+

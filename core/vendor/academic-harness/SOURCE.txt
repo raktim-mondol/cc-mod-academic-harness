@@ -1,0 +1,54 @@
+Vendored from https://github.com/raktim-mondol/academic-harness
+Commit: dbc7414662c776b55e9da87c798d1ad08bf1c941
+Version: 0.1.0 (rubric 1.3.0 here; upstream pin was 1.2.0)
+
+Note (2026-10-23): the upstream engine repository is no longer available at this
+URL; the name now refers to this DSH plugin. The vendored tree and this pin are
+authoritative for the engine; see docs/ACADEMIC-HARNESS-ENGINE.md.
+
+Python engine only (`ah/` package + pyproject.toml). The Pi adapter
+(`packages/ah-pi/`), Claude Code adapter, examples, phase reports, golden
+sets, tests, and `vendor/pi/` were not copied. The engine stays inside this
+plugin; a local `.venv` is created next to this tree. Nothing is installed
+into `$DSH_HOME`. ResearchCraft drives it through native DSH tools and
+interceptors (`academic-harness.js`, `academic-harness-hooks.js`).
+
+An optional T3 verifier backend in `ah/verifier/backends.py` can shell out
+to a `pi` binary when a project sets `verifier.backend: pi`. That is unused
+unless the project asks for it; `http` (OpenAI-compatible) and `command`
+backends work without Pi.
+
+Python package modified in this plugin (the vendored tree is maintained here as first-party):
+- `ah stability` and `ah audit --stability N` (ah/stability.py): run the checks N times on
+  unchanged text and report findings that come and go, plus unanchored units.
+- tests/: a restored engine test suite with a scaffolded LaTeX fixture project.
+- Tier TX (ah/external.py): findings of tools that live outside the engine (numbers_audit,
+  figure_audit, the citation audit, reporting_check verdicts) read from .ah/external/<tool>.json, with staleness by input hash
+  (EXT-00), `ah audit --external`, `ah external plan|status`, and ledger cause `evidence-changed` when a
+  tool is re-run. New checks STAT-01..05, FIG-01..04, CIT-01..06, RPT-01..03, EXT-00.
+- Tier TR (ah/rubric.py, ah/checks/rubric.py, ah/rubrics/*.yaml): the frozen rubric. Versioned yes/no
+  criteria judged per paragraph by the verifier backend, quote-checked, cached on (criterion, paragraph,
+  model, prompt version), unjudged pairs carried in the ledger; `ah rubric list|run|sheet|admit`,
+  admission against hand labels (Cohen's kappa, precision). New checks RUB-01/02; rubric 1.4.0.
+- ah/checks/t5_format.py: thirteen format and consistency rules (ACR-01/02, FMT-01..11), all at info, advisory
+  in hooks; `ah precision` (fixed against waived per rule, from the ledger). Rubric 1.5.0. Reading order through
+  \input, main-file prose, tables, captions and headings; ACR-03 split from ACR-01. Rubric 1.6.0.
+- ah/done.py: report["done"] (pass | fail | incomplete over findings, rubric, external, unexplained, lookups), `ah done`
+  (exit 0/1/3), `done:` and `gate.judge_touched` in ah.yaml, the line in `ah audit` and the state card; hooks.current_findings
+  now reads TX and the rubric (cached; judged on touched files with gate.judge_touched), EXT-00 excluded.
+- ah/promote.py, ah/checks/t5_promoted.py: promote a review comment to a rule. `ah rule propose|list|show|accept|reject|test`
+  (a pattern rule PRM-01/02 in rules/promoted.yaml, or a rubric criterion in rubric/promoted.yaml; the author accepts),
+  `ah triage` (covered-by / same-unit / exploratory against the current findings), coverage tags on review items
+  at `ah review import`. rules/** protected; the rules digest joins the snapshot (cause rubric-changed). Rubric 1.7.0.
+
+- ah/checks/t0_structure.py UNIT-03 (prose in a build-root file is unread), ah/checks/t1_numeric.py NUM-004 skips
+  signed percentages; found on real manuscripts in the first live run.
+
+Local DSH patch (ahead of upstream): registry --keys citation-key aliases
+(entry_for consulted by resolve/resolve_all/BIB-02) and byte-copy of .md/.txt
+sources so AH copies stay byte-identical to the sender's raw document.
+
+- Outline draft contract (ah/plan.py, ah/outline.py): optional literature, citation_hints,
+  figures, and section_points on a plan proposal. propose rejects a malformed block.
+  ARG-06 (minor) reports one that appears on the outline later. `ah plan queries` lists
+  the search tasks (year_max is the cutoff year). `ah plan show` counts the blocks.

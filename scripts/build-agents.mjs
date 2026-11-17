@@ -3,9 +3,9 @@
 //
 //   node scripts/build-agents.mjs
 //
-// The specialist names come from the `## Specialists` section of upstream/prompt.js (the four
+// The specialist names come from the `## Specialists` section of core/prompt.js (the four
 // "Group: a, b, c." lines), so a specialist added or removed upstream shows up here. Each brief is
-// the body of upstream/skills/<name>/SKILL.md after the line that tells DeepSeek Harness how to
+// the body of core/skills/<name>/SKILL.md after the line that tells DeepSeek Harness how to
 // delegate it; that line is host-specific and is replaced by the agent mechanism itself.
 //
 // Reviewers and checkers get no Edit, Write or NotebookEdit: the guidance says specialists "do not
@@ -63,7 +63,7 @@ export function agentFile(name, skillText) {
   ].join('\n')
 }
 
-export async function build({ upstream = join(root, 'upstream'), out = join(root, 'agents') } = {}) {
+export async function build({ upstream = join(root, 'core'), out = join(root, 'agents') } = {}) {
   const mod = await import(pathToFileURL(join(upstream, 'prompt.js')).href)
   const names = specialistNames(mod.ACADEMIC_HARNESS_PROMPT)
   rmSync(out, { recursive: true, force: true })

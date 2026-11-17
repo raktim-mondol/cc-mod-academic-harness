@@ -47,9 +47,9 @@ describe('resolution', () => {
     const launch = await resolveLaunch({ PAPERMEMORY_CLI: '/opt/pm', AH_MOD_HOME: join(scratch, 'none'), PATH: '' })
     assert.deepEqual(launch, { command: '/opt/pm', args: [] })
   })
-  test('development mode (AH_UPSTREAM) installs nothing', async () => {
+  test('development mode (AH_CORE) installs nothing', async () => {
     const home = join(scratch, 'dev-home')
-    const launch = await resolveLaunch({ AH_UPSTREAM: join(scratch, 'no-checkout'), AH_MOD_HOME: home, PATH: '' })
+    const launch = await resolveLaunch({ AH_CORE: join(scratch, 'no-checkout'), AH_MOD_HOME: home, PATH: '' })
     assert.equal(launch, undefined)
     assert.equal(existsSync(home), false)
   })
@@ -90,7 +90,7 @@ describe('install without uv', { timeout: 240000 }, () => {
   test('a missing uv falls back to python -m venv and pip, and the result runs', async () => {
     const home = join(scratch, 'home-nouv')
     const env = { ...process.env, AH_MOD_HOME: home, PAPERMEMORY_DB: join(scratch, 'pm-nouv.db'), UV: join(scratch, 'no-such-uv') }
-    delete env.AH_UPSTREAM
+    delete env.AH_CORE
     delete env.PAPERMEMORY_CLI
     const r = await new Promise(res => { const c = spawn(process.execPath, [BIN, '--install'], { env, stdio: ['ignore', 'pipe', 'pipe'] }); let err = ''; c.stderr.on('data', d => { err += d }); c.on('close', code => res({ code, err })) })
     assert.equal(r.code, 0, r.err)
@@ -106,7 +106,7 @@ describe('live server', { timeout: 180000 }, () => {
   const home = join(scratch, 'home')
   const db = join(scratch, 'pm.db')
   const env = { ...process.env, AH_MOD_HOME: home, PAPERMEMORY_DB: db }
-  delete env.AH_UPSTREAM
+  delete env.AH_CORE
   delete env.PAPERMEMORY_CLI
 
   test('two installs at once both succeed and leave one good install', async () => {

@@ -39,18 +39,18 @@ Every key, token and address a tool can use is a plugin option, saved with `clau
 | `AH_MOD_HOME` | The mod's home (default `~/.local/share/cc-mod-academic-harness/home`). Never `~/.dsh` |
 | `AH_AUTO_INSTALL=0` | Do not build the writing engine in the background |
 | `AH_MANAGED_INSTALLS=0` | Do not install TextFold or the Modal SDK |
-| `AH_BOOTSTRAP=0` | Do not fetch the source snapshot on first start; the server exits and says what to run |
+| `AH_BOOTSTRAP=0` | Do not set up the core on first start (copy it, install its dependencies); the server exits and says what to run |
 | `AH_JOB_FOREGROUND_MS` | How long a long tool holds the call before going on as a job. A headless `claude -p "/ah-research ..."` ends the session when the command returns, so set it high there |
 | `AH_JOBS_KEEP_DAYS` | How long the record and log of a job that has ended are kept (default 30 days; `0` keeps them all). Old ones are removed when a server starts |
 | `AH_TOOL_OUTPUT_KEEP_DAYS` | How long the full text of a clipped tool result stays in `<project>/.dsh/tool-output/` (default 30 days; `0` keeps it all). Older files are removed when a new one is written |
-| `AH_SNAPSHOT_KEEP_DAYS` | How long a source snapshot that an update left in the mod's home is kept after its last use (default 7 days; `0` keeps them all). The locked commit's is never removed |
+| `AH_SNAPSHOT_KEEP_DAYS` | How long a working copy of the core that an update left in the mod's home is kept after its last use (default 7 days; `0` keeps them all). The one for the installed plugin is never removed. The folder releases before 0.6.0 fetched their snapshot into (`<home>/upstream/`) goes the same way |
 | `AH_VALIDATE_TOOL_ARGS` | What the server does with a tool call whose arguments the tool's schema refuses: `enforce` (default) refuses it with an error naming the fields (never the values), and starts no job for it; `warn` runs it anyway, notes it on standard error and counts it as invalid in `/academic usage`; `off` does not check. Either way the refused call is counted as invalid |
 | `AH_USAGE=0` | Count no usage, whatever the `usage_counts` setting says |
 | `AH_USAGE_KEEP_DAYS` | How long a usage file is kept after it was last written (default 365 days; `0` keeps them all). Removed when a server starts |
 | `AH_NO_ENFORCE=1` | Work in an `ah.yaml` project without the guard: edits and shell commands are not checked. Set it in the shell before starting Claude Code. It also holds when the engine cannot run |
 | `AH_LLM_MODEL`, `AH_LLM_BUDGET_USD` | The model route, from the shell |
-| `AH_SOURCE` | A local Academic Harness checkout that `setup` and `update-upstream` read before going to GitHub (default `~/academic-harness`) |
-| `AH_UPSTREAM` | Development mode: run from a checkout of the engine code, read-only, with every installer off |
+| `AH_EXCLUDE_NONCOMMERCIAL=1` | Leave the six non-commercial (CC BY-NC-SA) skills out of the skill search and refuse to load them; 785 skills are bundled instead of 791. For commercial use ([NOTICE](../../NOTICE)) |
+| `AH_CORE` | Development mode: run from a folder of your own that holds the engine code, read-only, with every installer off |
 | `AH_S2_MIN_INTERVAL_MS` | The gap between Semantic Scholar requests when a key is set (default 2000; never below 1100, so the key's one request per second is not reached) |
 | `AH_KEYS_REPORT=<file>` | Diagnostic: write the name, length and a short hash of each key the server received. Never a value |
 

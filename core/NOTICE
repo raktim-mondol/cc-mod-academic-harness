@@ -1,0 +1,332 @@
+academic-harness
+================
+
+This plugin packages the Academic Harness research persona, scientific skills
+catalogue, lab notebook, and specialist subagent briefs as a DeepSeek Harness
+(DSH) profile bundle.
+
+Renamed in v0.16.0: this project was formerly `dsh-researchcraft` and displayed
+as ResearchCraft. References to ResearchCraft below identify upstream content
+and are retained for attribution.
+
+Scientific skills are seeded from the open-source catalogue
+`K-Dense-AI/scientific-agent-skills` (MIT License) — the full catalogue
+(140 skills) is vendored under `skills/` alongside this plugin's own
+first-party skills. Its `modal` skill (general Modal usage) is vendored as
+`skills/modal-usage`, and since v0.25.0 its frontmatter `name` is also
+`modal-usage`, so it does not collide with this plugin's own first-party
+`modal` skill (specific to the bundled `modal_run` tool). The skill body is
+otherwise unchanged; the file carries its own `Apache-2.0` license header as
+published upstream, which takes precedence for that bundle.
+
+Research-discipline skills (framing-research-questions, preregistering-analysis,
+verifying-results-before-claiming, requesting-red-team-review, and 12 more) are
+vendored under `skills/` from the open-source `K-Dense-AI/science-superpowers`
+catalogue (MIT License), unmodified. That project's Claude Code
+`SessionStart` hook, which force-injects its `using-science-superpowers`
+skill into every session, was not ported — DSH has no equivalent hook
+mechanism — and its guidance was folded into this plugin's own system prompt
+instead (see the "Research discipline" section of `prompt.js`).
+
+The `pele` skill (`skills/pele`) is vendored from `jpmanson/pele-skill` at
+commit `50ffbb57f3c4cd7b9f96f7bb02c69c70e6371973` (MIT License,
+Copyright 2026 Juan Pablo Manson). Its skill files are unchanged; the upstream
+license is included at `skills/pele/LICENSE`. The separately installed `pele`
+npm package is not vendored as part of the skill.
+
+503 profession-specific expert-reasoning skills (accelerator-physicist,
+zoologist, marine-biologist, and so on) are vendored under `skills/` from the
+open-source `K-Dense-AI/scientific-agents` catalogue (MIT License). Each was
+mechanically converted from that repo's `agents/<slug>.md` (Claude Code
+subagent format) into `SKILL.md` by adding a `license`/`metadata` block to the
+existing `name`/`description` frontmatter; the body content is unchanged.
+
+The `docx-editor-zotero` skill (`skills/docx-editor-zotero`) is adapted from
+the `extensions/docx-editor-zotero/` extension in the open-source
+`K-Dense-AI/claude-scientific-writer` repository (MIT License): its
+`docx-editor-zotero.md` became `SKILL.md` (frontmatter added; content
+otherwise unchanged), and its two Python scripts and `EXAMPLES.md` were
+copied into `scripts/` and `references/` — with one fix:
+`zotero_docx_preserver.py` had a malformed f-string (a stray `}` in a
+`.get(...)` call) that failed to parse under Python 3.12+; corrected to match
+the identical pattern used everywhere else in that file. That repository's 26 other
+skills were not vendored — every one of them duplicates a skill already
+vendored here from `K-Dense-AI/scientific-agent-skills` above.
+
+23 small-molecule and protein-therapeutics skills (autodock-vina,
+binding-site-analysis, retrosynthesis, protein-binder-design, and 19 more)
+are vendored under `skills/` from the open-source
+`K-Dense-AI/drug-discovery-agent-skills` catalogue (MIT License), unmodified.
+That catalogue's other 14 skills (rdkit, datamol, medchem, pytdc, esm, and 9
+more) were not vendored — this plugin already has a same-named skill for
+each from `K-Dense-AI/scientific-agent-skills` above; the two catalogues
+wrote independent, differently-detailed versions of those particular skills,
+and rather than pick a winner or maintain both under different names, the
+already-vendored version was kept as-is.
+
+The `agentic-data-science-pipeline` skill (`skills/agentic-data-science-pipeline`)
+adapts the plan → implement → verify → reflect agent architecture from the
+open-source `K-Dense-AI/agentic-data-scientist` project (MIT License): its
+Google ADK / Claude Agent SDK orchestration code was not ported (it
+reimplements what this plugin's `subagent`/`todo`/`notebook` tools already
+do), but its 11 per-role prompt files (`prompts/base/*.md`) and its two
+bioinformatics domain-specialization notes (`prompts/domain/bioinformatics/`)
+were copied into `references/` largely verbatim as detailed role briefs,
+alongside a new `SKILL.md` mapping the loop onto this plugin's own tools.
+One near-duplicate file (`plan_generator.md`, an alternate draft of
+`plan_maker.md`) was dropped to avoid two conflicting versions of the same
+role.
+
+The `hyperparameter-optimization` skill (`skills/hyperparameter-optimization`)
+is a fresh adaptation of the agentic-ML-engineer loop described in the
+open-source `K-Dense-AI/karpathy` project (MIT License) — no file from that
+repository was copied. Its Python package (Google ADK + Claude Agent SDK,
+a `delegate_task` tool) reimplements this plugin's own `subagent` delegation
+and was not ported; only the workflow idea (resource-aware, pre-registered,
+verify-before-claiming hyperparameter search) was carried over, rewritten
+for this plugin's own tools and narrowed to the hyperparameter-tuning use
+case.
+
+The `generating-scientific-hypotheses` skill (`skills/generating-scientific-hypotheses`)
+is a first-party procedure distilled from two *Nature* papers (no paper text
+was copied): Gottweis et al., “Accelerating scientific discovery with
+Co-Scientist”, *Nature* (2026), https://doi.org/10.1038/s41586-026-10644-y
+(CC BY 4.0); and Ghareeb et al., “A multi-agent system for automating
+scientific discovery”, *Nature* (2026),
+https://doi.org/10.1038/s41586-026-10652-y (CC BY-NC-ND 4.0). The
+evaluation axes, literature-before-claiming-novelty, and
+mechanism→assay→candidate shape were rewritten for this plugin’s own
+tools. The existing `hypothesis-generator` specialist brief points at that
+skill; it is not a second copy of the procedure.
+
+The `co-scientist-tournament` skill (`skills/co-scientist-tournament`), the
+`coscientist` / `coscientist_rank` tools, and their backing modules
+(`coscientist-models.js`, `coscientist-store.js`, `store-lock.js`) port the
+algorithms and role prompts of the open-source `raktim-mondol/co-scientist`
+project (MIT License, © 2025 Raktim Mondol) — itself an implementation of the
+Gottweis et al. *Nature* (2026) paper cited above. No file from that repository
+was copied: its TypeScript was rewritten as this plugin's own ES modules, and
+its Bun / `bun:sqlite` / `sqlite-vec` / ONNX-embedding / MCP-OAuth / ink-TUI
+stack was deliberately left behind.
+What is carried over is the deterministic core — the Glicko-2 update and
+review-score seeding, the citation-integrity penalty, both-order judge
+debiasing, the scheduling weight tables and termination rules, matchup
+selection, the save-time duplicate gate, the dual-use severity gate, and the
+experimental-feedback reward mapping — with the upstream constants kept so a
+run here stays comparable to a run there, plus subagent briefs written from its
+prompt templates. Upstream code is MIT; the *Nature* paper it implements is
+CC BY 4.0.
+
+The `scientific-figure-making` skill (`skills/scientific-figure-making`) is a
+fresh adaptation of the publication-figure workflow described in Chen Liu's
+`figures4papers` repository (CC BY-NC 4.0) —
+https://github.com/ChenLiu-1996/figures4papers. No file from that repository
+was copied (its license is non-commercial). The house-style conventions
+(semantic palette, spine/legend/export policy, grouped-bar and trend
+patterns) were rewritten for this plugin's tools, and the helper API that
+the upstream skill specifies but does not ship is implemented here as
+`scripts/publication_figure.py`.
+
+The `diagram-design` skill (`skills/diagram-design`) is vendored from the
+open-source `cathrynlavery/diagram-design` project (MIT License). The
+example-gallery HTML (`example-*.html`, `assets/index.html`) was not copied
+— templates, type references, import/export scripts, and the self-check are
+included, along with that project's `LICENSE` and `THIRD_PARTY_LICENSES.md`
+(Tabler Icons MIT, Simple Icons CC0). A short ResearchCraft mapping was
+added at the top of `SKILL.md` (paper-first PNG/SVG export, skip website
+brand onboarding unless asked, `uv run python`); the rest of the skill is
+unmodified.
+
+The `aer-skills` skill and its fifteen `aer-*` sub-skills (`skills/aer-skills`,
+`skills/aer-workflow`, `skills/aer-identification`, and the rest) are vendored
+from `brycewang-stanford/AER-Skills` (MIT License) —
+https://github.com/brycewang-stanford/AER-Skills. That repository is the one
+first-party MIT subset of the Auto-Empirical-Research-Skills catalog; every
+other collection in that catalog is CC BY-SA 4.0 and nothing from them is
+included. `aer-skills/SKILL.md` is a new condensed router; the shared `docs/`,
+`examples/`, `templates/`, `assets/`, `scripts/` and `references.bib` stay in
+`skills/aer-skills/` with that project's `LICENSE`. The fifteen sub-skills were
+moved to top-level skill folders because DSH's skill catalog is one directory
+deep, and each received a short mapping note after its frontmatter pointing at
+the shared folder; the rest of each skill is unmodified.
+
+The `paper2agent` skill (`skills/paper2agent`) is vendored from the
+open-source `jmiao24/Paper2Agent` project (MIT License) —
+https://github.com/jmiao24/Paper2Agent, commit
+`8c2d059165ef8cdcb70dbea76655b9c2b55b38e6`. The skill tree (`paper2agent` router plus sibling `paper2skill`,
+`paper2mcp`, and `paper2agent-paper` catalog skills, and Python helpers)
+is copied; a ResearchCraft mapping was added at the top of the three
+component `SKILL.md` files and to `paper2mcp/references/orchestration.md` and
+`output-delivery.md` (DSH `subagent`/`subagentId`, `uv`, `paper_download`,
+`paper_mcp`, no `claude mcp add`). Components are top-level skills because
+DSH's skill catalog is one directory deep (nested `paper2mcp` was
+`skill`-unknown). Codex UI metadata (`paper2mcp/agents/openai.yaml`) and
+the Claude-only `scripts/connect_remote_mcp.sh` were not copied. Python
+verification helpers are unmodified.
+
+Academic Harness (`vendor/academic-harness/` plus `skills/academic-harness/`
+and `skills/ah-*`) is the Python engine from
+`raktim-mondol/academic-harness` (commit
+`dbc7414662c776b55e9da87c798d1ad08bf1c941`), vendored without the Pi
+adapter, Claude Code adapter, examples, phase reports, or tests. ResearchCraft
+drives that engine through native DeepSeek Harness tools and interceptors
+(`academic-harness.js`, `academic-harness-hooks.js`). The optional T3
+verifier backend that can shell out to a `pi` binary is unused unless a
+project sets `verifier.backend: pi`. Skills were rewritten for DSH tool
+names; the engine Python is unmodified.
+
+open-deepreview (`vendor/open-deepreview/`) is vendored from
+`raktim-mondol/open-deepreview` (MIT License) —
+https://github.com/raktim-mondol/open-deepreview — at commit
+`c48e29450134d7a41559a73112962377f9602bce`. The TypeScript source under
+`src/` is unmodified. The plugin adds only a Node runner, a TypeScript loader
+hook, and `SOURCE.txt`, and does not expose the Bun-only web viewer, the
+development fixture command, or upstream tests. See
+`vendor/open-deepreview/SOURCE.txt`.
+
+PaperMemory (`vendor/papermemory/` plus `skills/papermemory/SKILL.md`) is
+vendored from the open-source `raktim-mondol/papermemory` project (MIT
+License) — https://github.com/raktim-mondol/papermemory. The Python package
+(CLI, SQLite store) is unmodified except `mcp_server.py`: DSH's MCP SDK
+speaks newline-delimited JSON on stdio, while upstream only spoke LSP
+Content-Length headers, so the handshake deadlocked and tools never
+registered. The vendored server now detects the inbound framing and replies
+in kind. PDF/markdown ingest also accepts `--doi` / `--pdf-path` so a
+downloaded PDF and its `pdf_to_markdown` output merge onto one verified
+PaperMemory record instead of a second unverified local-pdf row. The skill body was rewritten for this plugin's MCP tool names
+(`mcp__papermemory__*`), `paper_download` auto-ingest, and the ResearchCraft
+preset; citation-integrity rules are unchanged. Tests from that repository
+were not copied.
+
+The `python-helpers/` scientific-file-format decoders (chemistry, structure,
+mass spec, arrays, imaging, AnnData) and the `workflows.json` research-task
+template catalogue are adapted from the ResearchCraft codebase (MIT), a
+white-labeled fork of K-Dense BYOK — see
+https://github.com/K-Dense-AI/k-dense-byok.
+
+Citation formatting uses the open-source `citation-js` packages
+(`@citation-js/core`, `@citation-js/plugin-bibtex`, `@citation-js/plugin-csl`,
+`@citation-js/plugin-ris`, all MIT License) as npm dependencies, not vendored
+code. Mermaid rendering (`mermaid_render`) likewise uses `pele` (MIT License,
+https://github.com/obsidianmd/pele) as an npm dependency, unmodified; the only
+code this plugin adds around it is CSS-variable flattening for file output.
+The CSL style files under `styles/` (`ieee.csl`,
+`chicago-author-date.csl`, `modern-language-association.csl`) are unmodified
+files from the Citation Style Language styles repository,
+https://github.com/citation-style-language/styles, retrieved 2026-10-23 and
+licensed under CC BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0/).
+See `styles/README.md`.
+
+The `remove-ai-signs` skill under `skills/remove-ai-signs` is adapted from the
+local skill of the same name. Its reference guide, `references/signs.md`, is
+adapted from Wikipedia's "Signs of AI writing" (WP:AICAT) and is licensed
+CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/). It is a prose
+style-editing aid; it makes no detector-evasion or provenance-removal claim.
+A Supervisor-Skills routing note pointing to `paper-polish` was added; that
+modification remains under CC BY-SA 4.0.
+
+The reply-folding engine in `fold-core.js` is adapted from TextFold's
+`plugins/textfold/hooks/fold.ts` (Apache License 2.0), part of
+https://github.com/chenxiachan/textfold — version 0.10.31, commit 2182d9a,
+© 2026 Xia Chen. Changes for this plugin: string level names, structured blocks
+for the browser panel, removal of Pi-specific drawing-row detection, and
+DSH-oriented tests. The deletion-only fold, sentence splitter, word-count gate,
+and CJK reading-effort accounting are retained. TextFold is not vendored; its
+Python package is not used by `fold_text`.
+
+The preset-only `paper_fold` tool uses TextFold as an optional runtime
+dependency: on first preset start it installs `textfold==0.10.31` from PyPI into
+`$DSH_HOME/textfold` and calls the documented `get --json` CLI. The package is
+not vendored, and no TextFold source is copied for this tool; `TEXTFOLD_PYTHON`,
+`TEXTFOLD_CLI`, and `TEXTFOLD_SKIP_INSTALL` let a user supply or skip it.
+
+The 12 Supervisor-Skills research-lifecycle skills under `skills/`
+(benchmark-paper-template, deep-research, drawio-reconstruction,
+figure-designer, idea-evaluator, intro-drafter, paper-polish, paper-writer,
+pre-submission-reviewer, rebuttal-guidance, tech-paper-template, and
+vibe-research-workflow) are vendored from
+https://github.com/HKUSTDial/Supervisor-Skills at commit
+`a20d76ef3979b804d7dbf599d577826957e0a8a9` (2026-10-15, upstream v2.1.0).
+Their licences are mixed:
+
+- **CC BY 4.0**: benchmark-paper-template, figure-designer, idea-evaluator,
+  pre-submission-reviewer, tech-paper-template, vibe-research-workflow.
+- **CC BY-NC-SA 4.0**: deep-research, intro-drafter, paper-polish, paper-writer,
+  rebuttal-guidance. These are non-commercial and share-alike; they remain
+  under that licence inside this package, and this package's MIT licence does
+  not relicense them. The full licence text is in
+  `vendor/supervisor-skills/LICENSE`.
+- **MIT**: drawio-reconstruction (Copyright (c) 2026 VCG-Bench Authors; its
+  `LICENSE` is kept in the skill directory).
+
+License texts: https://creativecommons.org/licenses/by/4.0/ and
+https://creativecommons.org/licenses/by-nc-sa/4.0/; the latter is also included
+in `vendor/supervisor-skills/LICENSE`. The suite is © 2026 Yuyu Luo
+(methodology) and contributors, except drawio-reconstruction
+(© 2026 VCG-Bench Authors).
+
+The upstream `handbook/` and `handbook-en/` curricula, the repository and
+per-skill READMEs, and drawio-reconstruction's examples/assets/agent metadata
+were not copied; the skills are self-contained, and handbook references point
+upstream. Local changes: "(separate plugin)" cross-references were removed;
+`license:` frontmatter was added to drawio-reconstruction and
+rebuttal-guidance; short DSH runtime notes were added to drawio-reconstruction
+(use `uv run python`) and vibe-research-workflow (this agent is the runtime);
+and every skill gained a `Routing in Academic Harness` section that names the
+existing skill to use when a task crosses a stage boundary. Reciprocal
+routing notes were added to the plugin's `academic-harness`, `ah-write-unit`,
+`ah-plan-section`, `scientific-figure-making`, `diagram-design`,
+`manuscript-editor`, `peer-reviewer`, `literature-researcher`,
+`literature-review`, `surveying-prior-work`,
+`generating-scientific-hypotheses`, `agentic-data-science-pipeline`,
+`remove-ai-signs`, `abstract-writer`, and `systematic-review-ledger` skills;
+`seed.js` refreshes those known-stale copies on existing installs.
+See `vendor/supervisor-skills/SOURCE.txt` for the exact file list and changes.
+
+The `what-if-oracle` skill (`skills/what-if-oracle`) is vendored from
+https://github.com/ashrafkahoush-ux/claude-consciousness-skills (AHK Strategies,
+ashrafkahoush-ux; research DOIs 10.5281/zenodo.18736841 and
+10.5281/zenodo.18807387). It is licensed **CC BY-NC-SA 4.0**: non-commercial and
+share-alike. It remains under that licence inside this package, and this
+package's MIT licence does not relicense it. Together with the five CC BY-NC-SA
+Supervisor-Skills above it makes **six non-commercial skills**. To build or run
+without them, set `AH_EXCLUDE_NONCOMMERCIAL=1` (the skill seeder and the skill
+index then skip them) or build a tarball with `npm run pack:commercial`, which
+leaves all six out; `scripts/test-noncommercial-exclusion.mjs` checks that none
+of the six is present in that tarball.
+
+Skills whose frontmatter `license` names a GPL licence (`bioservices`,
+`cobrapy`, `etetoolkit`, `pathml`, `scikit-survival`) are guides to using
+third-party Python libraries that are themselves GPL-licensed. The label records
+the licence of the *library the skill teaches*, not of the skill text. The skill
+text is a how-to written for this catalogue and ships under this package's MIT
+licence; the libraries are never bundled, only named, and are installed by the
+user from their own distribution. `scripts/normalize-skill-licenses.mjs` leaves
+these five labels as they are and lists them so the owner can confirm this
+reading or relabel them.
+
+The `docx`, `pdf`, `pptx` and `xlsx` skills are first-party. Releases up to and
+including 0.50.0 shipped third-party versions of these four skills under a
+licence that did not permit redistribution; those versions are no longer
+distributed. The current skills were written from scratch from the public
+documentation of the libraries and tools they drive (python-docx, openpyxl,
+python-pptx, pypdf, reportlab, pdfplumber, pandoc, LibreOffice, poppler), with
+new names, structure and scripts, and no bundled ECMA/ISO/Microsoft schema
+files. Those libraries are used, not bundled. Method, tests and the automated
+overlap check are in `docs/legal/skill-rewrite-provenance.md`.
+
+Deep research pipeline design
+
+The `deep_research` tool's pipeline shape — step-per-phase skills, the frozen
+canonical query, tiers and gears, independence clustering, patch-only editing
+with per-hunk caps, the ship gate, and untrusted-source fencing — was adapted
+from `jordan-gibbs/hyperresearch` (MIT License), a Claude Code/Codex research
+harness. No upstream code is vendored: the implementation is first-party
+JavaScript (`deep-research.js`, `deep-research-store.js`,
+`deep-research-steps.js`, `independence-cluster.js`, `untrusted-fence.js`)
+written against this plugin's existing retrieval, ledger, and lock helpers, and
+the step set, gate semantics, tiers, and verification seams differ from the
+upstream design.
+
+ResearchCraft branding and content © ResearchCraft.
+Site: https://researchcraft.dev

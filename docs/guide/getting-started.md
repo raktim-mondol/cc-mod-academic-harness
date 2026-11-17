@@ -13,15 +13,14 @@ node scripts/setup.mjs
 claude --plugin-dir "$PWD"
 ```
 
-`setup.mjs` does five things, each skipped when it is already done:
+`setup.mjs` does four things, each skipped when it is already done. Nothing is downloaded from GitHub: the source the plugin runs is in the clone (`core/`, about 44 MB).
 
-1. **The engine code.** The tools, skills and writing engine the plugin runs, at the exact version `UPSTREAM.lock.json` names, into `upstream/` (gitignored, about 56 MB). If a local checkout of Academic Harness at `~/academic-harness` (or `AH_SOURCE`) has that version, it is read from there and never written; otherwise it is downloaded from GitHub and checked against the digest in the lock, and a download that is not the locked bytes is refused. `--github` forces the download.
-2. **Dependencies.** `npm ci` inside `upstream/` (about 115 MB).
-3. **The writing engine.** A Python environment inside `upstream/vendor/academic-harness`, for the `ah_*` tools and the guard. `--no-engine` leaves it to the server, which builds it in the background on first start.
-4. **The Python helpers**, only with `--helpers` (about 800 MB): the data, statistics and science toolkits fall back to `python3` without them.
-5. **A check**: `plugin.json` against the snapshot, and the doctor's report.
+1. **Dependencies.** `npm ci` inside `core/` (about 115 MB).
+2. **The writing engine.** A Python environment inside `core/vendor/academic-harness`, for the `ah_*` tools and the guard. `--no-engine` leaves it to the server, which builds it in the background on first start.
+3. **The Python helpers**, only with `--helpers` (about 800 MB): the data, statistics and science toolkits fall back to `python3` without them.
+4. **A check**: `plugin.json` against the core, and the doctor's report.
 
-`setup` is optional: a clone that was never set up fetches the snapshot itself on first start (see below).
+`setup` is optional: a clone that was never set up copies its core and installs the dependencies itself on first start (see below).
 
 To have the mod in every session, export `CLAUDE_CODE_PLUGIN_DIRS=/path/to/cc-mod-academic-harness` instead of passing `--plugin-dir`.
 
@@ -31,17 +30,17 @@ To have the mod in every session, export `CLAUDE_CODE_PLUGIN_DIRS=/path/to/cc-mo
 /plugin install academic-harness --marketplace raktim-mondol/cc-mod-academic-harness
 ```
 
-The repository is public, so this works for anyone with Claude Code. The installed copy has no snapshot (it is not part of the repository), so the first session sets itself up; see "First start" below. The same marketplace file can be added from a folder: `claude plugin marketplace add <folder>`.
+The repository is public, so this works for anyone with Claude Code. The installed copy holds the whole source, but nothing is installed from it yet, so the first session sets itself up; see "First start" below. The same marketplace file can be added from a folder: `claude plugin marketplace add <folder>`.
 
-## First start without a snapshot
+## First start
 
-When the server starts and finds no engine code, it does not wait: it answers `initialize` at once with one tool, `doctor`, and fetches the snapshot in the background, into `~/.local/share/cc-mod-academic-harness/home/upstream/<commit>` (outside the plugin folder, which an update replaces). When the fetch and `npm ci` are done it sends `tools/list_changed` and the whole tool list appears, with no restart. `/academic doctor` says how far it has got:
+When the server starts and finds the core's dependencies not installed, it does not wait: it answers `initialize` at once with one tool, `doctor`, and sets itself up in the background. It copies the plugin's `core/` to `~/.local/share/cc-mod-academic-harness/home/core/<version>-<fingerprint>` (outside the plugin folder, which an update replaces, so a plugin update that does not change the core keeps its installed dependencies) and runs `npm ci` there. When that is done it sends `tools/list_changed` and the whole tool list appears, with no restart. `/academic doctor` says how far it has got:
 
 ```
-! Source snapshot: being set up by the server (started 12 s ago): installing the tool dependencies (npm ci). The other tools appear when it is done
+· Core: being set up by the server (started 12 s ago): installing the tool dependencies (npm ci). The other tools appear when it is done
 ```
 
-If it fails, the doctor shows the step and the error, and the next start tries again (`AH_BOOTSTRAP=0` turns the fetch off; the server then exits with the command to run). The PaperMemory server, which starts at the same moment and builds from the snapshot, joins the same fetch instead of failing.
+If it fails, the doctor shows the step and the error, and the next start tries again (`AH_BOOTSTRAP=0` turns the setup off; the server then exits with the command to run). The PaperMemory server, which starts at the same moment and builds from the core, joins the same setup instead of failing. A clone that was set up with `setup.mjs` runs its own `core/` in place and copies nothing.
 
 ## What else is installed, and when
 
@@ -49,8 +48,8 @@ If it fails, the doctor shows the step and the error, and the next start tries a
 |---|---|---|
 | PaperMemory's CLI | `~/.local/share/cc-mod-academic-harness/home/papermemory` | First session that starts its server (about a second with a warm `uv` cache) |
 | TextFold (`paper_fold`) | the same home | First session that loads the notebook or submission tools. `AH_MANAGED_INSTALLS=0` turns it off |
-| The writing engine | `upstream/vendor/academic-harness/.venv` | `setup`, or in the background on first start (`AH_AUTO_INSTALL=0` turns that off) |
-| Python helpers | `upstream/python-helpers/.venv` | Only `setup --helpers` or `node scripts/install-helpers.mjs` |
+| The writing engine | `core/vendor/academic-harness/.venv` (in a working copy, the same path inside it) | `setup`, or in the background on first start (`AH_AUTO_INSTALL=0` turns that off) |
+| Python helpers | `core/python-helpers/.venv` | Only `setup --helpers` or `node scripts/install-helpers.mjs` |
 
 ## Keys
 

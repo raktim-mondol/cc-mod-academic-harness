@@ -252,7 +252,7 @@ describe('the hooks module and the server agree', () => {
 describe('old counts', () => {
   test('files untouched for a year go when a host starts', async () => {
     const { existsSync: ex } = await import('node:fs')
-    const UP = (await import('../../server/src/paths.mjs')).upstreamDir()
+    const UP = (await import('../../server/src/paths.mjs')).coreDir()
     if (!ex(join(UP, 'node_modules', 'ah-dsh-tools'))) return
     const { createHost } = await import('../../server/src/host.mjs')
     const home = join(root, 'prune-home')

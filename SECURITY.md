@@ -22,7 +22,7 @@ The owner will acknowledge the report, confirm the impact, and coordinate a fix 
 ## In scope
 
 - A way past the writing-engine guard in an `ah.yaml` project: a protected file changed, a unit anchor dropped, an author-only act run without the author, or a guarded call that fails open.
-- A path that escapes the session folder through the task commands, a tool, a symbol link, or a snapshot extraction.
+- A path that escapes the session folder through the task commands, a tool, a symbol link, or the copy of the core made on first start.
 - A key or a token printed, logged, written to a job record, or sent anywhere it should not go.
 - `modal_run`, `runpod_run` or `vastai_run` started without the approval dialog, or past the session cap.
 - A way to make the MCP server, the hooks module or an installer write outside its documented folders, or to make the doctor or the status line report a secret.
@@ -30,7 +30,7 @@ The owner will acknowledge the report, confirm the impact, and coordinate a fix 
 
 ## Out of scope
 
-- A vulnerability in **Academic Harness** itself or in the vendored writing engine, PaperMemory, TextFold or Open Deep Review. Report it upstream; this repository pins a commit and carries the fix on the next update.
+- A vulnerability in a package the code depends on (an npm or Python package that `npm ci` or the engine's environment installs), or in a project vendored in `core/vendor/` that is not this repository's own (PaperMemory, Open Deep Review, Supervisor-Skills): report it to that project too. If this repository ships a version with a known vulnerability, that is in scope here, and so is the code in `core/` itself.
 - A vulnerability in **Claude Code**, the model, GitHub, or a search or compute provider.
 - A person with a shell account on the machine reading the files they already own, or a key they exported themselves appearing in their own process environment.
 - The cost of a run the person approved, or a result the model got wrong. Correctness is a research concern, not a security one.

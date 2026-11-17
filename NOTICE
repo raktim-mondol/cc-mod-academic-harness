@@ -2,34 +2,73 @@ cc-mod-academic-harness
 =======================
 
 A Claude Code mod that runs the Academic Harness research tooling inside Claude
-Code. It is a port, not a fork: the upstream project is read at a pinned commit
-(UPSTREAM.lock.json) and never modified.
+Code. It started as a port of Academic Harness, which is the same author's
+project, and since 0.6.0 it holds that source itself (core/): it no longer
+downloads anything from the Academic Harness repository, and nothing follows it.
 
 Code written for this mod (hooks/, server/, scripts/, tests/, types/, docs/, the
 generated agents/ and the build tooling) is under the MIT License in LICENSE.
 
-Upstream
---------
+core/: Academic Harness, and what it bundles
+--------------------------------------------
 
-Academic Harness, MIT License, Copyright (c) 2026 Academic Harness (formerly ResearchCraft),
-https://github.com/raktim-mondol/academic-harness.
+core/ is Academic Harness at version 0.54.1 (commit
+a3f17eb8ae15221adeaa45cd19918c1f82f82973 of
+https://github.com/raktim-mondol/academic-harness), MIT License, Copyright (c)
+2026 Academic Harness (formerly ResearchCraft): its tool modules, writing
+engine, PaperMemory, prompt and 791 skills. core/NOTICE is that project's own
+notice and lists the third-party skill catalogues it bundles.
 
-Its tool modules, writing engine, PaperMemory and prompt are NOT in this
-repository. The plugin downloads the pinned commit on first start into the
-mod's home folder and checks it against the digests in UPSTREAM.lock.json. That
-download is upstream's own distribution and carries upstream's NOTICE, which
-lists every third-party skill catalogue it bundles and each one's licence. Some
-of those skills are licensed for non-commercial use only (CC BY-NC-SA 4.0), and
-some name a GPL library; they remain under their own licences, and this mod's
-MIT licence does not relicense them. A skill's `license:` line in its frontmatter
-names the licence it is under. None of them is copied into this repository (see
-below), but a skill the model fetches on demand from the downloaded snapshot may
-be one of them: read its `license:` line before reusing its text.
+THE MIT LICENCE DOES NOT COVER ALL OF core/. It bundles other projects'
+material, each under its own licence, which stays with it and is not relicensed
+by this repository's MIT licence. A skill's `license:` line in its SKILL.md
+names its licence; a vendored project's licence is in its folder. If you use
+this repository commercially, or redistribute it, read this section and leave
+out what its licence does not allow.
+
+Of the 791 skills in core/skills: 634 name MIT, 41 name BSD or Apache-2.0, 8 name
+CC-BY-4.0, and 77 name nothing (they are Academic Harness's own text). The rest
+need attention. To keep the six non-commercial skills out of what the plugin
+serves, set AH_EXCLUDE_NONCOMMERCIAL=1 in the environment of Claude Code: the
+skill search then covers 785 skills, and loading one of the six is refused
+(the build already leaves them out of skills/).
+
+Non-commercial (CC-BY-NC-SA-4.0, Creative Commons Attribution-NonCommercial-
+ShareAlike 4.0 International: not for commercial use, and adaptations must be
+shared alike):
+    deep-research, intro-drafter, paper-polish, paper-writer,
+    rebuttal-guidance, what-if-oracle.
+GPL (a copyleft licence; the skill's own text names a GPL-licensed library or
+tool, and any code you build with it has to respect that licence):
+    bioservices, cobrapy, etetoolkit, pathml, scikit-survival.
+Licence not stated ("Unknown" in the skill's own line; check the project each
+one describes before reusing its text):
+    biopython, cellxgene-census, dnanexus-integration, glycoengineering,
+    gtars, labarchive-integration, latchbio-integration, omero-integration,
+    opentrons-integration, phylogenetics, primekg, protocolsio-integration.
+Other, as the skill states it: fluidsim (CeCILL), imaging-data-commons (the
+skill is MIT; the IDC data it queries is mostly CC-BY, some CC-NC), matlab (the
+skill refers to MATLAB, which is proprietary, and Octave, which is GPL), rowan
+(proprietary service, API key required), and matplotlib, polars, pydicom and
+sympy (each points to that library's own licence file).
+
+Vendored projects in core/vendor:
+  - academic-harness: the writing engine (Python), MIT License, the same
+    author; see core/vendor/academic-harness/SOURCE.txt.
+  - papermemory: MIT License, the same author, raktim-mondol/papermemory.
+  - open-deepreview: MIT License, (c) 2026 open-deepreview contributors.
+  - supervisor-skills: Creative Commons Attribution-NonCommercial-ShareAlike
+    4.0 International as a whole (c) 2026 Yuyu Luo (methodology) and
+    contributors, https://github.com/HKUSTDial/Supervisor-Skills. NOT
+    covered by the MIT licence, and not for commercial use. Five of the
+    non-commercial skills above come from it (deep-research, intro-drafter,
+    paper-polish, paper-writer, rebuttal-guidance); the sixth, what-if-oracle,
+    is from ashrafkahoush-ux/claude-consciousness-skills (CC BY-NC-SA 4.0).
 
 What is copied into this repository
 -----------------------------------
 
-skills/ and agents/ are generated from the snapshot by scripts/build-skills.mjs
+skills/ and agents/ are generated from core/ by scripts/build-skills.mjs
 and scripts/build-agents.mjs. The build leaves out every skill whose licence is
 non-commercial, GPL or unknown (decision D5), and records what it copied and
 what it left out, with each licence, in skills/.build-info.json. Of the 54
@@ -90,8 +129,9 @@ Not in this repository, fetched or installed by the plugin at run time
   - TextFold (Apache License 2.0, (c) 2026 Xia Chen), installed from PyPI into
     the mod's home the first time the notebook tools load; set
     AH_MANAGED_INSTALLS=0 to prevent it.
-  - PaperMemory, Modal's SDK and the Python packages of the writing engine,
-    installed from their registries under their own licences.
+  - Modal's SDK, and the npm and Python packages that `npm ci` and the writing
+    engine's environment install, from their registries under their own
+    licences. core/package-lock.json lists the npm ones.
 
 To report a mistake in an attribution, see SECURITY.md for private matters or
 open an issue.

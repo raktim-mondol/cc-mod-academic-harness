@@ -9,10 +9,10 @@ import { Registry, createContext } from '../../server/src/context.mjs'
 import { hostOver } from '../../server/src/host.mjs'
 import { createJobs } from '../../server/src/jobs.mjs'
 import { createLlm, parseResult, promptFrom } from '../../server/src/llm.mjs'
-import { upstreamDir } from '../../server/src/paths.mjs'
+import { coreDir } from '../../server/src/paths.mjs'
 
 const root = join(homedir(), '.cache', 'ah-cc-p4', `unit-${process.pid}`)
-const UP = upstreamDir()
+const UP = coreDir()
 const HAVE_UP = existsSync(join(UP, 'job-runner.js'))
 const sleep = ms => new Promise(r => setTimeout(r, ms))
 

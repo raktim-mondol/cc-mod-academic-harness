@@ -1,8 +1,8 @@
-// What the first-start fetch of the source snapshot is doing, as a small file the doctor can read while the server works.
+// What the first-start setup of the core (copy, `npm ci`) is doing, as a small file the doctor can read while the server works.
 //
-//   <home>/bootstrap.json   { pid, step, startedAt, error? }   written when a server starts the fetch, removed when it succeeds
+//   <home>/bootstrap.json   { pid, step, startedAt, error? }   written when a server starts the setup, removed when it succeeds
 //
-// A file whose pid is dead and that carries no error is stale (the server was killed mid-fetch): it counts as no fetch running.
+// A file whose pid is dead and that carries no error is stale (the server was killed mid-setup): it counts as no setup running.
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { modHome } from './paths.mjs'
@@ -34,7 +34,7 @@ export function writeState(state, env = process.env) {
 }
 
 /**
- * Take the fetch for this process, atomically: the file is created only if absent, so two servers that start together do not both fetch.
+ * Take the fetch for this process, atomically: the file is created only if absent, so two servers that start together do not both set up.
  * Returns false when another live process holds it. A stale file (its process is gone), a failed one and one of ours are taken over.
  */
 export function claim(state, env = process.env) {

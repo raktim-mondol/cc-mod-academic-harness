@@ -1,4 +1,4 @@
-// node --test tests/server   (needs upstream/ and its node_modules: node scripts/sync-upstream.mjs && node scripts/install-deps.mjs)
+// node --test tests/server   (needs core/ and its node_modules: node scripts/setup.mjs)
 // Scratch state lives under ~/.cache (plan ground rule 4).
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
@@ -14,14 +14,14 @@ import { makeExec } from '../../server/src/exec.mjs'
 import { classify, discover, indexComponents, parseAreas, plan, presetModules, AREAS, TIER1, HOST_ONLY } from '../../server/src/manifest.mjs'
 import { adapt, blocksToContent, clip, fixSkillSearch, pruneOutputDir } from '../../server/src/render.mjs'
 import { toInputSchema } from '../../server/src/schema.mjs'
-import { upstreamDir } from '../../server/src/paths.mjs'
+import { coreDir } from '../../server/src/paths.mjs'
 import { hostOver, serve } from '../../server/src/host.mjs'
 import { PassThrough } from 'node:stream'
 import { createUsage } from '../../server/src/usage.mjs'
 
 const BIN = fileURLToPath(new URL('../../server/bin/ah-mcp.mjs', import.meta.url))
 const scratch = join(homedir(), '.cache', 'ah-cc-p2', `test-${process.pid}`)
-const UP = upstreamDir()
+const UP = coreDir()
 before(() => { rmSync(scratch, { recursive: true, force: true }); mkdirSync(scratch, { recursive: true }) })
 after(() => rmSync(scratch, { recursive: true, force: true }))
 
@@ -193,7 +193,7 @@ describe('env', () => {
     const optOut = { ...base, AH_MANAGED_INSTALLS: '0' }
     prepareEnv(optOut, { areas: ['submission', 'compute'] })
     assert.equal(optOut.TEXTFOLD_SKIP_INSTALL, '1')
-    const dev = { ...base, AH_UPSTREAM: '/somewhere' }
+    const dev = { ...base, AH_CORE: '/somewhere' }
     prepareEnv(dev, { areas: ['submission'] })
     assert.equal(dev.TEXTFOLD_SKIP_INSTALL, '1', 'development mode installs nothing')
     assert.ok(Object.keys(MANAGED_INSTALLS).length >= 2)
@@ -384,7 +384,7 @@ describe('stdio server', { skip: !existsSync(join(UP, 'node_modules', 'ah-dsh-to
   })
 
   test('without installed dependencies the server exits 1 and says what to run', async () => {
-    const child = spawn(process.execPath, [BIN], { env: { ...process.env, AH_UPSTREAM: join(scratch, 'empty-upstream'), AH_MOD_HOME: join(scratch, 'home') }, stdio: ['pipe', 'pipe', 'pipe'] })
+    const child = spawn(process.execPath, [BIN], { env: { ...process.env, AH_CORE: join(scratch, 'empty-upstream'), AH_MOD_HOME: join(scratch, 'home') }, stdio: ['pipe', 'pipe', 'pipe'] })
     let err = ''
     child.stderr.on('data', d => { err += d })
     const code = await new Promise(r => child.on('close', r))

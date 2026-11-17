@@ -4,11 +4,11 @@ A Claude Code plugin for academic research and writing. It adds literature searc
 
 It is a Claude Code *mod*: next to its MCP tools, skills and agents it runs code inside Claude Code, which is what gives it slash commands, a status line, a pane and the guard ([what that means](docs/maintain/next-steps.md#plugin-or-mod-both-and-it-works)).
 
-**Version 0.5.0.** Linux only. MIT licence.
+**Version 0.6.0.** Linux only. MIT licence.
 
 ## How it fits together
 
-![How the plugin is built: the hooks module, the ah and papermemory MCP servers, the pinned Academic Harness snapshot and the writing engine](docs/assets/architecture.svg)
+![How the plugin is built: the hooks module, the ah and papermemory MCP servers, the bundled core (the tools, skills and writing engine)](docs/assets/architecture.svg)
 
 Blue is code that runs inside Claude Code's hooks, green the MCP servers and background jobs, purple the writing engine, orange stored data, yellow skills and agents, and grey what is outside the plugin. The diagram is `docs/assets/architecture.mmd`, rendered with [Pele](https://github.com/obsidianmd/pele) (`node scripts/render.mjs --static-colors architecture.mmd architecture.svg` in the pele skill). [Architecture](docs/design/architecture.md) explains each part.
 
@@ -70,12 +70,12 @@ Every folder has its own index; start from [the documentation index](docs/README
 |---|---|
 | **Using it** | [User guide](docs/guide/README.md): [getting started](docs/guide/getting-started.md), [commands](docs/guide/commands.md), [tools, skills and agents](docs/guide/tools-skills-agents.md), [settings](docs/guide/settings.md), [keys and credentials](docs/guide/keys.md), [state and privacy](docs/guide/state-and-privacy.md), [troubleshooting](docs/guide/troubleshooting.md) |
 | **Understanding it** | [Design](docs/design/README.md): [architecture](docs/design/architecture.md), [decisions](docs/design/decisions.md), [what was left out and why](docs/design/fit-review.md) |
-| **Changing it** | [Maintenance](docs/maintain/README.md): [building](docs/maintain/building.md), [updating the engine code](docs/maintain/updating-upstream.md), [testing](docs/maintain/testing.md), [releasing](docs/maintain/releasing.md), [what to do next](docs/maintain/next-steps.md) |
+| **Changing it** | [Maintenance](docs/maintain/README.md): [building](docs/maintain/building.md), [testing](docs/maintain/testing.md), [releasing](docs/maintain/releasing.md), [what to do next](docs/maintain/next-steps.md) |
 | **How it was built** | [History](docs/history/README.md), and the [changelog](CHANGELOG.md) |
 
 ## Development
 
-`npm run check` runs the same checks CI runs: the node suites, `plugin.json` against the snapshot, and the served tool surface. `npm run typecheck` adds the hooks module's types after a session has loaded the mod, and `npm run build` regenerates the skills, prompt, agents and interface from `upstream/`.
+`npm run check` runs the same checks CI runs: the node suites, `plugin.json` against the core, and the served tool surface. `npm run typecheck` adds the hooks module's types after a session has loaded the mod, and `npm run build` regenerates the skills, prompt, agents and interface from `core/`.
 
 The ground rules, the test map and the release checklist are in [Maintaining the mod](docs/maintain/README.md); [CONTRIBUTING.md](CONTRIBUTING.md) is the short version.
 
@@ -85,13 +85,12 @@ The ground rules, the test map and the release checklist are in [Maintaining the
 |---|---|---|
 | [`hooks/`](hooks/README.md) | The code that runs inside Claude Code: research mode, the guard, approvals, commands, the pane | TypeScript |
 | [`server/`](server/README.md) | The tool server, the PaperMemory launcher and the helper processes the hooks run | Node |
-| [`scripts/`](scripts/README.md) | Setup, updates, builds, checks | Node |
+| [`scripts/`](scripts/README.md) | Setup, builds, checks | Node |
 | `skills/`, `agents/` | The skills and agents Claude Code loads | Generated; do not edit ([Building](docs/maintain/building.md)) |
 | [`tests/`](tests/README.md) | Plugin tests, node suites, live scripts | |
 | [`types/`](types/README.md) | The `$.state` contract of the hooks module | |
-| `upstream/` | The research engine and tool code the plugin runs | Not committed; `setup` fetches it |
+| `core/` | The research engine, tool code, writing engine and about 790 skills the plugin runs, with the licences they carry ([`core/NOTICE`](core/NOTICE)) | Committed, so the repository stands alone; `setup` installs what is built from it |
 | `.claude-plugin/` | The manifest and the marketplace file | `plugin.json` is partly generated |
-| `UPSTREAM.lock.json` | The exact version of that code this release uses, with a digest of its files | |
 
 ## Security
 
@@ -99,4 +98,4 @@ Keys reach the tools as environment variables and are reported by name, never by
 
 ## Licence
 
-MIT (`LICENSE`) for the code written for this mod. A few skills copied into `skills/` come from other projects and keep their own licences: three are CC BY 4.0 and one reference file is CC BY-SA 4.0; each is credited, with its changes, in `NOTICE`, which also lists the MIT sources and what the plugin downloads on first start. Skills under non-commercial, GPL or unknown licences are not in this repository. The Academic Harness snapshot the plugin fetches carries its own `NOTICE`, and a skill the model loads on demand from it can be under a non-commercial licence: its `license:` line says. Contributions are under the same licence; see [CONTRIBUTING.md](CONTRIBUTING.md).
+MIT (`LICENSE`) for the code written for this mod and for Academic Harness's own code in `core/`. **`core/` also bundles other projects' material under their own licences, and the MIT licence does not relicense it:** 791 skills, of which 6 are CC BY-NC-SA 4.0 (non-commercial), 5 name a GPL licence and 12 say "Unknown", plus vendored projects such as Supervisor-Skills (CC BY-NC-SA 4.0 as a whole). `NOTICE` lists them and says what each needs; a skill's `license:` line names its licence. If you use this repository commercially, read `NOTICE` first, and set `AH_EXCLUDE_NONCOMMERCIAL=1` to keep the six non-commercial skills out of what the plugin serves. The 54 core skills in `skills/` are the ones the build lets in: only MIT, CC BY 4.0 and the source's own text; each outside MIT is credited, with its changes, in `NOTICE`. Contributions are under the same licence; see [CONTRIBUTING.md](CONTRIBUTING.md).

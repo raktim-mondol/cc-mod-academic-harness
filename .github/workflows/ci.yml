@@ -35,10 +35,10 @@ jobs:
         with:
           python-version: '3.12'
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
-      # The source snapshot of Academic Harness at the commit in UPSTREAM.lock.json, downloaded and checked against the digest in the lock, then its
-      # dependencies and the writing engine's environment. No source checkout is needed.
+      # The source is in the repository (core/): this installs its dependencies and the writing engine's environment. Nothing is fetched from
+      # another repository.
       - name: Set up
-        run: node scripts/setup.mjs --github
+        run: node scripts/setup.mjs
       - name: Checks (node suites, manifest, served tool surface)
         run: npm run check
 

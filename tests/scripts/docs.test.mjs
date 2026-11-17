@@ -13,7 +13,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
  *  repository automation templates (`.github/`), which describe a process rather than the project. */
 const pages = execFileSync('git', ['-C', root, 'ls-files', '-co', '--exclude-standard'], { encoding: 'utf8' }).split('\n')
   .filter(f => f.endsWith('.md'))
-  .filter(f => !f.startsWith('upstream/') && !f.startsWith('tests/fixtures/') && !f.startsWith('tests/probe/') && !f.startsWith('scripts/research-mode'))
+  .filter(f => !f.startsWith('core/') && !f.startsWith('tests/fixtures/') && !f.startsWith('tests/probe/') && !f.startsWith('scripts/research-mode'))
   .filter(f => !f.startsWith('.github/'))
   .filter(f => !/^(skills|agents)\//.test(f))
 

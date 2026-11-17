@@ -1,9 +1,17 @@
 # Written by the engine when a mod loads interactively
 .claude-plugin/types/
 tsconfig.json
-# Recorded by scripts/check-upstream-clean.mjs --record
-.upstream-baseline.json
-# Built (later phases)
-upstream/
-server/dist/
+# What setup builds inside core/ (scripts/setup.mjs, the server's first start): dependencies, Python environments, build output and their stamps
 node_modules/
+.venv/
+__pycache__/
+*.pyc
+core/vendor/*/build/
+core/vendor/*/*.egg-info/
+core/vendor/academic-harness/.ah-tree-sha256
+core/vendor/academic-harness/.ah-installing
+core/vendor/academic-harness/installed-version
+core/.ah-core-ready
+# The pre-0.6.0 snapshot folder, left on disk by a clone that had been set up
+/upstream/
+server/dist/

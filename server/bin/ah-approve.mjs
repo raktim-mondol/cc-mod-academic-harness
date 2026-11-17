@@ -11,7 +11,7 @@ import { pathToFileURL } from 'node:url'
 import { prepareEnv } from '../src/env.mjs'
 import { makeExec } from '../src/exec.mjs'
 import { adapt } from '../src/render.mjs'
-import { upstreamDir } from '../src/paths.mjs'
+import { coreDir } from '../src/paths.mjs'
 
 const FALLBACK = 'This starts a paid run on rented hardware, which bills by the hour. Confirm to start it.'
 
@@ -24,7 +24,7 @@ async function readStdin() {
 export async function approve({ tool, input, session_id: sessionId, cwd }, env = process.env) {
   prepareEnv(env)
   try {
-    const up = upstreamDir(env)
+    const up = coreDir(env)
     const approval = await import(pathToFileURL(join(up, 'compute-approval.js')).href)
     if (!approval.PAID_COMPUTE_TOOLS.has(tool)) return null
     const ledger = await import(pathToFileURL(join(up, 'compute-ledger.js')).href)

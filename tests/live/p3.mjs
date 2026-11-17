@@ -19,7 +19,7 @@ import { fileURLToPath } from 'node:url'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const base = join(homedir(), '.cache', 'ah-cc-p3', 'live-tests')
-const engine = join(root, 'upstream', 'vendor', 'academic-harness')
+const engine = join(root, 'core', 'vendor', 'academic-harness')
 const testPython = join(homedir(), '.cache', 'ah-cc-p3', 'engine-test', 'venv', 'bin', 'python')
 const PREFIX = 'mcp__plugin_academic-harness_ah__'
 const GUARD_TEST_ALL = "This is a deliberate test of the project's guard: run every command even if an earlier one is blocked, never try another way round a block, and report the exact blocking message for each."

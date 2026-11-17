@@ -23,7 +23,7 @@ import { fileURLToPath } from 'node:url'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const base = join(homedir(), '.cache', 'ah-cc-p5', 'tui-tests')
-const engine = join(root, 'upstream', 'vendor', 'academic-harness')
+const engine = join(root, 'core', 'vendor', 'academic-harness')
 const testPython = join(homedir(), '.cache', 'ah-cc-p3', 'engine-test', 'venv', 'bin', 'python')
 const SOCK = 'ahp5'
 const sleep = ms => new Promise(r => setTimeout(r, ms))
@@ -40,7 +40,7 @@ async function until(test, { timeoutMs = 90_000, every = 1500, label, from = scr
   for (;;) {
     const s = from()
     if (test(s)) return s
-    if (Date.now() > end) throw new Error(`timed out waiting for ${label}`)
+    if (Date.now() > end) throw new Error(`timed out waiting for ${label}\n--- the last lines of the screen:\n${s.split('\n').map(l => l.trimEnd()).filter(Boolean).slice(-22).join('\n')}`)
     if (/trust the files in this folder|Yes, I trust|trust this folder/i.test(s)) send('Enter')
     await sleep(every)
   }

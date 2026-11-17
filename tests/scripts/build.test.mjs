@@ -1,5 +1,5 @@
 // node --test "tests/scripts/*.test.mjs"
-// Needs upstream/ (node scripts/sync-upstream.mjs) and the built outputs.
+// Needs core/ with its dependencies installed (node scripts/setup.mjs) and the built outputs.
 import assert from 'node:assert/strict'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
@@ -11,7 +11,7 @@ import { assemble, classify, MAX_ALWAYS_ON_CHARS, SECTIONS, splitSections } from
 import { decide, frontmatter } from '../../scripts/build-skills.mjs'
 
 const root = fileURLToPath(new URL('../..', import.meta.url))
-const upstream = join(root, 'upstream')
+const upstream = join(root, 'core')
 const lic = await import(pathToFileURL(join(upstream, 'skill-licenses.js')).href)
 const prompt = await import(pathToFileURL(join(upstream, 'prompt.js')).href)
 

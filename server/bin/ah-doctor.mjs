@@ -3,7 +3,6 @@
 //
 //   node server/bin/ah-doctor.mjs            the report as text
 //   node server/bin/ah-doctor.mjs --json     the checks as JSON
-//   node server/bin/ah-doctor.mjs --online   also ask GitHub whether upstream has moved on
 //   node server/bin/ah-doctor.mjs --usage    which skills, agents and commands were used and which never were (--all lists every name);
 //                                            the tools that were never called are only known to a running server: /academic usage
 //
@@ -18,6 +17,6 @@ if (process.argv.includes('--usage')) {
   process.stdout.write(`${formatReport(readUsage(usageDir(modHome())), knownNames(undefined), { all: process.argv.includes('--all') })}\n`)
   process.exit(0)
 }
-const report = await diagnose({ online: process.argv.includes('--online') })
+const report = await diagnose()
 process.stdout.write(`${process.argv.includes('--json') ? JSON.stringify(report, null, 2) : format(report)}\n`)
 process.exit(report.blocking ? 1 : 0)

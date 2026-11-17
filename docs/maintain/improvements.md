@@ -9,7 +9,7 @@ Done together, each with a test. The rows stay as a record of what was changed a
 | # | Done | What | Why | Where |
 |---|---|---|---|---|
 | 1 | [x] | Hold the model budget exactly: reserve each call's cap before it starts | Up to four model calls run at once and each is capped at $1, so a run can pass `llm_budget_usd` by a few dollars before it stops | `server/src/llm.mjs` |
-| 2 | [x] | Remove old snapshots at server start: any `<home>/upstream/<commit>` that is not the locked commit | After an update the previous folder stays, about 170 MB plus the engine's environment | `server/src/bootstrap.mjs`, `server/bin/ah-mcp.mjs` |
+| 2 | [x] | Remove old copies of the core at server start: any `<home>/core/<id>` (and, from 0.6.0, the old `<home>/upstream/`) that is not the current one | After an update the previous folder stays, about 170 MB plus the engine's environment | `server/src/bootstrap.mjs`, `server/bin/ah-mcp.mjs` |
 | 3 | [x] | Remove clipped tool output after 30 days | Files under `<project>/.dsh/tool-output/` are written and never cleaned up | `server/src/render.mjs`, `server/src/host.mjs` |
 | 4 | [x] | Send the system prompt to the model child by file or standard input | It goes as a command-line argument, and one over about 128 KB would stop the child from starting. Today's prompts are far below that | `server/src/llm.mjs` |
 | 5 | [x] | Resolve symbolic links in the task commands' file check | A link inside the session folder that points outside it passes the check | `hooks/tasks.ts` |
@@ -21,9 +21,9 @@ Items 7 to 10 are done, and the first CI runs were green on Node 22 and 24 and o
 
 | # | Done | What | Why |
 |---|---|---|---|
-| 7 | [x] | CI on GitHub: on every push run `node scripts/setup.mjs --github`, the node suites, the manifest and parity checks, and the plugin checks on each tested Claude Code version (the type check stays local: its types exist only after a real session loads the mod) | These checks run today only when someone remembers to |
+| 7 | [x] | CI on GitHub: on every push run `node scripts/setup.mjs`, the node suites, the manifest and parity checks, and the plugin checks on each tested Claude Code version (the type check stays local: its types exist only after a real session loads the mod) | These checks run today only when someone remembers to |
 | 8 | [x] | A Claude Code version check in the doctor: show the running version, warn when it is not one that was tested or when the hooks module did not load | The mod part has only been seen working on 2.1.325 |
-| 9 | [x] | A weekly upstream check: a scheduled workflow that runs the `node scripts/update-upstream.mjs` report and opens an issue when Academic Harness has moved | Academic Harness is released often, and nothing says so unless someone asks (`/academic doctor --online`) |
+| 9 | [x] | ~~A weekly upstream check~~ | Removed in 0.6.0: the repository no longer follows Academic Harness; `core/` is its own source |
 | 10 | [x] | Local usage counts: which tools and skills are called, as names and counts only, kept in the mod's home and shown by the doctor | It turns "which skills never load" into data for the next review of what to leave out |
 
 ## Only the owner can do
@@ -39,4 +39,4 @@ Items 1 to 10 are done. Items 11 and 12 are the owner's, and did not wait on any
 
 ## Not read line by line
 
-The review read the server, the hooks module and the setup scripts in full. These were left to their tests: the build and update scripts (`scripts/adapt.mjs`, `scripts/update-lib.mjs` and the `build-` scripts), `hooks/ui-core.ts`, and the generated skills and agents. A second pass would start there.
+The review read the server, the hooks module and the setup scripts in full. These were left to their tests: the build scripts (`scripts/adapt.mjs` and the `build-` scripts), `hooks/ui-core.ts`, and the generated skills and agents. A second pass would start there.

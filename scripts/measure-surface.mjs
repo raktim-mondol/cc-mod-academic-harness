@@ -4,7 +4,7 @@
 //   node scripts/measure-surface.mjs           print the report, exit 1 on a mismatch
 //   node scripts/measure-surface.mjs --json    the same as JSON
 //
-// Three questions, answered from the snapshot in upstream/ (never the source checkout):
+// Three questions, answered from the snapshot in core/ (never the source checkout):
 //   1. Do all the modules the manifest discovers (index.js components and the preset rows) register the same
 //      tool names as upstream's own collectToolDefinitions() (scripts/measure-tool-surface.mjs)?  Catches a
 //      module the manifest does not know about.
@@ -20,7 +20,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { createHost } from '../server/src/host.mjs'
 import { adapt } from '../server/src/render.mjs'
 import { discover, classify } from '../server/src/manifest.mjs'
-import { upstreamDir } from '../server/src/paths.mjs'
+import { coreDir } from '../server/src/paths.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 
@@ -51,7 +51,7 @@ const { found, skipped } = await collectToolDefinitions()
 process.stdout.write('\\n@@RESULT@@' + JSON.stringify({ perEntry, upstreamNames: found.map(f => f.definition.name), skipped }))
 `
 
-export function recordUpstream(upstream = upstreamDir()) {
+export function recordUpstream(upstream = coreDir()) {
   const scratchRoot = join(homedir(), '.cache', 'ah-test-homes')
   mkdirSync(scratchRoot, { recursive: true })
   const home = mkdtempSync(join(scratchRoot, 'surface-'))
@@ -65,7 +65,7 @@ export function recordUpstream(upstream = upstreamDir()) {
   }
 }
 
-export async function compare({ upstream = upstreamDir() } = {}) {
+export async function compare({ upstream = coreDir() } = {}) {
   const rec = recordUpstream(upstream)
   const recorded = new Map() // name -> { description, parameters, file }
   const classOf = new Map(discover(upstream).map(e => [`${e.file}#${e.fn}`, classify(e)]))

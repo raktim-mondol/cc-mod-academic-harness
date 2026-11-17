@@ -1,20 +1,20 @@
 // What is ready and what is not: the checks behind `/academic doctor` and `node server/bin/ah-doctor.mjs`.
 //
-// Read-only. Nothing is installed, no key value is read out (names only), and no network call is made unless `online` is asked for.
+// Read-only. Nothing is installed, no key value is read out (names only).
 import { execFileSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { assessVersion, readSeen, TESTED_VERSIONS } from './compat.mjs'
 import { listedAgents, listedSkills } from './skills-list.mjs'
 import { KNOWN_COMMANDS, readUsage, summaryLine, usageDir, usageEnabled } from './usage.mjs'
 import { engineDir, engineStatus } from './engine.mjs'
 import { DROPPED_TOOLS } from './fit.mjs'
 import { installDir, installedStamp, wantStamp } from './papermemory.mjs'
-import { isDevMode, modHome, modRoot, upstreamDir } from './paths.mjs'
+import { bundledCoreDir, isDevMode, modHome, modRoot, coreDir } from './paths.mjs'
 import { libraryCounts } from './panel.mjs'
 import { readState } from './bootstrap-state.mjs'
-import { checkSnapshot } from './snapshot.mjs'
+import { coreVersion } from './snapshot.mjs'
 
 /** Keys that change what a researcher gets the most; the rest are listed by count. */
 const WORTH_SETTING = [
@@ -31,53 +31,45 @@ const tryRun = (command, args) => {
  * @returns {{ checks: Array<{ id: string, state: 'ok'|'warn'|'missing'|'info', label: string, detail: string, fix?: string }>, blocking: number }}
  * `missing` means something the mod cannot work without; `warn` something that makes a feature fail until it is set up; `info` an optional extra.
  */
-export async function diagnose({ env = process.env, online = false, root = modRoot(), upstream = upstreamDir(env), home = modHome(env), served } = {}) {
+export async function diagnose({ env = process.env, root = modRoot(), core = coreDir(env), home = modHome(env), served } = {}) {
   const checks = []
   const add = (id, state, label, detail, fix) => checks.push({ id, state, label, detail, ...(fix ? { fix } : {}) })
-  // A missing or corrupt lock is a finding, not a crash: the doctor is what a person runs when something is wrong.
-  const lockPath = join(root, 'UPSTREAM.lock.json')
-  let lock = null
-  let lockProblem = null
-  if (!existsSync(lockPath)) {
-    lockProblem = 'UPSTREAM.lock.json is missing: this is not the plugin\'s folder'
-  } else {
-    try { lock = JSON.parse(readFileSync(lockPath, 'utf8')) } catch (error) { lockProblem = `UPSTREAM.lock.json is not readable JSON: ${String(error?.message ?? error).split('\n')[0]}` }
-    if (!lockProblem && (!lock || typeof lock !== 'object' || typeof lock.commit !== 'string' || !lock.treeSha256)) lockProblem = 'UPSTREAM.lock.json has no commit or digest'
-  }
+  // A plugin folder without its core is a finding, not a crash: the doctor is what a person runs when something is wrong.
+  const bundled = bundledCoreDir(root)
+  const coreProblem = existsSync(join(bundled, 'package.json')) ? null : `${bundled} is missing: this is not the plugin's folder`
 
   const major = Number(process.versions.node.split('.')[0])
   add('node', major >= 22 ? 'ok' : 'missing', 'Node.js', `v${process.versions.node}${major >= 22 ? '' : ' (22 or newer is needed for node:sqlite)'}`, major >= 22 ? undefined : 'install a current Node.js')
 
-  // A fetch that failed leaves its error behind until a server fetches again. Once the snapshot is usable (`node scripts/setup.mjs` after
-  // the failure, say) no server needs to fetch, so the old error would stay for ever: it is only reported while the snapshot is unusable.
-  const usable = existsSync(join(upstream, 'node_modules', 'ah-dsh-tools'))
+  // A setup that failed leaves its error behind until a server sets up again. Once the core is usable (`node scripts/setup.mjs` after the
+  // failure, say) no server needs to, so the old error would stay for ever: it is only reported while the core is unusable.
+  const usable = existsSync(join(core, 'node_modules', 'ah-dsh-tools'))
   const state = isDevMode(env) ? null : readState(env)
-  const fetching = state?.error && usable ? null : state
-  if (lockProblem) {
-    add('snapshot', 'missing', 'Source snapshot', lockProblem, 'restore UPSTREAM.lock.json from the repository, then run node scripts/setup.mjs')
-  } else if (fetching && !fetching.error) {
-    add('snapshot', 'info', 'Source snapshot', `being set up by the server (started ${Math.max(0, Math.round((Date.now() - fetching.startedAt) / 1000))} s ago): ${fetching.step}. The other tools appear when it is done`)
-  } else if (fetching?.error) {
-    add('snapshot', 'missing', 'Source snapshot', `the first-start fetch failed at "${fetching.step}": ${fetching.error}`, 'node scripts/setup.mjs (it shows the whole error)')
+  const settingUp = state?.error && usable ? null : state
+  if (coreProblem) {
+    add('snapshot', 'missing', 'Core', coreProblem, 'reinstall the plugin, or restore core/ from the repository, then run node scripts/setup.mjs')
+  } else if (settingUp && !settingUp.error) {
+    add('snapshot', 'info', 'Core', `being set up by the server (started ${Math.max(0, Math.round((Date.now() - settingUp.startedAt) / 1000))} s ago): ${settingUp.step}. The other tools appear when it is done`)
+  } else if (settingUp?.error) {
+    add('snapshot', 'missing', 'Core', `the first-start setup failed at "${settingUp.step}": ${settingUp.error}`, 'node scripts/setup.mjs (it shows the whole error)')
   } else if (isDevMode(env)) {
-    add('snapshot', 'info', 'Source snapshot', `development mode: reading ${upstream} (AH_UPSTREAM), read-only`)
+    add('snapshot', 'info', 'Core', `development mode: reading ${core} (AH_CORE), read-only`)
   } else {
-    const s = checkSnapshot(upstream, lock)
-    if (s.state === 'ok') add('snapshot', 'ok', 'Source snapshot', `Academic Harness ${s.version}, commit ${String(s.commit).slice(0, 7)}, ${s.fileCount} files, digest matches the lock`)
-    else if (s.state === 'missing') add('snapshot', 'missing', 'Source snapshot', s.detail, 'node scripts/setup.mjs (it downloads the pinned commit from GitHub; no source checkout is needed)')
-    else add('snapshot', s.state === 'differs' ? 'warn' : 'info', 'Source snapshot', `${s.version ?? '?'}: ${s.detail}`, s.state === 'differs' ? 'node scripts/sync-upstream.mjs' : undefined)
+    const version = coreVersion(core)
+    if (version) add('snapshot', 'ok', 'Core', `Academic Harness ${version}, ${resolve(core) === resolve(bundled) ? 'in the plugin folder' : `a working copy at ${core}`}`)
+    else add('snapshot', 'info', 'Core', `not set up yet: the server copies the plugin's core to ${core} on its first start`, 'node scripts/setup.mjs sets it up now')
   }
 
-  const deps = existsSync(join(upstream, 'node_modules', 'ah-dsh-tools'))
+  const deps = existsSync(join(core, 'node_modules', 'ah-dsh-tools'))
   let depsCurrent = deps
-  if (deps && existsSync(join(upstream, 'package-lock.json')) && !isDevMode(env)) {
-    const want = createHash('sha256').update(readFileSync(join(upstream, 'package-lock.json'))).digest('hex')
-    const stamp = join(upstream, 'node_modules', '.ah-lock-sha256')
+  if (deps && existsSync(join(core, 'package-lock.json')) && !isDevMode(env)) {
+    const want = createHash('sha256').update(readFileSync(join(core, 'package-lock.json'))).digest('hex')
+    const stamp = join(core, 'node_modules', '.ah-lock-sha256')
     depsCurrent = existsSync(stamp) && readFileSync(stamp, 'utf8').trim() === want
   }
-  add('deps', deps ? (depsCurrent ? 'ok' : 'warn') : 'missing', 'Tool dependencies', deps ? (depsCurrent ? 'installed, match package-lock.json' : 'installed, but package-lock.json has changed since') : 'upstream/node_modules is missing, so the ah server cannot start', deps && depsCurrent ? undefined : 'node scripts/install-deps.mjs')
+  add('deps', deps ? (depsCurrent ? 'ok' : 'warn') : 'missing', 'Tool dependencies', deps ? (depsCurrent ? 'installed, match package-lock.json' : 'installed, but package-lock.json has changed since') : 'core/node_modules is missing, so the ah server cannot start', deps && depsCurrent ? undefined : 'node scripts/install-deps.mjs')
 
-  const engine = engineStatus(env, engineDir(upstream))
+  const engine = engineStatus(env, engineDir(core))
   add('engine', engine.ok ? 'ok' : 'warn', 'Writing engine (ah_* tools, the guard)', engine.ok ? `ready (${engine.how})` : String(engine.why), engine.ok ? undefined : 'node scripts/install-engine.mjs (the server also builds it in the background on first start)')
 
   const claude = tryRun('claude', ['--version'])
@@ -112,7 +104,7 @@ export async function diagnose({ env = process.env, online = false, root = modRo
   const textfold = existsSync(join(home, 'textfold'))
   add('textfold', textfold ? 'ok' : 'info', 'TextFold (paper_fold)', textfold ? `installed in ${join(home, 'textfold')}` : 'installs into the mod\'s home the first time a session loads the notebook or submission tools', textfold ? undefined : 'AH_MANAGED_INSTALLS=0 turns this off')
 
-  const helpers = existsSync(join(upstream, 'python-helpers', '.venv'))
+  const helpers = existsSync(join(core, 'python-helpers', '.venv'))
   add('helpers', helpers ? 'ok' : 'info', 'Python helpers (data, statistics and science toolkits; about 800 MB)', helpers ? 'installed' : 'not installed: those tools use python3 and say which import they lack', helpers ? undefined : 'node scripts/install-helpers.mjs')
 
   const latex = tryRun('latexmk', ['-v']) ? 'latexmk' : tryRun('pdflatex', ['--version']) ? 'pdflatex' : null
@@ -137,14 +129,6 @@ export async function diagnose({ env = process.env, online = false, root = modRo
   const dropped = Object.keys(DROPPED_TOOLS)
   const restored = `${env.AH_RESTORE_TOOLS ?? ''},${env.AH_RESTORE_TOOLS_SETTING ?? ''}`.split(/[\s,]+/).filter(n => dropped.includes(n))
   add('surface', 'info', 'Tools', `areas: ${env.AH_TOOL_AREAS?.trim() || 'all'}; ${dropped.length} Academic Harness tools are left out on purpose${restored.length ? ` (restored: ${restored.join(', ')})` : ''}: docs/design/fit-review.md`)
-
-  if (online && lock) {
-    const out = tryRun('git', ['ls-remote', `https://${lock.source}.git`, 'HEAD'])
-    const head = out?.split(/\s+/)[0]
-    if (!head) add('upstream', 'info', 'Upstream', 'could not reach GitHub')
-    else if (head === lock.commit) add('upstream', 'ok', 'Upstream', `the snapshot is the current head of ${lock.source} (${head.slice(0, 7)})`)
-    else add('upstream', 'info', 'Upstream', `${lock.source} has moved on: the snapshot is ${lock.commit.slice(0, 7)}, the head is ${head.slice(0, 7)}`, 'node scripts/update-upstream.mjs reports what changed')
-  }
 
   return { checks, blocking: checks.filter(c => c.state === 'missing').length }
 }

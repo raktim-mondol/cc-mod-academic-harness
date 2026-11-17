@@ -69,7 +69,7 @@ export const ROUTER_OPTIONS = {
 
 const pretty = name => name.replace(/_/g, ' ').toLowerCase().replace(/\b(api|id|ads|wos|ncbi|s2|core|ieee|ocr)\b/g, m => m.toUpperCase()).replace(/^./, c => c.toUpperCase())
 
-export async function keyFields(upstream = join(root, 'upstream')) {
+export async function keyFields(upstream = join(root, 'core')) {
   const mod = await import(pathToFileURL(join(upstream, 'settings-keys.js')).href)
   // A field only a tool that cannot come back reads is not offered (server/src/fit.mjs); the keys of restorable tools are, so they can be saved ahead of `restore_tools`.
   const own = mod.KEY_FIELDS.filter(f => !NOT_OFFERED_KEY_FIELDS.some(re => re.test(f)) && !DROPPED_KEY_FIELDS.has(f)).map(name => ({ name, secret: mod.SECRET_FIELDS.has(name) }))

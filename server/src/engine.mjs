@@ -1,20 +1,20 @@
 // Where the writing engine (the Python `ah` package) lives and whether it is ready.
 //
-// The engine is vendored at upstream/vendor/academic-harness. Its virtual environment is built inside
+// The engine is vendored at core/vendor/academic-harness. Its virtual environment is built inside
 // that folder (upstream's own layout, `academic-harness-cli.js`), so it sits in the mod's snapshot and
 // never in the source checkout. A stamp records the hash of the engine's files when the venv was built;
 // when a sync brings a different engine, the stamp no longer matches and the venv is rebuilt.
 import { createHash } from 'node:crypto'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
-import { isDevMode, upstreamDir } from './paths.mjs'
+import { isDevMode, coreDir } from './paths.mjs'
 
 export const STAMP_FILE = '.ah-tree-sha256'
 /** Holds the pid of a running build (engine-install.mjs). Not part of the engine, so not part of its hash. */
 export const INSTALLING_FILE = '.ah-installing'
 const SKIP_DIRS = new Set(['.venv', '__pycache__', 'build', 'dist', '.pytest_cache', '.mypy_cache', '.ruff_cache'])
 
-export function engineDir(upstream = upstreamDir()) {
+export function engineDir(upstream = coreDir()) {
   return join(upstream, 'vendor', 'academic-harness')
 }
 
@@ -53,10 +53,10 @@ export function venvPython(dir = engineDir(), platform = process.platform) {
  *   { ok: true, how }   an override (ACADEMIC_HARNESS_CLI or AH_CMD) or a venv built from the current engine files
  *   { ok: false, why }  what is missing, worded for the person who has to fix it
  */
-export function engineStatus(env = process.env, dir = engineDir(upstreamDir(env)), { verify = true } = {}) {
+export function engineStatus(env = process.env, dir = engineDir(coreDir(env)), { verify = true } = {}) {
   const override = (env.ACADEMIC_HARNESS_CLI || env.AH_CMD || '').trim()
   if (override) return { ok: true, how: 'override', command: override }
-  if (!existsSync(join(dir, 'pyproject.toml'))) return { ok: false, why: `the engine is not in the snapshot (${dir}); run node scripts/sync-upstream.mjs` }
+  if (!existsSync(join(dir, 'pyproject.toml'))) return { ok: false, why: `the engine is not in the core (${dir}); run node scripts/setup.mjs` }
   if (!existsSync(venvBin(dir)) && !existsSync(venvPython(dir))) return { ok: false, why: 'the engine has no virtual environment; run node scripts/install-engine.mjs' }
   const stamp = join(dir, STAMP_FILE)
   if (!existsSync(stamp)) return { ok: false, why: 'the engine environment was not built by this mod; run node scripts/install-engine.mjs' }

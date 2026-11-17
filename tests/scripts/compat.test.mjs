@@ -72,7 +72,7 @@ describe('the CI workflow', () => {
     const text = readFileSync(join(import.meta.dirname, '..', '..', '.github', 'workflows', 'ci.yml'), 'utf8')
     for (const job of ['node:', 'versions:', 'claude-code:']) assert.ok(text.includes(`\n  ${job}`), job)
     for (const m of text.matchAll(/uses:\s*(\S+)/g)) assert.match(m[1], /@[0-9a-f]{40}$/, `${m[1]} is pinned to a commit`)
-    assert.match(text, /node scripts\/setup\.mjs --github/)
+    assert.match(text, /node scripts\/setup\.mjs\s*\n/)
     assert.match(text, /claude plugin validate \. --strict/)
   })
 })

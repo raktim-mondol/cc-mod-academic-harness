@@ -19,12 +19,12 @@ function world(on: any, mode: Mode) {
     calls.push(e)
     if (mode.tool === 'absent') throw new Error(`unknown tool ${String(e['tool'])}`)
     if (mode.tool === 'error') return { isError: true, result: 'boom', text: 'the server failed' }
-    return { result: {}, text: '✔ Node.js: v24\n✔ Source snapshot: Academic Harness 0.54.1\n\nReady.' }
+    return { result: {}, text: '✔ Node.js: v24\n✔ Core: Academic Harness 0.54.1, in the plugin folder\n\nReady.' }
   })
   on('process.run', (_: unknown, e: { argv: string[] }) => {
     runs.push(e.argv)
     if (mode.process === 'fails') throw new Error('could not start')
-    return { value: { exitCode: 0, stdout: '✘ Source snapshot: no snapshot\n    fix: node scripts/setup.mjs\n\n1 thing the mod cannot work without.\n', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+    return { value: { exitCode: 0, stdout: '✘ Core: core/ is missing\n    fix: node scripts/setup.mjs\n\n1 thing the mod cannot work without.\n', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
   })
   return { calls, runs }
 }
@@ -36,7 +36,7 @@ test('doctor asks the running server and shows its report', async ($, on) => {
   const w = world(on, { tool: 'answers' })
   await start($)
   const r = await academic($, 'doctor')
-  expect(r.text).toContain('Source snapshot: Academic Harness 0.54.1')
+  expect(r.text).toContain('Core: Academic Harness 0.54.1, in the plugin folder')
   expect(r.text).toContain('Ready.')
   expect(w.calls.length).toBe(1)
   expect(w.calls[0]!['tool']).toBe(DOCTOR)
@@ -44,11 +44,12 @@ test('doctor asks the running server and shows its report', async ($, on) => {
   expect(w.runs.length).toBe(0)
 })
 
-test('doctor --online passes the question on', async ($, on) => {
+test('there is no --online any more: nothing asks GitHub whether anything has moved, and the word is not passed on', async ($, on) => {
   const w = world(on, { tool: 'answers' })
   await start($)
   await academic($, 'doctor --online')
-  expect(w.calls[0]!['online']).toBe(true)
+  expect(w.calls.length).toBe(1)
+  expect(w.calls[0]!['online']).toBeUndefined()
 })
 
 test('with no server the report comes from a fresh process, and says what it cannot see', async ($, on) => {
@@ -57,7 +58,7 @@ test('with no server the report comes from a fresh process, and says what it can
   const r = await academic($, 'doctor')
   expect(w.runs.length).toBe(1)
   expect(w.runs[0]!.some(a => a.endsWith('server/bin/ah-doctor.mjs'))).toBe(true)
-  expect(r.text).toContain('no snapshot')
+  expect(r.text).toContain("core/ is missing")
   expect(r.text).toContain('node scripts/setup.mjs')
   expect(r.text).toContain('keys saved in the plugin\'s options are not visible')
 })

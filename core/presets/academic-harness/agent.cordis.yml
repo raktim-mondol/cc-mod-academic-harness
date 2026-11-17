@@ -1,0 +1,867 @@
+# The `academic-harness` agent preset: standard coding tools with a scientific
+# research persona and the scientific-agent-skills catalogue.
+#
+# This file is an AGENT-PLANE composition. The roster mounts it ONCE under a
+# standing scope; every session naming it joins by scope parentage, so the
+# tools and prompt sections registered here cover each joined agent while a
+# session's own state stays keyed per Session/Agent inside the plugins. The
+# host composition (`base.cordis.yml` + `web.cordis.yml`) keeps everything a
+# preset must not own: the registries themselves, the sandbox and approval
+# stack, persistence, and the model route.
+#
+# A service row here MUST sit inside a group carrying an `isolate` realm.
+# Without one it publishes into the root realm, where it is process-global —
+# another preset publishing the same name collides, and a host reader would
+# resolve one preset's instance for every session; `dsh-agent-preset-registry`
+# rejects that at mount. `true` means an entry-local realm: this standing mount's own
+# private instance, apart from every other preset's. (A shared label does NOT
+# pool instances — `provide()` throws on the second registration under the
+# same realm symbol; labels join REALMS, and are not what this file needs.)
+
+# ── identity ────────────────────────────────────────────────────────────────
+
+# The preset's own persona, shadowing the deployment default for this agent.
+# `{{model}}` resolves from the agent's own route. The working directory is
+# supplied as runtime context: DSH 0.2.1 removed the `{{cwd}}` prompt variable,
+# and a template that still references it fails before the first request. The
+# agent calls `working_directory` when it needs the absolute path.
+- id: persona
+  name: '@deepseek-ai/dsh-persona'
+  config:
+    prefix: >-
+      You are Academic Harness, a scientific research assistant powered by the {{model}} model. Ask before you assume. Do not invent citations, numbers, or papers.
+
+- id: agent-instructions
+  name: '@deepseek-ai/dsh-agent-instructions'
+  config:
+    maxBytes: 65536
+
+# Official Standard's clock: durable current-time and browser-zone readings so
+# unqualified dates and elapsed durations are interpretable. Academic Harness
+# keeps the clock without Standard's reminder tools.
+- id: time-context
+  name: '@deepseek-ai/dsh-time-context'
+
+# The longer Academic Harness system-prompt section (notebook/subagent/MCP/tool
+# guidance) — scoped to this preset the same way `persona` above is: rows
+# registered here are visible only to sessions joined to this preset's
+# standing mount. Previously called from the plugin's bundle-level apply()
+# in index.js, which made it global — every session on every preset got the
+# Academic Harness prompt even outside this preset. See prompt-section.js.
+- id: academic-harness-prompt
+  name: academic-harness/prompt-section
+
+# ── shell ───────────────────────────────────────────────────────────────────
+
+# `shell-env` stays in the HOST composition: `apps/cli/src/web.ts` injects it to
+# publish `DSH_WEB_URL`/`DSH_WEB_MODE`, and a host row that injects a service is
+# the criterion for host-plane ownership — injection resolves before any session
+# exists, so there is no agent to key by. Behind a preset realm those variables
+# never reached the model's shell at all. Both shell tools consume the host
+# registry from here; their executors (`bash-sandbox`/`pwsh-sandbox`) are
+# host-plane too.
+- id: tool-bash
+  name: '@deepseek-ai/dsh-tool-bash'
+  disabled: !!js process.platform === 'win32'
+
+- id: tool-pwsh
+  name: '@deepseek-ai/dsh-tool-pwsh'
+  disabled: !!js process.platform !== 'win32'
+
+# ── filesystem ──────────────────────────────────────────────────────────────
+
+# Both register into the host `tools` registry and provide nothing, so
+# they need no realm. The `fs` service and its policy stay in the host.
+- id: tool-fs
+  name: '@deepseek-ai/dsh-tool-fs'
+
+- id: tool-fs-search
+  name: '@deepseek-ai/dsh-tool-fs-search'
+  config:
+    sampleOverCapGlobResults: false
+
+# ── background jobs ────────────────────────────────────────────────────────
+
+# Only the model-facing controls. The task REGISTRY stays on the host plane:
+# its producers sit outside any realm this file could put it in — `tool-bash`
+# above resolves it with `ctx.get`, and an entry-local realm here is invisible
+# to every sibling row, so `run_in_background` would answer "background jobs
+# unavailable" while these controls sat in the catalog. The registry is keyed by
+# owning agent anyway, so one host instance serves every session. What a preset
+# chooses is whether its agent can collect and stop background work at all.
+- id: tool-jobs
+  name: '@deepseek-ai/dsh-tool-jobs'
+
+# ── skills ──────────────────────────────────────────────────────────────────
+
+# The skill REGISTRY lives in the host composition and is layered per scope:
+# these rows register into THIS preset's layer of it, so they need no realm.
+# `skill-filesystem` contributes local-root discovery for agents on this preset, and
+# `tool-skill` gives them the catalog and loader; the merged catalog also
+# carries whatever the deployment registered globally (repository plugins).
+- id: skill-filesystem
+  name: '@deepseek-ai/dsh-skill-filesystem'
+  config:
+    customSkillDirs:
+      - !!js process.env.ACADEMIC_HARNESS_SKILLS_DIR || (process.env.HOME + '/scientific-agent-skills/skills')
+
+- id: tool-skill
+  name: '@deepseek-ai/dsh-tool-skill'
+  config:
+    # The catalogue lists only the core skills (skills-core.json); keep each
+    # entry short. The rest of the bundle is reached through skill_search and
+    # skill_load (skill-on-demand.js), so it costs context only when used.
+    catalogDescriptionMaxLength: 240
+
+- id: skill-on-demand
+  name: academic-harness/skill-on-demand
+
+# ── goals ───────────────────────────────────────────────────────────────────
+
+# The goal service and session driver stay on the host plane, where the Gateway
+# can resolve them. The human command and model-facing tool register into this
+# preset's scoped layers.
+- id: command-goal
+  name: '@deepseek-ai/dsh-command-goal'
+
+- id: tool-goal
+  name: '@deepseek-ai/dsh-tool-goal'
+
+# ── plan mode ───────────────────────────────────────────────────────────────
+
+# Plan state is per-agent by nature, so an entry-local realm is not a
+# workaround here — it is the correct lifetime.
+- id: planning
+  name: cordis:group
+  group: true
+  isolate:
+    planMode: true
+  config:
+    # The task command shares this realm so its executor can check planMode.
+    - id: academic-task
+      name: academic-harness/academic-task
+
+    - id: plan-mode
+      name: '@deepseek-ai/dsh-plan-mode'
+      config:
+        section: |
+              You are in plan mode. Stay in plan mode until exit_plan_mode succeeds or the user switches the session mode. Imperative language to implement changes means plan the implementation, not execute it. A user's conversational agreement — including an answer confirming something you asked — approves nothing and does not end plan mode; fold the confirmed decision into the plan and submit it through exit_plan_mode.
+
+              Explore first. Use non-mutating reads, searches, static analysis, and checks to ground the plan in the actual repository. Do not edit or write files, change configuration, run formatters or code generation that rewrites tracked files, commit, or otherwise carry out the plan. Prefer existing functions and patterns over new machinery.
+
+              The tool catalog stays the same across modes for request-cache stability. These plan-mode rules override any later tool description or guidance that suggests using mutation tools; those tools remain listed to keep the tool catalog unchanged. Do not use todo_write to track this planning phase: it tracks implementation after an approved plan, while the plan itself belongs in exit_plan_mode.
+
+              Resolve discoverable facts by inspection. Use ask_user_question only for user-owned choices or material ambiguity that inspection cannot answer. Do not ask the user where code lives or how current behavior works when you can find out.
+
+              Make the plan decision-complete: state the goal and success criteria; group implementation changes by subsystem; identify public API, schema, and data-flow changes; cover edge cases, failure modes, tests, acceptance criteria, and explicit assumptions. Keep it concise enough to review but detailed enough that another engineer can implement it without making design decisions.
+
+              When ready, call exit_plan_mode with the complete plan markdown, starting with a # title. Make exit_plan_mode the only and final tool call in that assistant response: it presents the plan for approval, and implementation begins only in a later step after approval. Do not paste the final plan as a plain reply or ask "should I proceed?" through prose or ask_user_question. If review rejects it, incorporate the feedback and present again. If the review channel is unavailable or aborted, stay in plan mode and ask the user to switch modes manually; do not proceed with implementation.
+
+# ── compaction ──────────────────────────────────────────────────────────────
+
+# `compaction-basic` reads `toolResultPrune` through `ctx.get`, so the pruner must
+# share this realm rather than sit outside it.
+#
+# `tokenMeter` is deliberately NOT in this realm: the meter stays on the HOST
+# plane, and the rows here resolve that one instance. It takes no configuration,
+# keys every fold by Session, and owns the context-meter projection units the
+# browser reads for every session — behind a realm those units would come and go
+# with whichever presets happen to be mounted. What a preset chooses is whether
+# its agent compacts at all, which is `compaction-basic` below.
+- id: compaction
+  name: cordis:group
+  group: true
+  isolate:
+    compaction: true
+    toolResultPruner: true
+  config:
+    - id: compaction-basic
+      name: '@deepseek-ai/dsh-compaction-basic'
+
+    - id: command-compact
+      name: '@deepseek-ai/dsh-command-compact'
+
+    - id: tool-result-pruner
+      name: '@deepseek-ai/dsh-compaction-tool-result-pruner'
+      config:
+        thresholdChars: 8192
+        headChars: 4096
+        tailChars: 1024
+
+# ── delegation and workflows ────────────────────────────────────────────────
+
+# The `subagents` registry and its spawn/fork backends live in the HOST
+# composition: the registry is a process singleton whose cross-session queries
+# the api-proxy serves to the browser, and a provider name may only be
+# registered once. This preset contributes the delegation TOOLS, which resolve
+# that host registry.
+#
+# `workflows` is different — nothing outside an agent reads it — so every row
+# that reaches it shares one entry-local realm here, and a consumer left
+# outside would resolve a host registry this preset does not populate.
+#
+# `tool-subagent-report` is host-plane for the same reason as the registry,
+# not because a preset may not want it: it registers a CONTINUABLE SETUP on
+# that singleton rather than a tool this agent calls, and the setup list is
+# not scope-aware — one copy per mounted preset means every child gets
+# `report` registered once per live session, which throws on the second.
+- id: delegation
+  name: cordis:group
+  group: true
+  isolate:
+    workflowEngine: true
+  config:
+    - id: tool-subagent-control
+      name: '@deepseek-ai/dsh-tool-subagent-control'
+
+    # 0.2.1 provides a separate list-agents subpath; 0.2.2 registers the
+    # same tool in tool-subagent-control and no longer exports that subpath.
+    - id: tool-subagent-list-agents-compat
+      name: academic-harness/subagent-list-compat
+
+    # Every delegation is a managed activation: the tool returns
+    # `{ kind: 'activation', subagentId }` immediately and the runtime delivers
+    # the child's final answer as a completion notice. `send_message` and
+    # `interrupt_agent` come from `tool-subagent-control` above. DSH 0.2.1
+    # removed `backgroundMode`; local spawn/fork children remain continuable.
+    - id: tool-subagent
+      name: '@deepseek-ai/dsh-tool-subagent'
+      config:
+        provider: spawn
+        toolName: subagent
+
+    # Fork omits model selection so provider/model stay equal to the parent and
+    # the inherited history remains eligible for KV Cache reuse. Fork inherits
+    # the parent's preset; issue #2124 tracks cache-preserving continuable fork.
+    - id: tool-subagent-fork
+      name: '@deepseek-ai/dsh-tool-subagent'
+      config:
+        provider: fork
+        toolName: subagent_fork
+
+    # Two optional spawn-backed delegation tools. Each can register a custom
+    # OpenAI/Anthropic-compatible route from its three Settings fields
+    # (endpoint URL, model, API key); the URL selects Anthropic Messages when
+    # it contains "anthropic" and OpenAI Chat Completions otherwise. The
+    # plugin writes that route onto the llm-pi-ai entry and stores the key in
+    # the credential service. With no complete custom route the tool inherits
+    # the session model.
+    # `subagent_pro` is for difficulty-bound work, `subagent_vision` for an
+    # optional separate image-capable route. The top-level agent may use the
+    # host's `read_image` directly when its session model supports images;
+    # the host checks the actual route's declared image input. The plugin
+    # records each Pro/Vision delegation decision and outcome in the session
+    # notebook. Mounted programmatically rather than as static rows so the
+    # custom route can come from Settings -> Academic Harness API keys as well
+    # as SUBAGENT_PRO_* / SUBAGENT_VISION_* env vars; see subagent-models.js
+    # for the resolution order and the restart caveat this shares with the MCP
+    # connectors below, and for the `inject` declaration a
+    # `ctx.plugin()`-mounted child like this one needs.
+    #
+    # `agentOptions` is forwarded by `@deepseek-ai/dsh-tool-subagent`. The
+    # programmatic mount resolves the host's own copy of that package at
+    # runtime (source tree first, then DSH's healed packages beside profiles),
+    # so its `startActivation` call always matches the running subagent
+    # service; DSH 0.2.2-rc.2 flattened that payload. Spawn-in-process on
+    # 0.2.1 advertises `agentOptions`; a mismatched older spawn provider
+    # throws at mount and drops `subagent_pro`/`subagent_vision` as
+    # "unknown tool".
+    - id: subagent-models
+      name: academic-harness/subagent-models
+
+    # Production dsh does not install these optional providers. Enabling the
+    # matching Bundle adds its delegation tool as a Host global for every
+    # preset; these disabled rows are only for composing one explicitly (or
+    # shadowing that global tool with preset-specific config). Host
+    # availability alone grants no tool.
+    - id: tool-subagent-codex
+      name: '@deepseek-ai/dsh-tool-subagent'
+      disabled: true
+      config:
+        provider: codex
+        toolName: subagent_codex
+        maxDepth: provider-managed
+
+    - id: tool-subagent-claude-code
+      name: '@deepseek-ai/dsh-tool-subagent'
+      disabled: true
+      config:
+        provider: claude-code
+        toolName: subagent_claude_code
+        maxDepth: provider-managed
+
+    - id: workflow-ptc
+      name: '@deepseek-ai/dsh-workflow-ptc'
+      config:
+        provider: spawn
+
+    - id: tool-workflow
+      name: '@deepseek-ai/dsh-tool-workflow'
+
+    - id: tool-ralph
+      name: '@deepseek-ai/dsh-tool-ralph'
+      config:
+        subagentProvider: spawn
+        maxRounds: 64
+
+# ── remaining model-facing rows ─────────────────────────────────────────────
+
+- id: tool-ask-user
+  name: '@deepseek-ai/dsh-tool-ask-user'
+
+- id: tool-todo
+  name: '@deepseek-ai/dsh-tool-todo'
+  config:
+    allowParallelInProgress: true
+
+# The `web` service and its search provider stay in the host composition; only
+# the model-facing tool is per-session.
+- id: tool-web
+  name: '@deepseek-ai/dsh-tool-web'
+  config:
+    fetch: true
+    searchTimeoutMs: 60000
+
+# ── literature & academic search MCP connectors ─────────────────────────────
+
+# One JS module mounts up to two `mcp-client` instances programmatically
+# (rather than static rows) so each server's key can come from the credentials
+# store (Settings -> Academic Harness API keys) as well as its env var — see
+# mcp-connectors.js for the resolution order and per-server detail. Each
+# connector mounts only when its key is set; tools surface as
+# `mcp__firecrawl__*`, `mcp__scite__*`. No
+# realm needed: like tool-web, it registers only into the shared `tools`
+# registry and provides no service of its own.
+- id: mcp-connectors
+  name: academic-harness/mcp-connectors
+
+# zvec-grep local workspace search (loopback Streamable HTTP MCP via
+# `zg server on` while this fiber is loaded, `zg server off` on unload).
+# Surfaces as `mcp__zvec_grep__zvec_grep_search` when the `zg` CLI is
+# installed and the daemon is ready; skips the mount (and logs) when it
+# is not, so a missing CLI/daemon does not take this preset down. Exact
+# lookup stays on tool-fs-search `grep`/`glob` above. Indexing is opt-in
+# (Settings default no); see zvec-index.js. No realm. HTTP rather than
+# `zg server --stdio` — see zvec-grep.js.
+- id: zvec-grep
+  name: academic-harness/zvec-grep
+
+# Native index/status/cancel tool (progress + Cancel in Settings and the
+# session header). Separate row so it can inject `tools`; the MCP row above
+# must not. See zvec-index.js. Indexing is opt-in (Settings default no).
+- id: zvec-index
+  name: academic-harness/zvec-index
+
+# Parallel Search REST (x-api-key auth) — per-call `mode` (turbo/fast/basic/
+# advanced). The MCP `web_search` tool cannot set mode; this is how the
+# agent picks one. See parallel-search.js. Kept in this preset alongside
+# the connectors above rather than global, same reason as consensus-search.
+- id: parallel-search
+  name: academic-harness/parallel-search
+
+# Parallel Extract REST (x-api-key) — native URL extraction (excerpts or full
+# content) with the same PARALLEL_API_KEY as parallel_search. Use after search
+# has produced URLs; see parallel-extract.js.
+- id: parallel-extract
+  name: academic-harness/parallel-extract
+
+# Brave web search (independent index, x-subscription-token) — general web
+# fallback, not a literature index. Requires BRAVE_API_KEY; see brave-search.js.
+- id: brave-search
+  name: academic-harness/brave-search
+
+# Additional general web indexes and readers (Phase 3): Tavily, Exa,
+# Perplexity Search, and Jina Reader/Search. Native REST tools, not literature
+# indexes; each requires its own key except keyless Jina Reader. See
+# tavily-search.js, exa-search.js, perplexity-search.js, jina-reader.js.
+- id: tavily-search
+  name: academic-harness/tavily-search
+- id: exa-search
+  name: academic-harness/exa-search
+- id: perplexity-search
+  name: academic-harness/perplexity-search
+- id: jina-reader
+  name: academic-harness/jina-reader
+
+# Free academic backbones: OpenAlex, Semantic Scholar, Crossref, arXiv, and
+# PubMed/Europe PMC. All are native REST tools, keyless by default; the keys
+# in Settings only raise rate/budget limits. paper-resolve converts between
+# DOI/PMID/arXiv/OpenAlex/S2 identifiers so the same paper is not treated as
+# two. Shared normalization and rate limiting live in search-normalize.js and
+# search-http.js. Kept in this preset, like consensus-search above.
+- id: paper-resolve
+  name: academic-harness/paper-resolve
+- id: integrity-check
+  name: academic-harness/integrity-check
+- id: openalex-search
+  name: academic-harness/openalex-search
+- id: openalex-cite
+  name: academic-harness/openalex-cite
+- id: semantic-scholar-search
+  name: academic-harness/semantic-scholar-search
+- id: crossref-lookup
+  name: academic-harness/crossref-lookup
+- id: arxiv-search
+  name: academic-harness/arxiv-search
+- id: pubmed-search
+  name: academic-harness/pubmed-search
+- id: journal-search
+  name: academic-harness/journal-search
+- id: paper-get
+  name: academic-harness/paper-get
+- id: paper-context
+  name: academic-harness/paper-context
+- id: academic-databases
+  name: academic-harness/academic-databases
+
+# Gated Phase 4 sources: CORE repository full texts (key optional), Elicit
+# paper/trial search (Pro+ key), and FutureHouse Crow/Falcon/Owl agents (async
+# start/status/cancel). Native REST tools; see core-search.js,
+# elicit-search.js, futurehouse-agent.js.
+- id: core-search
+  name: academic-harness/core-search
+- id: elicit-search
+  name: academic-harness/elicit-search
+- id: futurehouse-agent
+  name: academic-harness/futurehouse-agent
+
+# Multi-source discovery router: OpenAlex + Semantic Scholar by default,
+# PubMed/arXiv/INSPIRE/bioRxiv by domain, ADS when keyed, Crossref opt-in.
+# Deduplicates and rank-fuses with RRF. See literature-search.js.
+- id: literature-search
+  name: academic-harness/literature-search
+
+# Source-specific domain lookups: bioRxiv/medRxiv browse, ACL Anthology
+# records, INSPIRE citations/references/texkeys, ADS export and metrics,
+# Scopus/WoS cited-by, and Wikidata identity resolution. Keyed sources
+# return key_missing without a request; router adapters add no tool schema.
+# See domain-search.js.
+- id: domain-search
+  name: academic-harness/domain-search
+
+# Consensus is a plain REST tool (x-api-key auth), not an MCP client — see
+# consensus-search.js. Kept in this preset alongside the connectors above
+# rather than global, since it's specifically an academic-search capability.
+- id: consensus-search
+  name: academic-harness/consensus-search
+
+# Resolves a DOI to an open-access PDF via the Unpaywall API and saves it to
+# the workspace (or downloads a direct URL) — see paper-download.js. Kept
+# here rather than global for the same reason as consensus-search above.
+- id: paper-download
+  name: academic-harness/paper-download
+
+# Map-first paper reading through TextFold (pin 0.10.31, optional Python
+# runtime under $DSH_HOME/textfold). Local first-sentence levels by default;
+# model-written levels require generate:true and TextFold's own provider.
+# PaperMemory remains the source for quotes and citation keys. See
+# paper-fold.js.
+- id: paper-fold
+  name: academic-harness/paper-fold
+
+# Citation formatting/export/validation.
+# Native, preset-only, local tool: citation-js + CSL styles under styles/.
+# See citation.js and citation-format.js.
+- id: citation
+  name: academic-harness/citation
+
+# Manuscript ↔ bibliography consistency (missing/unused/duplicate keys,
+# undefined \ref targets). Local and deterministic; see manuscript-citations.js.
+- id: manuscript-citations
+  name: academic-harness/manuscript-citations
+
+# Systematic/scoping-review ledger plus risk-of-bias appraisal: protocol, records, single or dual
+# two-stage screening, evidence, RoB 2/ROBINS-I/QUADAS-2/NOS appraisal,
+# conflicts and reconcile, kappa agreement, PRISMA counts, and
+# rob-table/rob-summary/rob-figure exports. Append-only logs under
+# <cwd>/.dsh/review/<slug>/; see review.js, review-store.js, appraisal.js, and
+# agreement.js. The tool never makes inclusion, appraisal, or consensus
+# decisions.
+- id: review
+  name: academic-harness/review
+
+# Pairwise meta-analysis ledger:
+# effect-size conversion, fixed/random pooling with DL/PM/REML tau^2, normal or
+# Hartung-Knapp CIs, heterogeneity, subgroup and meta-regression analyses,
+# leave-one-out, Egger/Begg/funnel publication-bias diagnostics, univariate
+# diagnostic-accuracy pooling, and forest/funnel/SROC SVG plots. State lives
+# under <cwd>/.dsh/meta/<slug>/; the statistics live in meta_helper.py. The tool
+# reports computed estimates and warnings, never a certainty or clinical
+# recommendation.
+- id: meta-analysis
+  name: academic-harness/meta-analysis
+
+# Reproducible analysis runs:
+# a frozen analysis plan plus immutable run manifests — argv execution (no
+# shell), environment allowlist with secret redaction, hashed inputs/outputs,
+# hard timeouts, notebook execution, run diffs, and lab-notebook entries.
+# State lives under <cwd>/.dsh/analysis/<slug>/. The tool records what ran and
+# never interprets the science. See analysis-run.js and analysis-store.js.
+- id: analysis-run
+  name: academic-harness/analysis-run
+
+# Experiment registry (Phase 2B / Phase 4): sweeps, simulations, pilots, and
+# model comparisons as append-only runs with params, metrics, hashed artifacts,
+# seeds, and links. A staged contract adds a benchmark spec, baseline/variant
+# roles with reproduced|reported references, subset|slice|full stages, a
+# sampling rule, and a protocol digest that reports spec_drift; verdicts are
+# advisory good|engineer|bad (force-bad when the engineering budget is
+# exhausted), and best is by a named metric or the multi-metric Pareto front.
+# State lives under <cwd>/.dsh/experiments/<slug>/. See experiment-log.js and
+# experiment-store.js.
+- id: experiment-log
+  name: academic-harness/experiment-log
+
+# Ablation/attribution ledger (Phase 5): a frozen component x arm x dataset x
+# metric plan, records that link cells to existing experiment_log/analysis_run
+# runs (it never executes), paired removal deltas with ties and missing cells,
+# an advisory attribution reading, human good|refine|unattributed verdicts, and
+# append-only pruning. State lives under <cwd>/.dsh/ablation/<slug>/. The
+# reading is advisory; only ah_check blocks. See ablation.js and
+# ablation-store.js.
+- id: ablation
+  name: academic-harness/ablation
+
+# Dataset downloads with provenance (Phase 2C): resolve a DOI through DataCite
+# and the Zenodo/Figshare file APIs, download into data/<slug>/ with size
+# caps, verify checksums, and keep a manifest under <cwd>/.dsh/data/<slug>/.
+# dataset_search stays search-only. See dataset-get.js.
+- id: dataset-get
+  name: academic-harness/dataset-get
+
+# Local data profiling (Phase 2C): schema, missingness, duplicates, ID/date
+# heuristics, target balance, split overlap, and leakage risks for one
+# workspace file through python-helpers/data_profile.py. Reports not_checked
+# items instead of implying safety. See data-profile.js.
+- id: data-profile
+  name: academic-harness/data-profile
+
+# Scientific databases (Phase 6): one multiplexed, read-only, keyless tool over
+# adapters in science-sources/ (UniProt, RCSB PDB, AlphaFold DB, PubChem).
+# Records carry source, id, url, retrieved_at, license, and endpoint; failures
+# are named states. `fetch` saves a source file into the workspace with a hashed
+# entry under <cwd>/.dsh/science/. See science-source.js.
+- id: science-source
+  name: academic-harness/science-source
+
+# Local science toolkits (Phase 6): RDKit chemistry, pure-Python sequences, and
+# gemmi structures. Local only; every run appends input hashes and tool versions
+# to <cwd>/.dsh/science/runs.jsonl. See chem-toolkit.js, seq-toolkit.js,
+# structure-toolkit.js, and science-toolkit-kit.js.
+- id: chem-toolkit
+  name: academic-harness/chem-toolkit
+
+- id: seq-toolkit
+  name: academic-harness/seq-toolkit
+
+- id: structure-toolkit
+  name: academic-harness/structure-toolkit
+
+# Saved literature searches (Phase 7A): add/list/remove/run/digest/status over the existing search sources, deduplicated against an append-only ledger under <cwd>/.dsh/watch/. Scheduling is manual; nothing is emailed or ingested. See literature-watch.js.
+- id: literature-watch
+  name: academic-harness/literature-watch
+
+# Data/code/accession links and availability statements from paper text, with optional link checks to public hosts (Phase 7E). Accessions are never reported verified. See paper-artifacts.js.
+- id: paper-artifacts
+  name: academic-harness/paper-artifacts
+
+# Related-paper recommendations from Semantic Scholar and OpenAlex with measured reasons, library duplicates removed (Phase 7F). See paper-recommend.js.
+- id: paper-recommend
+  name: academic-harness/paper-recommend
+
+# Citation graphs frozen under <cwd>/.dsh/network/<slug>/ with metrics, Louvain clusters, paths, and GraphML/CSV/Mermaid export (Phase 7B). See citation-network.js.
+- id: citation-network
+  name: academic-harness/citation-network
+
+# Reproducibility packages (Phase 2D): a frozen inventory plus a built
+# package (manifest with SHA-256, environment snapshot, generated Dockerfile,
+# README, CITATION.cff, codemeta.json, RO-Crate, checksums) under a workspace
+# output dir; verify re-hashes; Zenodo deposit is confirm-gated and draft-only.
+# See repro-package.js and repro-package-store.js.
+- id: repro-package
+  name: academic-harness/repro-package
+
+# Cross-ledger provenance audit:
+# a strictly READ-ONLY index that joins the ledgers that already exist — review
+# records, screening, evidence, extraction, appraisal and GRADE events,
+# reporting_check verdicts, stored deep reviews, notebook entries, analysis and
+# experiment runs, dataset downloads, meta-analysis studies, and Academic
+# Harness claim sidecars — by the ids and hashes they already store. It reports
+# which claims have no verified support (no_link / not_checked / unverified /
+# stale / not_found), what depends on a paper, quote, file, or run, and exports
+# Markdown, CSV, JSON, GraphML, and Mermaid views. Support is never inferred
+# from co-occurrence or a model judgement, and an unreadable ledger is reported
+# as unknown with its reason. It writes only its own cache under
+# .dsh/provenance/<slug>/; see provenance-audit.js and provenance-store.js.
+- id: provenance-audit
+  name: academic-harness/provenance-audit
+
+# Submission planning and bundling:
+# plan/build/status/export a journal-ready bundle under .dsh/submission/<slug>/.
+# Checks limits, figures, citations, reporting evidence, numbers, statements, and
+# reviewers; unknown requirements stay manual_check. The zip is reproducible from
+# a SHA-256 manifest. It never submits, emails, or logs into a portal.
+- id: submission-pack
+  name: academic-harness/submission-pack
+
+# Revision diffs (Phase 4C): latexdiff or Markdown diff, changed-block extraction,
+# DOCX tracked changes/comments with Zotero fields preserved, and a response-letter
+# skeleton that only cites recorded hunks. The source files are never edited.
+- id: manuscript-diff
+  name: academic-harness/manuscript-diff
+
+# Reviewer-response coverage ledger (Phase 7): actions import, plan, link,
+# respond, decline, coverage, draft, export, status. Import a stored
+# deep_review round, ah_review items, or supplied openreview reviews; plan
+# supplementary task stubs capped by REBUTTAL_MAX_TASKS (the paper's Rebuttal
+# Planner instantiates N_t — this tool never does); link stubs to existing
+# experiment_log/analysis_run runs pinned by SHA-256 digest; record
+# author-written responses and declines the author already made; read
+# answered/answered_asserted/declined/unaddressed coverage and which points a
+# newer deep_review round closed (identical bytes ⇒ variance_only, never
+# closed); draft a letter from recorded hunks only; export markdown/json/csv.
+# It never fetches, never executes, never edits a manuscript, and never writes
+# reviewer prose. State lives under <cwd>/.dsh/rebuttal/<slug>/. The coverage
+# reading is advisory; only ah_check blocks. See rebuttal.js and rebuttal-store.js.
+- id: rebuttal
+  name: academic-harness/rebuttal
+
+# Numerical-reporting audit (Phase 4E): recomputed p-values where possible, CI and
+# estimate consistency, total N/subgroup/flow counts, percentages, table/text
+# candidates, and explicit not_checked items. Candidates only, never a validity
+# verdict. Extends python-helpers/stat_audit.py.
+- id: numbers-audit
+  name: academic-harness/numbers-audit
+
+# Posters and slides (Phase 4D): fill known sections/figures into tikzposter,
+# beamerposter, baposter, Beamer, or python-pptx templates; compile and preview;
+# `qa` returns a checklist for subagent_vision and never claims a visual pass.
+- id: presentation-build
+  name: academic-harness/presentation-build
+
+# Authorship ledger (Phase 4F): authors, CRediT roles, and ICMJE criteria in an
+# append-only record under .dsh/authorship/<slug>/; statement and CSV/JSON/Markdown
+# exports. Order, qualification, affiliations, and conflicts remain human-owned.
+- id: authorship
+  name: academic-harness/authorship
+
+# Reporting-guideline checker:
+# list/suggest/start/items/candidates/judge/status/export against versioned
+# CONSORT, STROBE, PRISMA, ARRIVE, TRIPOD+AI, CARE, and STARD checklists. The
+# ledger is append-only under <cwd>/.dsh/reporting/<slug>/; every reported quote
+# is re-found in the manuscript, and exports report verified evidence rather
+# than a compliance verdict. See reporting-check.js and reporting-store.js.
+- id: reporting-check
+  name: academic-harness/reporting-check
+
+# Full-manuscript deep review with the vendored Open Deep Review engine
+# (vendor/open-deepreview): estimate, multi-pass segmented critique with
+# page/quote-anchored comments, scholar-peer summary with author questions,
+# and reference verification. Every pass is kept as a numbered round under
+# rounds/ and `compare` diffs two rounds. Artifacts live under
+# <cwd>/.dsh/deep-review/<key>/. `review` and `verify_citations` call the
+# session's own model through the host llm service over a loopback
+# OpenAI-compatible bridge — no separate endpoint or key — and are
+# token-heavy. `validity` runs four advisory evaluation-validity checks
+# (attribution, evaluator drift, benchmark coverage, unmeasured trade-off)
+# over a stored round plus a deterministic manuscript inventory, writing
+# extra_checks.json; it makes at most one critic call and none with
+# `critic: false`. `score` makes one bounded call for advisory
+# soundness/originality/clarity/significance readings on a declared scale,
+# each citing stored comment ids, writing score.json; rounds record
+# held_out vs in_distribution (pass rubric_round when a prior rubric fed a
+# revision). Settings: default rubric, max rounds, per-review cost ceiling.
+# estimate, pdf2md, status, show, compare, and list make no model call.
+# Advisory only: nothing here gates, and only ah_check blocks.
+# Node-only, no Bun.
+# See deep-review.js and vendor/open-deepreview/SOURCE.txt.
+- id: deep-review
+  name: academic-harness/deep-review
+
+# Co-Scientist hypothesis tournament: generate, review, rank, and evolve candidate hypotheses with state
+# that outlives the context window. Append-only event logs under
+# <cwd>/.dsh/coscientist/<slug>/, shared by the delegation tree the way the
+# review ledger is. `coscientist` owns the ledger and the scheduling policy
+# (`next` samples the next task, `status` says when to stop); `coscientist_rank`
+# owns matchups and Glicko-2 rating updates with position-bias control. Phase 6
+# adds append-only limitation records with verified source quotes and coverage,
+# `trace` of failed/pruned experiment_log runs (also carried by evolution
+# dispatches), and an evidence-bound `select` that freezes a champion. Neither
+# calls a model: the session does the reasoning, usually through `subagent`.
+# Rating math and thresholds live in coscientist-models.js, storage in
+# coscientist-store.js, trace joins in coscientist-trace.js, all dependency-free. No realm.
+- id: coscientist
+  name: academic-harness/coscientist
+- id: coscientist-rank
+  name: academic-harness/coscientist-rank
+
+# Citation integrity, claim support, and grounded novelty for the tournament. This is the only tournament module that reaches the network
+# — Crossref for existence and reference retrieval, reusing integrity-check for
+# retraction status — and it shares one process-wide Crossref limiter with
+# crossref_lookup. It never calls a model: `claims` records judgements a subagent
+# already made, and `novelty` stores a documented lexical prior-art reading pinned
+# to verbatim quotes from the retrieved set.
+- id: coscientist-verify
+  name: academic-harness/coscientist-verify
+
+# Clinical and regulatory evidence (Phase 4): ClinicalTrials.gov v2 trials and
+# posted results, plus openFDA adverse events/recalls/510(k)/labels/food events.
+# Free and keyless; OPENFDA_API_KEY only raises limits. Neither is a literature
+# search. See clinicaltrials.js and openfda.js.
+- id: clinicaltrials
+  name: academic-harness/clinicaltrials
+- id: openfda
+  name: academic-harness/openfda
+
+# Datasets and venue policy (Phase 5): DataCite dataset discovery with Zenodo/
+# Figshare file listings, and DOAJ + Sherpa Romeo OA policy. Both free; Sherpa
+# needs SHERPA_ROMERO_API_KEY for the policy half. See dataset-search.js and
+# journal-policy.js.
+- id: dataset-search
+  name: academic-harness/dataset-search
+- id: journal-policy
+  name: academic-harness/journal-policy
+
+# Funder identity (OpenAlex) + OA policy (Sherpa Juliet; SHERPA_ROMERO_API_KEY
+# for the policy half). See funder-policy.js.
+- id: funder-policy
+  name: academic-harness/funder-policy
+
+# Reference library (PaperMemory) as a native tool, so it knows each session's workspace.
+# The MCP copy (papermemory_library) is hidden by papermemory.js. See reference-library.js.
+- id: reference-library
+  name: academic-harness/reference-library
+
+# Study planning: power, sample size, effect sizes, multiplicity correction, and
+# simulation for designing a study before data exist. Local (numpy + scipy via
+# python-helpers/power_helper.py), no key, no network. Requires effect_source for
+# any assumed effect size and refuses post-hoc power. See power-analysis.js.
+- id: power-analysis
+  name: academic-harness/power-analysis
+
+# Study conduct, ethics, and grants.
+# preregister freezes a hashed study plan before data collection and versions
+# every later edit; causal_dag stores a user-specified DAG and derives
+# d-separation, adjustment sets, instruments, and E-values; design generates
+# seeded randomization schedules and DOE matrices with realized-balance
+# diagnostics; ethics_protocol drafts a protocol/consent and a concept
+# checklist; deidentify scans and redacts PHI/PII locally with a masked report;
+# dmp drafts funder-shaped data-management plans; grant_budget builds a
+# multi-year budget with explicit rates and arithmetic checks. State lives under
+# .dsh/{preregister,causal,design,ethics,deidentify,dmp,budget}/<slug>/.
+# None submits, invents an approval/rate/repository, or issues a compliance or
+# causality verdict.
+# deep_research runs a bounded, self-driving investigation: it frames the
+# questions, sweeps the literature through the existing router, counts independent
+# voices rather than copies, drafts, attacks the draft with four critics, repairs it
+# with capped hunks only, and refuses to ship a report that cites a source it cannot
+# support. The run ledger under .dsh/deep-research/<run>/ freezes the query verbatim
+# and resumes at the step that died. Anything it could not verify is reported as
+# not_checked rather than passed silently; it never submits anything and never
+# decides what the answer should be.
+- id: deep-research
+  name: academic-harness/deep-research
+- id: preregister
+  name: academic-harness/preregister
+- id: causal-dag
+  name: academic-harness/causal-dag
+- id: design
+  name: academic-harness/design
+- id: ethics-protocol
+  name: academic-harness/ethics-protocol
+- id: deidentify
+  name: academic-harness/deidentify
+- id: dmp
+  name: academic-harness/dmp
+- id: grant-budget
+  name: academic-harness/grant-budget
+
+# Identity and peer review. See author-lookup.js and openreview.js.
+- id: author-lookup
+  name: academic-harness/author-lookup
+- id: openreview
+  name: academic-harness/openreview
+
+# Local audits. pdf_references additionally requires GROBID_BASE_URL. See
+# stat-audit.js, figure-audit.js, pdf-references.js, and repo-audit.js.
+- id: pdf-references
+  name: academic-harness/pdf-references
+- id: stat-audit
+  name: academic-harness/stat-audit
+- id: figure-audit
+  name: academic-harness/figure-audit
+- id: repo-audit
+  name: academic-harness/repo-audit
+
+# Prior-art triage (Phase 5A): assembles a report for one claim from searches the
+# agent already ran. It does not search and never says a claim is novel. See
+# prior-art.js. The figure-to-result handoff is `figure_audit action=handoff`
+# (figure-handoff.js).
+- id: prior-art
+  name: academic-harness/prior-art
+
+# Funding and patent discovery. patent_search additionally requires
+# PATENTSVIEW_API_KEY on every call and returns a clear error without it. See
+# grant-search.js and patent-search.js.
+- id: grant-search
+  name: academic-harness/grant-search
+- id: patent-search
+  name: academic-harness/patent-search
+
+# Paper2MCP stdio servers registered in this workspace
+# (`<cwd>/.dsh/paper-mcps.json`). Native `paper_mcp` (status/register/
+# unregister) plus best-effort `mcp__<serverName>__*` mounts on session
+# create. Standing process-lifetime, same restart caveat as the connectors
+# above. See paper-mcp.js. No realm.
+- id: paper-mcp
+  name: academic-harness/paper-mcp
+
+# PaperMemory local academic memory (stdio MCP via `papermemory mcp`).
+# Surfaces as `mcp__papermemory__*` (search, ingest, cite, cite-check, recap,
+# remember, claim, lesson, get) when the CLI is on PATH or the plugin-managed
+# venv is ready; skips the mount (and logs) when it is not, so a missing
+# install does not take this preset down. Store is the default PaperMemory
+# SQLite DB. Auto-installs on first Academic Harness start; see papermemory.js.
+# No realm. paper_download also auto-ingests the saved PDF into this store.
+- id: papermemory
+  name: academic-harness/papermemory
+
+# PaperMemory dreaming: when an agent is disposed, consolidate the free-text notes
+# (dedupe, re-check against source files, recover quarantined claims) at most once
+# an hour. PAPERMEMORY_DREAM=apply (default) | report | off. See papermemory-dream.js.
+- id: papermemory-dream
+  name: academic-harness/papermemory-dream
+
+# paper_backfill: gives text-less PaperMemory papers (cite_state chunkless) their
+# open-access full text so they can be searched, quoted and cited. Dry run by
+# default. See papermemory-backfill.js.
+- id: papermemory-backfill
+  name: academic-harness/papermemory-backfill
+
+# Academic Harness (LaTeX writing oracle). Native `ah_*` tools plus
+# guard / post-edit check / gate / paper-state interceptors. Engine is
+# vendored in this plugin (`vendor/academic-harness`); Pi is not required.
+# Inactive outside a tree with ah.yaml. The hooks row keeps inject: [] and
+# neither row awaits venv setup in apply(): preparation runs in the
+# background, while ah_* calls and hooks await it lazily. Awaiting it here
+# stalls plugin-manager installs for the full uv/pip timeout. See
+# academic-harness.js / academic-harness-hooks.js.
+- id: academic-harness
+  name: academic-harness/ah
+
+- id: academic-harness-hooks
+  name: academic-harness/ah-hooks
+
+# Local recursive self-improvement (RSI). Captures tool outcomes and user
+# corrections on this machine, diagnoses recurring research failures, admits
+# short lessons automatically, and injects them into later turns. The store is
+# $DSH_HOME/ah-rsi (or AH_RSI_STORE); it never writes to the plugin, the ah
+# engine, the project, or the audit/evaluation code. `ah_rsi` is the visible
+# control surface; `academic-harness-rsi` is the offline CLI. Set AH_RSI=off to
+# disable capture/injection, or AH_RSI=observe to capture without injecting.
+# See rsi.js, rsi-hooks.js, and docs/RSI.md.
+- id: academic-harness-rsi
+  name: academic-harness/rsi
+
+- id: academic-harness-rsi-hooks
+  name: academic-harness/rsi-hooks

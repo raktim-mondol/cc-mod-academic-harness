@@ -91,7 +91,7 @@ describe('the engine build in a process of its own', () => {
     assert.equal(await until(() => !existsSync(e.marker)), true)
   })
   test('the real worker says nothing and exits 1 when nothing may be built', () => {
-    const r = spawnSync(process.execPath, [src('bin/ah-engine-install.mjs')], { encoding: 'utf8', timeout: 20_000, env: { ...process.env, AH_UPSTREAM: join(root, 'a-checkout') } })
+    const r = spawnSync(process.execPath, [src('bin/ah-engine-install.mjs')], { encoding: 'utf8', timeout: 20_000, env: { ...process.env, AH_CORE: join(root, 'a-checkout') } })
     assert.equal(r.status, 1)
     assert.equal(r.stdout + r.stderr, '')
   })
