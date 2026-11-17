@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.1 (2026-11-18)
+
+- README: an optional zvec-grep section says how to add semantic workspace search to Claude Code (`npm install -g @zvec/zvec-grep --allow-scripts=@zvec/zvec-grep`, then `zg install --target claude --yes --mcp-toolset full`), what it adds (`zvec_grep_search`, `zvec_grep_rg` and the index tools), and that the plugin still bundles none of it.
+- Research mode now routes workspace search to the zvec-grep tools when they are installed: semantic and cross-file discovery to `zvec_grep_search`, exact words, regexes, filenames and exhaustive lists to `zvec_grep_rg` (or `Grep`/`Glob` when it is not), and never creates, rebuilds or drops an index without the person asking. The stale note that named `zvec_index` as not provided is gone.
+- The fit review points at zvec-grep's own Claude Code integration instead of leaving the tool's absence unexplained.
+
 ## 0.6.0 (2026-11-17)
 
 - **The repository stands alone.** The source the plugin runs (the tool modules, the writing engine, PaperMemory, Open Deep Review, the prompt and all 791 skills: 3,276 files, 44 MB) is committed as `core/`, byte for byte what Academic Harness 0.54.1 held, so nothing is downloaded from another repository and nothing follows Academic Harness any more. The lock file, the scripts `sync-upstream`, `update-upstream`, `update-lib`, `upstream-watch` (and its weekly workflow) and `check-upstream-clean`, `AH_SOURCE`, `setup --github` and `/academic doctor --online` are gone. `scripts/setup.mjs` installs the dependencies and builds the engine in place; an installed copy copies `core/` to `<home>/core/<version>-<fingerprint>` on first start (a plugin update that does not change the core keeps its installed dependencies) and installs there. `AH_UPSTREAM` is now `AH_CORE`. The folder earlier releases fetched into, `<home>/upstream/`, is removed a week after its last use.

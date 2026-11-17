@@ -63,7 +63,7 @@ export const SECTIONS = {
   'Academic Harness (LaTeX papers, grants, theses)': { where: 'guide', slug: 'latex-projects', hint: 'a workspace with ah.yaml, or starting a paper, grant or thesis in LaTeX' },
   'LaTeX': { where: 'guide', slug: 'latex', hint: 'compiling or fixing LaTeX' },
   'Remote compute': { where: 'guide', slug: 'remote-compute', hint: 'paid GPU or cloud compute (always ask first)' },
-  'Workspace search': { where: 'drop', why: 'it is about zvec_index, which is not ported yet (P6)' },
+  'Workspace search': { where: 'drop', why: 'the zvec tools come from the global zvec-grep integration; research-mode.md carries the routing' },
   'Workflow templates': { where: 'drop', why: 'research_template is not served; skills and the task commands do that job' },
   'Files': { where: 'drop', why: 'covered by research-mode.md' },
   'Safety': { where: 'own' },

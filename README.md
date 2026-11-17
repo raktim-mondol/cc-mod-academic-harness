@@ -4,7 +4,7 @@ A Claude Code plugin for academic research and writing. It adds literature searc
 
 It is a Claude Code *mod*: next to its MCP tools, skills and agents it runs code inside Claude Code, which is what gives it slash commands, a status line, a pane and the guard ([what that means](docs/maintain/next-steps.md#plugin-or-mod-both-and-it-works)).
 
-**Version 0.6.0.** Linux only. MIT licence.
+**Version 0.6.1.** Linux only. MIT licence.
 
 ## How it fits together
 
@@ -61,6 +61,17 @@ research mode on · 1 job running · gate FAIL (5 blocking)
 | **Interface** | A status line (`research mode on · 1 job running · gate FAIL (5 blocking)`) and a pane (project state, jobs, notebook, library) |
 | **Guard** | In a folder with an `ah.yaml`: protected files, unit anchors and author-only acts enforced on every write and shell call |
 | **Safety** | Paid compute always asks. Keys are never printed. Tools stay inside the project folder |
+
+## Optional: semantic workspace search
+
+The plugin does not bundle or serve zvec-grep. If you want meaning-based search over the workspace, with exact and regex search through the same interface, install it and run its own Claude Code integration:
+
+```
+npm install -g @zvec/zvec-grep --allow-scripts=@zvec/zvec-grep
+zg install --target claude --yes --mcp-toolset full
+```
+
+That adds the `mcp__zvec_grep__*` tools to Claude Code: `zvec_grep_search` for semantic or cross-file discovery, `zvec_grep_rg` for exact and regex search, and the index and status tools. It also pre-approves them and writes retrieval guidance to `~/.claude/CLAUDE.md`. Indexing is per workspace and opt-in: `zvec_grep_index` creates `<project>/.zvec-grep/`, the default embedding runs locally, and the shared daemon listens on loopback only. Research mode uses these tools when they are present and falls back to `Grep` and `Glob` otherwise; [what was left out and why](docs/design/fit-review.md) explains why the plugin serves none of them itself.
 
 ## Documentation
 
