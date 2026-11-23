@@ -13,9 +13,9 @@ In Claude Code a **plugin** is the package: a folder with `.claude-plugin/plugin
 | Skills and agents | Instructions and specialists | `skills/`, `agents/` |
 | The manifest | Settings, the servers, the version | `.claude-plugin/plugin.json` |
 
-So there is nothing to choose between: loading the plugin loads the mod. It has been seen working, in Claude Code 2.1.330 (0.7.0; earlier releases on 2.1.325), from `--plugin-dir` and from a marketplace install in a scratch configuration (`tests/live/install.mjs`): the commands answer, the status line and the pane draw (also in a real terminal under tmux), the guard refuses protected writes, and the servers connect with their tools. See [How Claude Code mods work](../design/how-claude-code-mods-work.md).
+So there is nothing to choose between: loading the plugin loads the mod. It has been seen working, in Claude Code 2.1.331 (0.7.0; earlier releases on 2.1.325), from `--plugin-dir` and from a marketplace install in a scratch configuration (`tests/live/install.mjs`): the commands answer, the status line and the pane draw (also in a real terminal under tmux), the guard refuses protected writes, and the servers connect with their tools. See [How Claude Code mods work](../design/how-claude-code-mods-work.md).
 
-**Not yet seen:** any Claude Code version other than 2.1.330 (`/academic doctor` says which version is running and whether the mod was seen on it; after running the live scripts on another, add it to `TESTED_VERSIONS` in `server/src/compat.mjs`, see [Testing](testing.md)). The servers, skills and agents are ordinary plugin parts; the hooks module needs a Claude Code that has the mod platform.
+**Not yet seen:** any Claude Code version other than 2.1.331 (`/academic doctor` says which version is running and whether the mod was seen on it; after running the live scripts on another, add it to `TESTED_VERSIONS` in `server/src/compat.mjs`, see [Testing](testing.md)). The servers, skills and agents are ordinary plugin parts; the hooks module needs a Claude Code that has the mod platform.
 
 ## Before you start
 

@@ -4,7 +4,7 @@
 
 **Upgrade notes**
 
-- **Claude Code 2.1.330 or newer.** The hooks this release adds (`PostToolBatch`, `PostToolUseFailure`, and a `tool.check` for `paper_mcp`) were run on 2.1.330 only. 2.1.325 was not run for 0.7.0, so it is no longer in `TESTED_VERSIONS` and the doctor warns on anything older.
+- **Claude Code 2.1.331 or newer.** The hooks this release adds (`PostToolBatch`, `PostToolUseFailure`, and a `tool.check` for `paper_mcp`) were run on 2.1.331 only (the whole live matrix; they were first tried on 2.1.330, the version before). 2.1.325 was not run for 0.7.0, so it is no longer in `TESTED_VERSIONS` and the doctor warns on anything older.
 - **Search providers serve themselves once their key is set** (Brave, Tavily, Exa, Perplexity, Parallel, Consensus, Elicit, and Firecrawl for reading pages). With no key nothing changes: 129 tools, and Claude uses `WebSearch` and `WebFetch`. With keys, up to 139 tools.
 - **The self-improvement loop (`ah_rsi`) is off by default.** Turn it on with the `rsi_mode` setting or `AH_RSI` (`observe` records, `auto` also adds lessons to prompts). It never runs headless.
 - **`paper_mcp` asks before it registers a server**, and is refused where nobody can answer.

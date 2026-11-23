@@ -18,7 +18,7 @@ Blue is code that runs inside Claude Code's hooks, green the MCP servers and bac
 |---|---|
 | **OS** | Linux. The writing engine is Linux-only |
 | **Node.js** | 22 or newer, with `npm` and `tar` |
-| **Claude Code** | 2.1.330 or newer, the oldest version this release was tested on; `/academic doctor` reports the running version and whether the hooks module loaded |
+| **Claude Code** | 2.1.331 or newer, the oldest version this release was tested on; `/academic doctor` reports the running version and whether the hooks module loaded |
 | **Python** | 3.11 or newer for the writing engine. `uv` is used when present, otherwise `python -m venv` and pip |
 | **Login** | a working `claude` login for the tools that call a model. They need no API key |
 
@@ -109,6 +109,14 @@ The ground rules, the test map and the release checklist are in [Maintaining the
 | [`types/`](types/README.md) | The `$.state` contract of the hooks module | |
 | `core/` | The research engine, tool code, writing engine and about 790 skills the plugin runs, with the licences they carry ([`core/NOTICE`](core/NOTICE)) | Committed, so the repository stands alone; `setup` installs what is built from it |
 | `.claude-plugin/` | The manifest and the marketplace file | `plugin.json` is partly generated |
+
+## What it runs, sends and fetches
+
+- **Runs on your machine.** Two MCP servers (`ah`, `papermemory`, Node) that Claude Code starts; a hooks module inside Claude Code that starts small Node helpers (`server/bin/`) for the guard, the approvals and the pane. The first start copies `core/` to `~/.local/share/cc-mod-academic-harness/home` and installs its dependencies there (`npm ci`, and a Python environment for the writing engine with `uv` or `pip`). On request only: LaTeX, the `zg` index, and the Modal, Runpod and Vast.ai tools, which ask first. Tools that call a model run a headless `claude -p` under your own login, capped by `llm_budget_usd`.
+- **Sends.** Only to the hosts declared in `plugin.json` (`network.hosts`): public scholarly and registry APIs for the queries you make, and a search, fetch or model service (a search or fetch provider, the model router's Jev, a reranker, embeddings, image generation) only when you have saved its key. A tool sends what it needs (a query, a DOI, a URL); files go only to rented compute you approved. No telemetry. [State and privacy](docs/guide/state-and-privacy.md) lists what is read, written and kept.
+- **Fetches.** The papers, pages and datasets you ask for, and the npm and Python packages at the first start.
+- **Credentials.** Plugin options marked sensitive, or the provider's environment variable (`GITHUB_TOKEN` for `repo_audit`, for example); never printed, never committed.
+- **Asks before it acts**: paid compute, author-only acts and registering a Paper2MCP server; where nobody can answer (`claude -p`) those are refused. [Running headless](docs/guide/headless.md) says how to run a folder you did not write.
 
 ## Security
 

@@ -14,7 +14,7 @@ import { join } from 'node:path'
  * The versions of Claude Code the mod was seen working on: the commands answer, the status line and the pane draw, the guard refuses
  * protected writes, and the servers connect (tests/live). Add a version here after running the live scripts on it (docs/maintain/testing.md).
  */
-export const TESTED_VERSIONS = ['2.1.330']
+export const TESTED_VERSIONS = ['2.1.331']
 
 const VERSION = /(\d+)\.(\d+)\.(\d+)(-[0-9A-Za-z.]+)?/
 

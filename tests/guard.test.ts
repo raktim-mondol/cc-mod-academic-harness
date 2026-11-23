@@ -279,7 +279,7 @@ function rsiWorld(on: any, opts: { env?: Record<string, string>; reply?: Reply |
   on('ui.notify', () => ({ value: { isSent: true, channel: 'terminal' } }))
   on('prompt.submit', (_: unknown, e: { text: string }) => ({ text: e.text }))
   on('ui.status', () => ({ value: undefined }))
-  on('session.version', () => ({ value: { version: '2.1.330', base: '2.1.330' } }))
+  on('session.version', () => ({ value: { version: '2.1.331', base: '2.1.331' } }))
   // what sits beneath the plugin for the loop's two events
   on('classic.PostToolBatch', () => ({}))
   on('classic.PostToolUseFailure', () => ({}))

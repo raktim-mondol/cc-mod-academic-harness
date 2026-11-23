@@ -1,6 +1,6 @@
 # Running headless
 
-For `claude -p`, scripts, CI and the Agent SDK: nobody is at the prompt, so nothing can be asked and nothing is drawn. This page says what the plugin does then, what Claude Code does that you should know about, and how to run it safely. Every claim here was checked with `tests/live/headless.mjs` and `tests/live/rsi.mjs` on Claude Code 2.1.330 (the evidence for each release is in its notes).
+For `claude -p`, scripts, CI and the Agent SDK: nobody is at the prompt, so nothing can be asked and nothing is drawn. This page says what the plugin does then, what Claude Code does that you should know about, and how to run it safely. Every claim here was checked with `tests/live/headless.mjs` and `tests/live/rsi.mjs` on Claude Code 2.1.331 (the evidence for each release is in its notes).
 
 ## What the plugin does when nobody can answer
 
