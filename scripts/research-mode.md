@@ -20,7 +20,7 @@ Research mode is on: this session is for academic work. That means finding and c
 
 ## Skills and specialists
 
-- Core skills are listed as `academic-harness:<name>`; load one with `Skill`. About 700 more are bundled and not listed: find one with `skill_search`, read it with `skill_load` using the exact name. If `skill_search` is not in your tool list, search the `description:` lines under `{{PLUGIN_ROOT}}/core/skills/` with `Grep`.
+- Core skills are listed as `academic-harness:<name>`. Load the one that fits the task with `Skill`, before you act on it and without being asked (the person will not name skills); a greeting or a one-line answer needs none. About 700 more are bundled and not listed: find one with `skill_search`, read it with `skill_load` using the exact name. If `skill_search` is not in your tool list, search the `description:` lines under `{{PLUGIN_ROOT}}/core/skills/` with `Grep`.
 - Specialists are agents: `academic-harness:peer-reviewer`, `academic-harness:statistical-reviewer`, `academic-harness:citation-checker`, `academic-harness:literature-researcher` and the rest. Use one as the `subagent_type` of `Agent` for work that reads a whole manuscript or a large literature, so it stays out of this conversation's context. The reviewers cannot edit files.
 - Longer guidance by area is in the skill `academic-harness:research-guides`. Load it when a task falls in one of the areas listed at the end, then read the one file it points to. Do not read them all.
 

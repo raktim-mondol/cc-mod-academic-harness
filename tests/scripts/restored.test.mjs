@@ -171,9 +171,12 @@ describe('what the host serves now', () => {
       rmSync(dir, { recursive: true, force: true })
     }
   })
-  test('the four skills are built, none of them names the other host, and using-science-superpowers stays out of the list', () => {
-    assert.equal(existsSync(join(root, 'skills', 'using-science-superpowers')), false)
-    for (const n of ['agent-browser', 'modal', 'runpod', 'vastai']) {
+  test('the five skills are built, none of them names the other host, and using-science-superpowers asks for a skill by need, not on every response', () => {
+    const sup = readFileSync(join(root, 'skills', 'using-science-superpowers', 'SKILL.md'), 'utf8')
+    assert.doesNotMatch(sup, /ANY response|even 1%|1% chance|ABSOLUTELY MUST/)
+    assert.match(sup, /without waiting to be asked/)
+    assert.match(sup, /greeting/)
+    for (const n of ['agent-browser', 'modal', 'runpod', 'vastai', 'using-science-superpowers']) {
       const f = join(root, 'skills', n, 'SKILL.md')
       assert.ok(existsSync(f), n)
       const t = readFileSync(f, 'utf8')

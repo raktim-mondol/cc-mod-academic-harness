@@ -11,7 +11,7 @@ Blue is code that runs inside Claude Code's hooks, green the MCP servers and bac
 | Hooks module | `hooks/register.tsx` | Runs inside Claude Code, with no Node. Research mode and the system-prompt section; the slash commands `/academic`, `/ah-*`, `/fold`, `/ah-watch`; the status line, pane and completion notices; the writing-engine guard and approvals (`tool.check`). It reaches the outside with `$.process.run`, which starts `node server/bin/ah-{hook,approve,ui,doctor}.mjs` |
 | MCP server `ah` | `server/bin/ah-mcp.mjs` | One Node process over stdio. Loads the research tool modules from the engine code through a small context shim; 121 tools plus the `job_*` tools and `doctor`, deferred behind ToolSearch; the jobs service and the model route (headless `claude -p`); fetches the engine code itself on first start (`bootstrap.mjs`) |
 | MCP server `papermemory` | `server/bin/papermemory-mcp.mjs` | A launcher for `papermemory mcp` |
-| Skills | `skills/` | 58 core skills and the guides (generated) |
+| Skills | `skills/` | 59 core skills and the guides (generated) |
 | Agents | `agents/` | 21 specialists (generated) |
 
 ## The engine code
@@ -76,7 +76,7 @@ It adds what only Claude Code has: commands, a pane and a status line, the guard
 
 Code written for the plugin is MIT (`LICENSE`), and so is Academic Harness's own code in `core/` (Copyright 2026 Academic Harness, formerly ResearchCraft, the same author). **`core/` is not all MIT.** It carries the third-party material that Academic Harness bundles, each under its own licence, and `NOTICE` and `core/NOTICE` list it. Decision, 2026-11-17: the repository stands alone and commits all of `core/`, including the skills and vendored projects whose licences are non-commercial or GPL, with that said in the README and `NOTICE` and not by leaving them out. The consequence to know: someone who uses this repository commercially has to read `NOTICE` and leave out what its licence does not allow.
 
-What the build lets into `skills/` (the 58 core skills, plus the guides, that Claude Code lists) is narrower, and unchanged from the review settled on 2026-11-16:
+What the build lets into `skills/` (the 59 core skills, plus the guides, that Claude Code lists) is narrower, and unchanged from the review settled on 2026-11-16:
 
 - Skills under non-commercial, GPL or unknown licences are left out of `skills/` by the build (decision D5), and `skills/.build-info.json` records each with its licence. The 54 that are copied name MIT, CC-BY-4.0 or nothing (the source's own text).
 - Eight skills come from K-Dense (MIT): their copyright lines are in `NOTICE`.

@@ -228,6 +228,10 @@
       "license": "MIT"
     },
     {
+      "name": "using-science-superpowers",
+      "license": null
+    },
+    {
       "name": "vastai",
       "license": null
     },
@@ -395,11 +399,6 @@
       "why": "A template for one paper type."
     },
     {
-      "name": "using-science-superpowers",
-      "kind": "on demand",
-      "why": "Its description tells the model to load a skill before every response, which would apply to every session; it is read on request with skill_load."
-    },
-    {
       "name": "vibe-research-workflow",
       "kind": "on demand",
       "why": "A general workflow."
@@ -410,5 +409,5 @@
       "why": "Excel files: Anthropic ships an xlsx skill."
     }
   ],
-  "descriptionChars": 21027
+  "descriptionChars": 21186
 }

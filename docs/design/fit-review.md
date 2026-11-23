@@ -10,7 +10,7 @@ The decisions are in one file, `server/src/fit.mjs` (what is left out, with a re
 |---|---|---|
 | Research tools in the engine code | 136 | 124 served, 12 left out on purpose |
 | Tools served by the `ah` server | 129 | The 124, four `job_*` tools and `doctor`; 269,000 characters of descriptions and schemas, deferred behind `ToolSearch`, so little is in context at once |
-| Skills in the always-loaded list | 58 (21,027 characters of descriptions), plus `research-guides` | The part that costs context every turn |
+| Skills in the always-loaded list | 59 (21,186 characters of descriptions), plus `research-guides` | The part that costs context every turn |
 | Agents | 21 | |
 | Research-mode text in the system prompt | about 2,900 tokens | Includes the index of 27 guides |
 | Settings fields | 53, plus `restore_tools` | |
@@ -59,13 +59,13 @@ Three tools and five skills were left out in the first review and are served aga
 | `zvec_index` | Served as it was: it drives the `zg` CLI you already have (it never installs one, so no package is fetched behind your back) and asks before it indexes. It sits beside zvec-grep's own `zvec_grep_index`; use either. `ZVEC_GREP_CLI` and `ZVEC_GREP_EMBEDDING` are read from the environment. |
 | `paper_mcp` | The same four actions (`status`, `register`, `approve`, `unregister`) and the same registry (`<project>/.dsh/paper-mcps.json`), but "mount" is now "write the server into the project's `.mcp.json`" (`server/src/mcpjson.mjs`): Claude Code has no call to start a server mid-session. Claude Code asks you to approve the new server and you reload with `/mcp`. Only variable *names* are written (`${NAME}`), never values. A registry that came with a cloned folder writes nothing by itself. |
 | `ah_rsi` and its loop | The tool shows and steers the lessons. The loop itself (capture a turn, learn lessons, inject them into later prompts) was DSH's host events; here it runs from the guard bridge (`server/src/rsi-bridge.mjs`, `server/bin/ah-hook.mjs`), one hook event at a time with the open turn kept in a file, plus a PostToolUse hook for every tool (`hooks/rsi.ts`) so it sees what each tool returned. It acts only in a folder with an `ah.yaml`. Its mode is upstream's default, `auto`: lessons are injected into your prompts without asking, each reversible. `AH_RSI=observe` records without injecting; `AH_RSI=off` stops it. |
-| `agent-browser`, `modal`, `runpod`, `vastai` | Built into `skills/` with their host wording rewritten (`scripts/adapt.mjs`). `using-science-superpowers` is bundled but on demand (`skill_load`), because its description tells the model to load a skill before every response. |
+| `agent-browser`, `modal`, `runpod`, `vastai`, `using-science-superpowers` | Built into `skills/` with their host wording rewritten (`scripts/adapt.mjs`). `using-science-superpowers` is rewritten to be need-based: load the skill that fits the task, without being asked, and none for a greeting or a one-line answer (upstream said a skill before every response, even at 1%). |
 
 ## Skills and agents
 
 **Not built (10 skills).** `docx`, `pdf`, `pptx`, `xlsx` (Anthropic ships these), and six skills that were the *same brief* as an agent already built: `abstract-writer`, `citation-checker`, `literature-researcher`, `manuscript-editor`, `peer-reviewer`, `statistical-reviewer`. The agent keeps each, in its own context.
 
-**On demand (18 skills).** Left out of the list, still bundled, found with `skill_search` and read with `skill_load`: `using-science-superpowers` (its description tells the model to load a skill before every response, which would apply to every session), `openfda`, `clinicaltrials`, `gget`, `scanpy`, `pytorch-lightning`, `hyperparameter-optimization`, `drawio-reconstruction`, `diagram-design`, `markdown-mermaid-writing`, `scientific-visualization`, `benchmark-paper-template`, `tech-paper-template`, `vibe-research-workflow`, `agentic-data-science-pipeline`, `paper2agent`, `paper2skill`, `paper2mcp`. A library the model already knows, a niche workflow, or a skill whose tool describes itself.
+**On demand (17 skills).** Left out of the list, still bundled, found with `skill_search` and read with `skill_load`: `openfda`, `clinicaltrials`, `gget`, `scanpy`, `pytorch-lightning`, `hyperparameter-optimization`, `drawio-reconstruction`, `diagram-design`, `markdown-mermaid-writing`, `scientific-visualization`, `benchmark-paper-template`, `tech-paper-template`, `vibe-research-workflow`, `agentic-data-science-pipeline`, `paper2agent`, `paper2skill`, `paper2mcp`. A library the model already knows, a niche workflow, or a skill whose tool describes itself.
 
 **Agent not built (1).** `pipeline-engineer`: ordinary coding, which Claude Code's own agent does. The other 21 are reviewers, checkers and researchers whose value is a separate context.
 
@@ -84,7 +84,7 @@ Three tools and five skills were left out in the first review and are served aga
 | `tests/scripts/fit.test.mjs` | Every left-out module is a real module of the engine code and classed as dropped; the plan loads none of them and loads a restored one; the server serves a restored tool and not a dropped one (by the shell variable and by the setting); no left-out skill or agent is built and the on-demand ones are still bundled; every rewrite has its target built and a rule whose text is gone throws; no built skill, guide or brief names a tool that is not served or the other chat host; the catalogue stays under 22,000 characters of descriptions |
 | Surface parity (`measure-surface.mjs`) | 136 registered, 124 served, 12 left out |
 | `claude plugin test .`, `validate`, `tsc` | Pass |
-| Live (`tests/live/fit.mjs`) | `catalogue`: 59 skills, 21 agents, 129 `ah` tools, none of the 12 left out; `restore`: the setting serves exactly the named tool; `search_route`: asked for papers, the model calls `literature_search` and not `WebSearch`; `on_demand`: `skill_search` finds `openfda` and `skill_load` reads it |
+| Live (`tests/live/fit.mjs`) | `catalogue`: 60 skills, 21 agents, 129 `ah` tools, none of the 12 left out; `restore`: the setting serves exactly the named tool; `search_route`: asked for papers, the model calls `literature_search` and not `WebSearch`; `on_demand`: `skill_search` finds `openfda` and `skill_load` reads it |
 
 ## The next review
 

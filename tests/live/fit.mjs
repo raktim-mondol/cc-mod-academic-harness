@@ -4,8 +4,8 @@
 //   node tests/live/fit.mjs                 all
 //   node tests/live/fit.mjs search_route    one or more by name
 //
-// catalogue     what Claude Code lists from the mod: 59 skills (the 10 duplicates of agents and of Anthropic's own skills are
-//               gone, the 18 niche ones are on demand), 21 agents, none of the 12 dropped tools, and the unified literature_search
+// catalogue     what Claude Code lists from the mod: 60 skills (the 10 duplicates of agents and of Anthropic's own skills are
+//               gone, the 17 niche ones are on demand), 21 agents, none of the 12 dropped tools, and the unified literature_search
 // restore       AH_RESTORE_TOOLS=brave_search brings that one tool back, and only that one
 // search_route  asked for papers, the model reaches for an academic search tool through ToolSearch, not for WebSearch (the guidance says which)
 // on_demand     a skill that is not in the catalogue is found with skill_search and read with skill_load
@@ -40,9 +40,9 @@ const scenarios = {
     const r = run('catalogue', 'Say hi in one word.')
     const i = r.init
     const skills = i.skills.filter(s => s.startsWith('academic-harness:'))
-    assert.equal(skills.length, 59, `${skills.length} skills`)
-    for (const gone of ['docx', 'pdf', 'pptx', 'xlsx', 'peer-reviewer', 'literature-researcher', 'using-science-superpowers']) assert.ok(!skills.includes(`academic-harness:${gone}`), gone)
-    for (const kept of ['academic-search', 'literature-review', 'academic-harness', 'papermemory', 'research-guides', 'agent-browser', 'modal', 'runpod', 'vastai']) assert.ok(skills.includes(`academic-harness:${kept}`), kept)
+    assert.equal(skills.length, 60, `${skills.length} skills`)
+    for (const gone of ['docx', 'pdf', 'pptx', 'xlsx', 'peer-reviewer', 'literature-researcher']) assert.ok(!skills.includes(`academic-harness:${gone}`), gone)
+    for (const kept of ['academic-search', 'literature-review', 'academic-harness', 'papermemory', 'research-guides', 'agent-browser', 'modal', 'runpod', 'vastai', 'using-science-superpowers']) assert.ok(skills.includes(`academic-harness:${kept}`), kept)
     const agents = i.agents.filter(a => a.startsWith('academic-harness:'))
     assert.equal(agents.length, 21)
     assert.ok(agents.includes('academic-harness:peer-reviewer') && !agents.includes('academic-harness:pipeline-engineer'))
@@ -73,6 +73,15 @@ const scenarios = {
     const load = r.calls.find(c => c.name === `${PREFIX}skill_load`)
     assert.match(JSON.stringify(load.input), /openfda/i)
     return `openfda is not in the catalogue and was found and loaded on demand, ${cost(r)}`
+  },
+  // skill_auto    in a project (research mode on), a research task that a skill covers makes the model load a skill itself, with no request to; a greeting loads none
+  skill_auto() {
+    const task = run('skill_auto_task', 'I have survey data and a hunch that sleep affects exam scores. Help me turn that into a plan I can test before I look at any outcomes.', { allow: ['Skill'] })
+    const loaded = task.calls.filter(c => c.name === 'Skill').map(c => String(c.input.skill ?? c.input.name))
+    assert.ok(loaded.some(n => /academic-harness:/.test(n)), `no academic-harness skill was loaded by itself: ${task.calls.map(c => c.name)}`)
+    const hi = run('skill_auto_hi', 'Hi! What can you do in one sentence?', { allow: ['Skill'] })
+    assert.equal(hi.calls.filter(c => c.name === 'Skill').length, 0, `a greeting loaded a skill: ${hi.calls.map(c => c.name)}`)
+    return `loaded ${loaded.join(', ')} on its own for the task and none for a greeting, ${cost(task)}+${cost(hi)}`
   },
 }
 

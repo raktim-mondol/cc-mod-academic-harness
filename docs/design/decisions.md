@@ -7,7 +7,7 @@ The decisions made while building the plugin, and what each came to. The reasoni
 | D1 | Where the plugin lives | `~/cc-mod-academic-harness`, its own git repository, private on GitHub, loaded with `--plugin-dir` or installed from its own marketplace file |
 | D2 | Name | `academic-harness` |
 | D3 | Where the engine code comes from | Committed in this repository as `core/` (decided 2026-11-17, superseding the pinned snapshot: nothing is fetched and nothing follows Academic Harness). Installed dependencies and the engine's environment are built from it, in place in a clone or in a working copy in the mod's home ([Building](../maintain/building.md)) |
-| D4 | Which skills are listed | The core skills minus excluded licences, minus what is left out or put on demand: 58, plus the guides skill |
+| D4 | Which skills are listed | The core skills minus excluded licences, minus what is left out or put on demand: 59, plus the guides skill |
 | D5 | Which licences are excluded | Non-commercial, GPL and unknown. A local build flag keeps them for personal use; never commit that build |
 | D6 | How much prompt is always on | A short section written for Claude Code (about 2,900 tokens), with the per-area guidance as on-demand guides |
 | D7 | The model route for tools that call a model | A headless `claude -p --safe-mode --tools ""` child, a budget cap, no key (2 s a call) |

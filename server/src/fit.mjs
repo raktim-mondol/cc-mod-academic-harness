@@ -46,7 +46,6 @@ export const DROPPED_SKILLS = {
 
 /** Skills kept out of the session catalogue (each description is context on every turn) and left to `skill_search` / `skill_load`. */
 export const ON_DEMAND_SKILLS = {
-  'using-science-superpowers': 'Its description tells the model to load a skill before every response, which would apply to every session; it is read on request with skill_load.',
   openfda: 'Tool `openfda` describes itself.',
   clinicaltrials: 'Tool `clinicaltrials` describes itself.',
   gget: 'A bioinformatics CLI.',
