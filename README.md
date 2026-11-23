@@ -4,7 +4,7 @@ A Claude Code plugin for academic research and writing. It adds literature searc
 
 It is a Claude Code *mod*: next to its MCP tools, skills and agents it runs code inside Claude Code, which is what gives it slash commands, a status line, a pane and the guard ([what that means](docs/maintain/next-steps.md#plugin-or-mod-both-and-it-works)).
 
-**Version 0.7.0.** Linux only. MIT licence.
+**Version 0.7.1.** Linux only. MIT licence.
 
 ## How it fits together
 

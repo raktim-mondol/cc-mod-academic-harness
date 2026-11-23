@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.1 (2026-11-24)
+
+A maintenance release. Nothing in the plugin's code, tools, settings or served surface changes, and there is no upgrade step.
+
+**Changed**
+
+- **CI:** `astral-sh/setup-uv` 10.3.3 to 10.4.0 (Dependabot, pull request #20), still pinned to a commit. The pin was checked against the upstream tag (`v10.4.0` is commit `1db35dd`, a verified commit in `astral-sh/setup-uv`) and the release notes were read: it adds an opt-in `require-checksums` input and fixes two bugs (partial PEP 440 version specifiers; cached Python junctions on Windows), none of which the workflow uses.
+- **Maintaining:** `docs/maintain/releasing.md` now says to record `claude --version` before the live matrix (Claude Code updates itself: 2.1.330 became 2.1.331 between the first checks of 0.7.0 and its matrix), and how a Dependabot pull request is reviewed and what to do with one that was opened before a tested version was renamed (it waits on a check that never reports until its branch is brought up to date).
+
 ## 0.7.0 (2026-11-24)
 
 **Upgrade notes**

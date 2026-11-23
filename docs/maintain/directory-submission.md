@@ -1,10 +1,10 @@
 # Submitting to Anthropic's plugin directory
 
-The repository is already its own marketplace ([Releasing](releasing.md#marketplace)), so anyone can install it from GitHub. The directory is a second route: people add it on claude.ai or in Cowork, and it loads in their Claude Code sessions through account sync. **Only the owner can submit it**: it needs a paid claude.ai plan and the owner's GitHub account connected to claude.ai, in the developer portal at <https://claude.ai/directory/manage> (Submit new, then Plugin bundle). The checks below are Anthropic's own published ones (<https://claude.com/docs/plugins/pre-submission-checklist>), read against this repository for 0.7.0.
+The repository is already its own marketplace ([Releasing](releasing.md#marketplace)), so anyone can install it from GitHub. The directory is a second route: people add it on claude.ai or in Cowork, and it loads in their Claude Code sessions through account sync. **Only the owner can submit it**: it needs a paid claude.ai plan and the owner's GitHub account connected to claude.ai, in the developer portal at <https://claude.ai/directory/manage> (Submit new, then Plugin bundle). The checks below are Anthropic's own published ones (<https://claude.com/docs/plugins/pre-submission-checklist>), read against this repository for 0.7.1 (the plugin is the same as in 0.7.0).
 
 ## What was checked
 
-| Check | Result for 0.7.0 |
+| Check | Result for 0.7.1 |
 |---|---|
 | `claude plugin validate . --profile directory --strict` | Passes. It is a subset of what the directory runs and does not apply the directory's own rules for a hooks module |
 | `plugin.json`: name, description, author, version, license, `network.hosts` | Set. The name `academic-harness` is lowercase ASCII, and the 83 hosts the plugin reaches are declared (`server/src/hosts.mjs`, kept true by `tests/scripts/hosts.test.mjs`) |
@@ -12,7 +12,7 @@ The repository is already its own marketplace ([Releasing](releasing.md#marketpl
 | Layout | about 3,660 files in about 1,380 folders (limits: 10,000 together), an archive of 16 MB (limit 50 MiB), no file over 5 MiB, no symbolic link, submodule, LFS pointer, `.gitattributes`, package-manager configuration file, macOS or Windows system file, minified file, name that is invalid on Windows or macOS, or two names that differ only in capitals |
 | Files | No binary file other than 8 images (6 PNG, 1 JPEG, 1 GIF) |
 | MCP servers and hooks | `node ${CLAUDE_PLUGIN_ROOT}/server/bin/ah-mcp.mjs` and `papermemory-mcp.mjs`: a plain file, a path from `${CLAUDE_PLUGIN_ROOT}`, no launcher; `hooks/hooks.json` is valid with a `modules` array |
-| Credentials | Every key is a `sensitive` `userConfig` option; none is committed (secret scan of `git ls-files -co`, 0.7.0) |
+| Credentials | Every key is a `sensitive` `userConfig` option; none is committed (secret scan of `git ls-files -co`, 0.7.1) |
 | Dependencies | `npm audit` reports no advisory in the core's dependencies, production or development |
 
 ## What a reviewer is likely to hold, and why (not a rejection)
