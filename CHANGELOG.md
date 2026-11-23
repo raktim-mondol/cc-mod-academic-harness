@@ -1,18 +1,40 @@
 # Changelog
 
-## Unreleased
+## 0.7.0 (2026-11-24)
 
-- **The search providers come back, keyed and routed.** `brave_search`, `tavily_search`, `exa_search`, `perplexity_search`, `parallel_search`, `parallel_extract`, `consensus_search` and `elicit_search` are served again, each as soon as its key is set (`autoProviders` in `server/src/fit.mjs`; no `restore_tools` needed; `AH_AUTO_PROVIDERS=0` switches it off). A provider with no key is not offered, so the model is never handed a tool that can only fail.
-- **One job per provider.** The new guide `search-providers` (`scripts/guides/search-providers.md`, built into `research-guides`) says which provider answers which need, when a second independent one checks a claim, how a survey is bounded, and that a hit is a lead until read. Research mode carries a short pointer to it (about 240 tokens more).
-- **`web_search` and `web_extract`: the orchestration in code.** `web_search` picks the best provider that is on for the kind of search (`general`, `semantic`, `fresh`, `news`, `excerpts`), falls to the next when one has no key, fails or finds nothing, and says which answered; `intent=claim` asks one provider from each of two independent groups and marks what both found. `web_extract` reads URLs with Firecrawl, then Parallel Extract, then Jina Reader (keyless), naming the reader of each. Both exist only when a provider is on, so the default surface (126 tools) is unchanged; with no key at all, research mode falls back to `WebSearch`, `WebFetch` and any connector the person has signed in to. `/academic doctor` lists the providers that are on.
-- **Brought back at the person's request: `zvec_index`, `paper_mcp`, `ah_rsi` and five skills.** `zvec_index` drives the installed `zg` and asks before indexing. `paper_mcp` registers a Paper2MCP server in the project's `.mcp.json` (Claude Code asks you to approve it; only variable names are written). `ah_rsi` is served with its loop, now driven by hook events from the guard bridge (`server/src/rsi-bridge.mjs`) and a PostToolUse hook for every tool (`hooks/rsi.ts`); it works in a folder with an `ah.yaml`, injects learned lessons into prompts in `auto` mode (the upstream default; `AH_RSI=observe` or `off` changes that). `agent-browser`, `modal`, `runpod`, `vastai` and `using-science-superpowers` are built into `skills/` (59 skills, 129 tools by default). `using-science-superpowers` is rewritten to be need-based: Claude loads the skill that fits a task by itself, without being asked, and none for a greeting or a one-line answer (upstream said a skill before every response, even at 1%).
-- **Review of the whole architecture, and what it fixed** (2026-11-23; the diagram, the README and the guides are updated to match):
-  - `paper_mcp` wrote a program into `.mcp.json` without asking anyone (the in-tool question had been stubbed), so under `claude -p` a registered server started unasked. `register` and `approve` now ask through a `tool.check` that shows the program, its folder and its variables, and are refused where nobody can answer. Its description and results no longer talk about mounting, `dsh` or restarting; `status` reads `.mcp.json`.
-  - `web_search` returned third-party titles and snippets unfenced; the listing is now inside the untrusted-source fence, with a forged closing tag escaped.
-  - The self-improvement loop now reads the stop gate: a turn the gate holds stays open until the gate lets go (it used to be closed, and the rest of the work lost, at the first blocked stop), a handoff is recorded as a signal, the session file is written under a lock so parallel tool calls lose no update, and a tool's arguments are bounded before they are handed over. The doctor shows its mode, and the mode is a plugin option now (`rsi_mode`: `auto`, `observe`, `off`; `AH_RSI` still wins).
-  - Restored search tools were counted under an `undefined` area; the tool descriptions no longer name `ask_user_question` or a `mcp__firecrawl__*` tool this host does not have; the `paper-agent-builder` brief keeps its upstream `paper_mcp` line now that the tool is served; stale counts and statements in the architecture page, the README, the decisions log and the live-test thresholds are corrected.
-- Reading a page now goes Firecrawl first (`web_extract`, or a Firecrawl connector's scrape), with `WebFetch` as the fallback.
-- Still left out: `scientific_result`, `research_template`, `fold_text` and `latex_compile`, which duplicate something already there.
+**Upgrade notes**
+
+- **Claude Code 2.1.330 or newer.** The hooks this release adds (`PostToolBatch`, `PostToolUseFailure`, and a `tool.check` for `paper_mcp`) were run on 2.1.330 only. 2.1.325 was not run for 0.7.0, so it is no longer in `TESTED_VERSIONS` and the doctor warns on anything older.
+- **Search providers serve themselves once their key is set** (Brave, Tavily, Exa, Perplexity, Parallel, Consensus, Elicit, and Firecrawl for reading pages). With no key nothing changes: 129 tools, and Claude uses `WebSearch` and `WebFetch`. With keys, up to 139 tools.
+- **The self-improvement loop (`ah_rsi`) is off by default.** Turn it on with the `rsi_mode` setting or `AH_RSI` (`observe` records, `auto` also adds lessons to prompts). It never runs headless.
+- **`paper_mcp` asks before it registers a server**, and is refused where nobody can answer.
+- `plugin.json` now declares the network hosts the plugin reaches (`network.hosts`).
+
+**Added**
+
+- **`web_search` and `web_extract`** (`server/src/webtools.mjs`): `web_search` picks the best provider that is on for the kind of search (`general`, `semantic`, `fresh`, `news`, `excerpts`), falls to the next when one has no key, fails or finds nothing, and says which answered; `intent=claim` asks one provider from each of two independent groups and marks what both found. `web_extract` reads URLs with Firecrawl, then Parallel Extract, then Jina Reader (keyless), naming the reader of each. Both exist only when a provider is on. The guide `search-providers` gives each provider one job.
+- **Brought back at the person's request:** `zvec_index` (drives the `zg` you have and asks before it indexes), `paper_mcp` (registers a Paper2MCP server in the project's `.mcp.json`; only variable names are written), `ah_rsi` with its loop, and the skills `agent-browser`, `modal`, `runpod`, `vastai` and `using-science-superpowers` (rewritten to load the skill that fits a task by itself, and none for a greeting). 59 skills in all.
+- **The self-improvement loop** is driven from the guard bridge (`server/src/rsi-bridge.mjs`) and two hooks (`hooks/rsi.ts`): `PostToolBatch` hands it a step's calls in one process, `PostToolUseFailure` the calls that failed. It runs only in a folder with an `ah.yaml`, only with a person at the prompt, and starts no process when it is off. A turn the stop gate holds stays open until the gate lets go, and a handoff is a signal. Its store is kept bounded (rotation and compaction once a day).
+- **The doctor** shows which search providers are on, the loop's mode, and what a folder starts on its own (`.mcp.json` servers and project hooks: names only).
+- **[Running headless](docs/guide/headless.md)**, checked live: the plugin's asks are refusals where nobody can answer, also under `--permission-mode bypassPermissions`; Claude Code starts a folder's own `.mcp.json` servers and hooks in `claude -p`, `--restricted` stops that and leaves the plugin and the guard working; `--bare` and `--strict-mcp-config` remove the plugin.
+- `npm run typecheck` says what to do when the generated typings are the cause of a TS2589.
+- New live scripts: `tests/live/rsi.mjs`, `tests/live/headless.mjs`, `tests/live/papermcp.mjs`.
+
+**Fixed**
+
+- `paper_mcp` wrote a program into `.mcp.json` without asking anyone, so under `claude -p` a registered server started unasked. It now asks (a `tool.check` showing the program, its folder and its variables) and its description and results say what really happens.
+- `web_search` returned third-party titles and snippets unfenced; the listing is now inside the untrusted-source fence.
+- The loop closed a turn at the first blocked stop, never saw failed calls, and could lose updates from parallel hooks; it also used to be on by default.
+- Restored search tools were counted under an `undefined` area; tool descriptions named the other host's question tool and a `mcp__firecrawl__*` tool; the `paper-agent-builder` brief had a stale `paper_mcp` rewrite; counts and statements across the docs were out of date.
+- The hooks tests (`claude plugin test .`) were skipped by the checks and failed once the loop's hook was added; they now cover the loop's hooks and the `paper_mcp` ask.
+
+**Security**
+
+- **Dependencies:** `npm audit` found 18 advisories in the core's production dependencies (15 high), all from three packages the DSH packages pull in: `zod` (memory exhaustion on oversized collections), `undici` (eight advisories: denial of service, TLS validation bypass, cache poisoning) and `@modelcontextprotocol/client` (cross-origin redirects that re-sent headers). They are pinned to patched versions with npm `overrides` in `core/package.json` (zod 4.6.7, undici 8.13.1, @modelcontextprotocol/client 2.4.0) and the lockfile is regenerated; `npm audit` now reports none, including the dev-only `minimatch` advisory, and the core's own 125 test files pass on the patched versions.
+- A new test (`tests/scripts/hosts.test.mjs`) fails when the code names a network host `plugin.json` does not declare.
+- `SECURITY.md`: supported line is now `0.7.x`; new in-scope items and design guarantees (asks refuse headless, fencing, the loop, declared hosts); a section on running headless.
+
+Still left out: `scientific_result`, `research_template`, `fold_text` and `latex_compile`, which duplicate something already there.
 
 ## 0.6.1 (2026-11-18)
 

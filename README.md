@@ -4,7 +4,7 @@ A Claude Code plugin for academic research and writing. It adds literature searc
 
 It is a Claude Code *mod*: next to its MCP tools, skills and agents it runs code inside Claude Code, which is what gives it slash commands, a status line, a pane and the guard ([what that means](docs/maintain/next-steps.md#plugin-or-mod-both-and-it-works)).
 
-**Version 0.6.1.** Linux only. MIT licence.
+**Version 0.7.0.** Linux only. MIT licence.
 
 ## How it fits together
 
@@ -18,7 +18,7 @@ Blue is code that runs inside Claude Code's hooks, green the MCP servers and bac
 |---|---|
 | **OS** | Linux. The writing engine is Linux-only |
 | **Node.js** | 22 or newer, with `npm` and `tar` |
-| **Claude Code** | 2.1.325 or newer, the oldest version the mod was seen working on; `/academic doctor` reports the running version and whether the hooks module loaded |
+| **Claude Code** | 2.1.330 or newer, the oldest version this release was tested on; `/academic doctor` reports the running version and whether the hooks module loaded |
 | **Python** | 3.11 or newer for the writing engine. `uv` is used when present, otherwise `python -m venv` and pip |
 | **Login** | a working `claude` login for the tools that call a model. They need no API key |
 
@@ -86,7 +86,7 @@ Every folder has its own index; start from [the documentation index](docs/README
 
 | For | Start at |
 |---|---|
-| **Using it** | [User guide](docs/guide/README.md): [getting started](docs/guide/getting-started.md), [commands](docs/guide/commands.md), [tools, skills and agents](docs/guide/tools-skills-agents.md), [settings](docs/guide/settings.md), [keys and credentials](docs/guide/keys.md), [state and privacy](docs/guide/state-and-privacy.md), [troubleshooting](docs/guide/troubleshooting.md) |
+| **Using it** | [User guide](docs/guide/README.md): [getting started](docs/guide/getting-started.md), [commands](docs/guide/commands.md), [tools, skills and agents](docs/guide/tools-skills-agents.md), [settings](docs/guide/settings.md), [keys and credentials](docs/guide/keys.md), [state and privacy](docs/guide/state-and-privacy.md), [running headless](docs/guide/headless.md), [troubleshooting](docs/guide/troubleshooting.md) |
 | **Understanding it** | [Design](docs/design/README.md): [architecture](docs/design/architecture.md), [decisions](docs/design/decisions.md), [what was left out and why](docs/design/fit-review.md) |
 | **Changing it** | [Maintenance](docs/maintain/README.md): [building](docs/maintain/building.md), [testing](docs/maintain/testing.md), [releasing](docs/maintain/releasing.md), [what to do next](docs/maintain/next-steps.md) |
 | **How it was built** | [History](docs/history/README.md), and the [changelog](CHANGELOG.md) |

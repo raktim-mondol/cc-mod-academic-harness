@@ -31,7 +31,7 @@ Off by default. When it is on and a TypeSafe key is saved, each prompt it classi
 
 ## The self-improvement loop
 
-Off unless you turn it on (the `rsi_mode` setting or `AH_RSI`; the doctor shows the mode). When it is on it records, per turn, the kind of task, a hash of your message (not the message), which tools ran and whether they failed, the findings they reported, and whether the stop gate held the turn. A tool's result is read in memory to find those findings and is never stored. It does this only in a folder with an `ah.yaml`, and only when a person is at the prompt: a headless run (`claude -p`, the SDK) is never recorded and never gets lessons, so a scripted run stays reproducible. A sentence in which you state a preference ("from now on, always run integrity_check before citing") is kept, as written, as a lesson. In `auto` mode the lessons that fit the task are added to your next prompts as short guidance; in `observe` mode nothing is added. Nothing leaves the machine unless you set `AH_RSI_REMOTE=1`. `ah_rsi` lists, forgets and rolls back lessons, and deleting `<home>/ah-rsi/` erases everything it learned.
+Off unless you turn it on (the `rsi_mode` setting or `AH_RSI`; the doctor shows the mode). When it is on it records, per turn, the kind of task, a hash of your message (not the message), which tools ran and whether they failed, the findings they reported, and whether the stop gate held the turn. A tool's result text is read in memory to find those findings and is not stored: what is kept is its size, a hash, the finding ids it reported and, for a failure, a short signature of the error with paths and numbers replaced. It does this only in a folder with an `ah.yaml`, and only when a person is at the prompt: a headless run (`claude -p`, the SDK) is never recorded and never gets lessons, so a scripted run stays reproducible. A sentence in which you state a preference ("from now on, always run integrity_check before citing") is kept, as written, as a lesson. In `auto` mode the lessons that fit the task are added to your next prompts as short guidance; in `observe` mode nothing is added. Nothing leaves the machine unless you set `AH_RSI_REMOTE=1`. `ah_rsi` lists, forgets and rolls back lessons, and deleting `<home>/ah-rsi/` erases everything it learned.
 
 ## What leaves the machine
 
@@ -46,6 +46,7 @@ Text that comes back from any of these is fenced as untrusted (below).
 - **The plugin's own `core/`**: read, and copied to the mod's home on a first start. It is never written by the server.
 - **The PaperMemory database**, opened read-only and immutable (`?immutable=1`) by the pane, so not even a `-shm` or `-wal` file appears beside it. The PaperMemory tools themselves write to it, as they always did.
 - **Keys**: from the plugin's options and the environment, into the server's environment. The doctor and the diagnostics print names, never values.
+- **A folder's `.mcp.json` and `.claude/settings*.json`**, by the doctor only, to say what the folder starts on its own (server names and hook event names, never a command or a value). See [Running headless](headless.md).
 
 ## What it never touches
 

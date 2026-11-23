@@ -7,14 +7,14 @@ Two kinds. The **unit and integration suites** need no account and no network an
 | Command | Covers |
 |---|---|
 | `npm run check` | The node suites, `build-manifest.mjs --check` and `measure-surface.mjs` in one command. This is the gate CI runs; `node scripts/check.mjs` is the same script |
-| `npx --yes -p typescript@5.6.3 tsc -p . --noEmit` | Types of the hooks module (`npm run typecheck`) |
+| `npm run typecheck` | Types of the hooks module and the plugin tests (`tsc` through `scripts/typecheck.mjs`) |
 | `claude plugin validate .` | The manifest, the marketplace file and the hooks module as the engine reads them |
 | `claude plugin test .` | The hooks (see below), with every engine call stood in for |
 | `node --test "tests/scripts/*.test.mjs" "tests/server/*.test.mjs"` | The builds, the tool host, the guard bridge, jobs, the model route, the core and the first start |
 | `node scripts/build-manifest.mjs --check` | `plugin.json` matches what the core would generate |
 | `node scripts/measure-surface.mjs` | The host serves what the core registers, minus what is left out on purpose, and each tool is identical |
 
-`node --test` needs the globs quoted (Node 24). The type check needs the engine's types, which exist only after a real Claude Code session has loaded the mod, so it is a local step and not part of CI. Three tests in `tests/server/papermemory.test.mjs` build real environments (`uv`, or `python -m venv` and `pip`) and need the network (PyPI): they fail on a machine with neither.
+`node --test` needs the globs quoted (Node 24). The type check needs the engine's types, which exist only after a real Claude Code session has loaded the mod, so it is a local step and not part of CI. The engine writes the MCP part of them from the servers that session had connected: after a session with many connectors the file is megabytes and `tsc` fails on the `PreToolUse` event with TS2589, which is the typings' fault and not the code's. `npm run typecheck` says so and how to write small typings again (`ENABLE_CLAUDEAI_MCP_SERVERS=false claude --plugin-dir "$PWD"`). Three tests in `tests/server/papermemory.test.mjs` build real environments (`uv`, or `python -m venv` and `pip`) and need the network (PyPI): they fail on a machine with neither.
 
 ## CI
 

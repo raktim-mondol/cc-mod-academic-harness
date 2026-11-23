@@ -41,8 +41,24 @@ async function until(test, { timeoutMs = 120_000, every = 1500, label }) {
 }
 /** How many turns have ended on the screen: Claude Code prints "✻ <verb> for <n>s" at the end of each. */
 const turnsEnded = () => (screen().match(/✻ [A-Za-zé]+ for \d+[smh]/g) ?? []).length
-/** Wait until one more turn has ended than `before`. */
-const turnEnded = async (before, label) => { await until(() => turnsEnded() > before, { timeoutMs: 150_000, label }); return screen() }
+/**
+ * Wait until one more turn has ended than `before`: the end-of-turn line has been printed one more time, or the "working" indicator was seen and
+ * has been gone for three polls in a row (a turn so short that its end line scrolled away or was folded).
+ */
+const turnEnded = async (before, label) => {
+  const end = Date.now() + 180_000
+  let sawWorking = false
+  let idle = 0
+  for (;;) {
+    const s = screen()
+    if (turnsEnded() > before) return s
+    if (/esc to interrupt/i.test(s)) { sawWorking = true; idle = 0 } else if (sawWorking) idle += 1
+    if (sawWorking && idle >= 3) return s
+    if (Date.now() > end) throw new Error(`timed out waiting for ${label}\n${s.slice(-700)}`)
+    if (/trust the files in this folder|Yes, I trust|trust this folder/i.test(s)) send('Enter')
+    await sleep(1500)
+  }
+}
 
 function fixture(name) {
   assert.ok(existsSync(testPython), 'the engine test venv is missing: run node scripts/test-engine.mjs first')
