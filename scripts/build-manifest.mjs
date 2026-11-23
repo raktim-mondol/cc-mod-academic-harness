@@ -14,6 +14,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { DROPPED_KEY_FIELDS, DROPPED_TOOLS, EXTRA_KEY_FIELDS, NOT_OFFERED_KEY_FIELDS } from '../server/src/fit.mjs'
+import { NETWORK_HOSTS } from '../server/src/hosts.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const manifestPath = join(root, '.claude-plugin', 'plugin.json')
@@ -144,9 +145,9 @@ export async function build(manifest) {
   userConfig.rsi_mode = {
     type: 'string',
     title: 'Self-improvement loop',
-    description: 'In a folder with an ah.yaml, a local loop learns short lessons from your corrections and from what tools returned. auto: it adds the lessons that fit the task to your prompts (ah_rsi shows and forgets them). observe: it records and adds nothing. off: nothing is recorded. The AH_RSI environment variable wins when set.',
-    default: 'auto',
-    options: ['auto', 'observe', 'off'],
+    description: 'Off unless you turn it on. In a folder with an ah.yaml, in a session with a person at the prompt (never a headless run), a local loop learns short lessons from your corrections and from what tools returned. observe: it records and adds nothing to your prompts. auto: it also adds the lessons that fit the task to your prompts (ah_rsi shows and forgets them). The AH_RSI environment variable wins when set.',
+    default: 'off',
+    options: ['off', 'observe', 'auto'],
   }
   // The model router's settings are read by the hooks module (hooks/router-core.ts), not the server, so they carry no AH_ variable.
   Object.assign(userConfig, ROUTER_OPTIONS)
@@ -165,6 +166,8 @@ export async function build(manifest) {
   return {
     ...manifest,
     userConfig,
+    // The hosts the plugin reaches, for everything it ships (server/src/hosts.mjs): the author's word, shown to whoever installs it and read by the directory.
+    network: { hosts: NETWORK_HOSTS },
     mcpServers: {
       ...manifest.mcpServers,
       ah: { command: 'node', args: ['${CLAUDE_PLUGIN_ROOT}/server/bin/ah-mcp.mjs'], env },

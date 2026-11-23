@@ -16,6 +16,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { housekeeping } from './rsi-retention.mjs'
 
 const STATE_KEEP_MS = 7 * 24 * 3600 * 1000
 
@@ -107,18 +108,21 @@ export function gateKind(engineOut) {
 }
 
 /**
- * Handle one hook event: { event: 'userprompt' | 'post' | 'stop', payload (the hook's JSON), root (the ah.yaml folder), home (the mod's home),
- * rsi ({ store, core, lock } from loadRsi), engineOut (the engine's reply to a stop, for the gate) }.
- * Returns { additionalContext? } or { error }. The session's file is read and written under a lock, because Claude Code runs the hooks of
- * parallel tool calls at the same time; the slow part (updating lessons, diagnosing) runs after the lock is released, and everything
- * is awaited, because the process ends when this returns.
+ * Handle one hook event: { event: 'userprompt' | 'batch' | 'fail' | 'stop', payload (the hook's JSON), root (the ah.yaml folder), home (the mod's
+ * home), rsi ({ store, core, lock } from loadRsi), mode ('off' | 'observe' | 'auto', from rsi-mode.mjs), engineOut (the engine's reply to a stop,
+ * for the gate), limits (the store's retention limits, for tests) }.
+ * `batch` is the calls of one step (PostToolBatch), `fail` one call that failed (PostToolUseFailure). Returns { additionalContext? } or { error }.
+ *
+ * With the mode off nothing is read or written, not even the store's folder. The session's file is read and written under a lock, because
+ * hooks can overlap; the slow part (updating lessons, diagnosing, housekeeping) runs after the lock is released, and everything is awaited,
+ * because the process ends when this returns.
  */
-export async function rsiEvent({ event, payload, root, home, rsi, engineOut }) {
+export async function rsiEvent({ event, payload, root, home, rsi, mode, engineOut, limits }) {
+  if (mode !== 'observe' && mode !== 'auto') return {}
   const { store, core, lock } = rsi
   const dir = store.defaultStoreDir()
   let config
-  try { config = store.effectiveConfig(dir) } catch (error) { return { error: `store unavailable: ${error?.message ?? error}` } }
-  if (config.mode === 'off') return {}
+  try { config = { ...store.effectiveConfig(dir), mode } } catch (error) { return { error: `store unavailable: ${error?.message ?? error}` } }
   store.ensureStore(dir)
 
   const sessions = join(home, 'rsi-sessions')
@@ -179,13 +183,26 @@ export async function rsiEvent({ event, payload, root, home, rsi, engineOut }) {
         return additionalContext ? { additionalContext } : {}
       }
 
-      if (event === 'post') {
-        const turn = state.currentTurn
-        const name = bareName(payload.tool_name)
-        if (!turn || turn.finalized || !name || name === 'ah_rsi') return {}
-        const summary = core.summarizeToolResult(name, payload.tool_input, payload.tool_response)
-        addTool(turn, summary, payload.tool_input)
+      /** One call's outcome into the open turn, and into the event log. */
+      const record = (turn, name, args, result) => {
+        if (!name || name === 'ah_rsi') return
+        const summary = core.summarizeToolResult(name, args, result)
+        addTool(turn, summary, args)
         core.appendTurnEvent(dir, { type: 'tool', session_id: state.sessionId, task_class: turn.taskClass, tool: summary.name, is_error: summary.is_error, finding_count: summary.finding_count, findings: summary.findings, verdict: summary.verdict, gate_passed: summary.gate_passed, result_size: summary.result_size, result_hash: summary.text_hash })
+      }
+
+      if (event === 'batch') {
+        const turn = state.currentTurn
+        if (!turn || turn.finalized) return {}
+        for (const call of Array.isArray(payload.tool_calls) ? payload.tool_calls : []) record(turn, bareName(call?.tool_name), call?.tool_input, call?.tool_response)
+        save()
+        return {}
+      }
+
+      if (event === 'fail') {
+        const turn = state.currentTurn
+        if (!turn || turn.finalized) return {}
+        record(turn, bareName(payload.tool_name), payload.tool_input, { isError: true, text: String(payload.error ?? '') })
         save()
         return {}
       }
@@ -212,6 +229,7 @@ export async function rsiEvent({ event, payload, root, home, rsi, engineOut }) {
   } catch (error) {
     return { error: String(error?.message ?? error) }
   }
+  if (event === 'stop') later.push(() => housekeeping({ dir, store, lock: store.withStoreLock, limits }))
   for (const job of later) { try { await job() } catch { /* a lesson update is not worth a failed hook */ } }
   if (event === 'stop') forgetOldSessions(sessions)
   return out

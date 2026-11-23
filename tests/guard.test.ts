@@ -1,4 +1,4 @@
-import { expect, test } from 'claude-code/testing'
+import { expect, mock, test } from 'claude-code/testing'
 
 // The writing-engine guard (P3). Nothing sits beneath the plugin in a test: each hook below stands for the
 // engine, and `process.run` stands for server/bin/ah-hook.mjs, so these tests drive the guard's own logic.
@@ -31,8 +31,8 @@ function world(on: any, opts: { cwd?: string; files?: string[]; reply?: Reply | 
   return { runs, cwd }
 }
 
-/** The calls that went to the writing engine: the self-improvement loop's own hook (`rsi-post`) is another call and is tested below. */
-const engineRuns = <T extends { event: string }>(w: { runs: T[] }): T[] => w.runs.filter((r) => r.event !== 'rsi-post')
+/** The calls that went to the writing engine: the self-improvement loop's own events (`rsi-batch`, `rsi-fail`) are other calls and are tested below. */
+const engineRuns = <T extends { event: string; argv: string[] }>(w: { runs: T[] }): T[] => w.runs.filter((r) => /ah-hook\.mjs$/.test(r.argv[1] ?? '') && r.event !== 'rsi-batch' && r.event !== 'rsi-fail')
 
 const deny = (reason: string) => ({ stdout: JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } }), exitCode: 0 })
 const at = (w: { cwd: string }) => ({ cwd: w.cwd, session_id: 'sess-1' })
@@ -263,47 +263,129 @@ test('other tools are not asked about', async ($, on) => {
   expect(w.runs.length).toBe(0)
 })
 
-// ---- the self-improvement loop's hook (hooks/rsi.ts) ----
+// ---- the self-improvement loop's hooks (hooks/rsi.ts) ----
+//
+// The loop is off unless a person turns it on, never runs headless, and only runs in an ah.yaml project; when it does not run, its hooks start
+// no process at all. When it does, one process takes the calls of a step (PostToolBatch) or one failed call (PostToolUseFailure).
 
-test('the loop is handed every tool\'s result in a project, the engine\'s own post check still sees none of it, and the call goes on unchanged', async ($, on) => {
-  const w = world(on)
-  const out = await $.classic.PostToolUse({ ...at(w), tool_name: 'Read', tool_input: { file_path: '/p/a.tex' }, tool_response: { content: 'y'.repeat(100_000) }, tool_use_id: 'r1' })
+/** The guard's world plus what an interactive or headless session.start needs, and the shell's AH_RSI. */
+function rsiWorld(on: any, opts: { env?: Record<string, string>; reply?: Reply | ((event: string, payload: any) => Reply); cwd?: string; files?: string[] } = {}) {
+  const w = world(on, { ...(opts.cwd ? { cwd: opts.cwd } : {}), ...(opts.files ? { files: opts.files } : {}), ...(opts.reply ? { reply: opts.reply } : {}) })
+  on('env.get', (_: unknown, e: { name: string }) => ({ value: e.name === 'AH_MOD_HOME' ? '/mod' : e.name === 'HOME' ? '/home/u' : opts.env?.[e.name] }))
+  on('fs.list', () => ({ value: [] }))
+  on('fs.read', () => ({ value: '' }))
+  on('fs.write', () => ({ value: undefined }))
+  mock.clock(on)
+  on('ui.notify', () => ({ value: { isSent: true, channel: 'terminal' } }))
+  on('prompt.submit', (_: unknown, e: { text: string }) => ({ text: e.text }))
+  on('ui.status', () => ({ value: undefined }))
+  on('session.version', () => ({ value: { version: '2.1.330', base: '2.1.330' } }))
+  // what sits beneath the plugin for the loop's two events
+  on('classic.PostToolBatch', () => ({}))
+  on('classic.PostToolUseFailure', () => ({}))
+  on('command.register', (_: unknown, e: { name: string }) => ({ value: { command: e.name } }))
+  on('session.start', (_: unknown, e: { cwd: string }) => ({ cwd: e.cwd }))
+  return w
+}
+const loopRuns = <T extends { event: string }>(w: { runs: T[] }): T[] => w.runs.filter((r) => r.event === 'rsi-batch' || r.event === 'rsi-fail')
+/** Every call to the hook bridge (a session start also runs the pane's own helper, which is not the bridge). */
+const hookRuns = <T extends { argv: string[] }>(w: { runs: T[] }): T[] => w.runs.filter((r) => /ah-hook\.mjs$/.test(r.argv[1] ?? ''))
+const READ_CALL = { tool_name: 'Read', tool_input: { file_path: '/p/a.tex' }, tool_response: 'text', tool_use_id: 'u1' }
+
+test('the loop is off by default: a person at the prompt, an ah.yaml project, and still no process is started', async ($, on) => {
+  const w = rsiWorld(on)
+  await $.session.start({ cwd: '/p/sections', surface: 'terminal', isInteractive: true })
+  await $.classic.PostToolBatch({ ...at(w), tool_calls: [READ_CALL] })
+  await $.classic.PostToolUseFailure({ ...at(w), tool_name: 'Bash', tool_input: {}, error: 'boom', tool_use_id: 'u2' })
+  expect(hookRuns(w).length).toBe(0)
+})
+
+test('with the loop on, a step\'s calls go to the bridge in one process and the engine\'s own post check sees none of them', { options: { rsi_mode: 'observe' } }, async ($, on) => {
+  const w = rsiWorld(on)
+  await $.session.start({ cwd: '/p/sections', surface: 'terminal', isInteractive: true })
+  const out = await $.classic.PostToolBatch({ ...at(w), tool_calls: [READ_CALL, { ...READ_CALL, tool_name: 'Write', tool_input: { file_path: '/p/big.tex', content: 'z'.repeat(200_000) }, tool_response: 'y'.repeat(100_000), tool_use_id: 'u3' }] })
   expect(out.block).toBeUndefined()
-  const rsi = w.runs.filter((r) => r.event === 'rsi-post')
-  expect(rsi.length).toBe(1)
-  expect(rsi[0]!.argv[1]).toMatch(/server\/bin\/ah-hook\.mjs$/)
-  expect(rsi[0]!.payload.tool_name).toBe('Read')
-  expect(rsi[0]!.payload.tool_input).toEqual({ file_path: '/p/a.tex' })
-  expect(typeof rsi[0]!.payload.tool_response).toBe('string')
-  expect(rsi[0]!.payload.tool_response.length).toBeLessThanOrEqual(30_000)
+  expect(out.additionalContext).toBeUndefined()
+  const runs = loopRuns(w)
+  expect(runs.length).toBe(1)
+  expect(runs[0]!.event).toBe('rsi-batch')
+  expect(runs[0]!.argv[1]).toMatch(/server\/bin\/ah-hook\.mjs$/)
+  expect(runs[0]!.env?.AH_RSI_SETTING).toBe('observe')
+  expect(runs[0]!.env?.AH_RSI_INTERACTIVE).toBe('1')
+  const calls = runs[0]!.payload.tool_calls
+  expect(calls.map((c: any) => c.tool_name)).toEqual(['Read', 'Write'])
+  expect(typeof calls[1].tool_input).toBe('string')
+  expect(calls[1].tool_input.length).toBeLessThanOrEqual(20_000)
+  expect(calls[1].tool_response.length).toBeLessThanOrEqual(30_000)
   expect(engineRuns(w).length).toBe(0)
 })
 
-test('a large tool input is cut before it is handed over', async ($, on) => {
-  const w = world(on)
-  await $.classic.PostToolUse({ ...at(w), tool_name: 'Write', tool_input: { file_path: '/p/big.tex', content: 'z'.repeat(200_000) }, tool_response: 'ok', tool_use_id: 'r2' })
-  const rsi = w.runs.find((r) => r.event === 'rsi-post')!
-  expect(typeof rsi.payload.tool_input).toBe('string')
-  expect(rsi.payload.tool_input.length).toBeLessThanOrEqual(20_000)
+test('a batch is bounded', { options: { rsi_mode: 'auto' } }, async ($, on) => {
+  const w = rsiWorld(on)
+  await $.session.start({ cwd: '/p/sections', surface: 'terminal', isInteractive: true })
+  await $.classic.PostToolBatch({ ...at(w), tool_calls: Array.from({ length: 100 }, (_, i) => ({ ...READ_CALL, tool_use_id: `b${i}` })) })
+  expect(loopRuns(w)[0]!.payload.tool_calls.length).toBe(40)
 })
 
-test('the loop starts no process outside an ah.yaml tree, and a loop that cannot start never changes the turn', async ($, on) => {
-  const outside = world(on, { cwd: '/home/u/notes', files: [] })
-  await $.classic.PostToolUse({ ...at(outside), tool_name: 'Read', tool_input: {}, tool_response: '', tool_use_id: 'r3' })
-  expect(outside.runs.length).toBe(0)
+test('a call that failed goes to the bridge, an interrupted one does not', { options: { rsi_mode: 'auto' } }, async ($, on) => {
+  const w = rsiWorld(on)
+  await $.session.start({ cwd: '/p/sections', surface: 'terminal', isInteractive: true })
+  await $.classic.PostToolUseFailure({ ...at(w), tool_name: 'Bash', tool_input: { command: 'latexmk' }, error: 'e'.repeat(10_000), tool_use_id: 'f1' })
+  await $.classic.PostToolUseFailure({ ...at(w), tool_name: 'Bash', tool_input: {}, error: 'interrupted', is_interrupt: true, tool_use_id: 'f2' })
+  const runs = loopRuns(w)
+  expect(runs.length).toBe(1)
+  expect(runs[0]!.event).toBe('rsi-fail')
+  expect(runs[0]!.payload).toMatchObject({ tool_name: 'Bash', tool_input: { command: 'latexmk' } })
+  expect(runs[0]!.payload.error.length).toBeLessThanOrEqual(2000)
 })
 
-test('a loop that cannot start never blocks or changes the call', async ($, on) => {
-  const w = world(on, { reply: 'throw' })
-  const out = await $.classic.PostToolUse({ ...at(w), tool_name: 'Read', tool_input: {}, tool_response: '', tool_use_id: 'r4' })
+test('a headless run is never recorded, even when the loop is asked for', { options: { rsi_mode: 'auto' } }, async ($, on) => {
+  const w = rsiWorld(on, { env: { AH_RSI: 'auto' } })
+  await $.session.start({ cwd: '/p/sections', surface: null, isInteractive: false })
+  await $.classic.PostToolBatch({ ...at(w), tool_calls: [READ_CALL] })
+  await $.classic.PostToolUseFailure({ ...at(w), tool_name: 'Bash', tool_input: {}, error: 'boom', tool_use_id: 'h1' })
+  expect(hookRuns(w).length).toBe(0)
+  // and what the guard hands the bridge says so, so the prompt and the stop add nothing either
+  await $.classic.UserPromptSubmit({ ...at(w), prompt: 'write the intro' })
+  expect(hookRuns(w)[0]!.event).toBe('userprompt')
+  expect(hookRuns(w)[0]!.env?.AH_RSI_INTERACTIVE).toBe('0')
+})
+
+test('the shell\'s AH_RSI wins over the setting, both ways', { options: { rsi_mode: 'auto' } }, async ($, on) => {
+  const w = rsiWorld(on, { env: { AH_RSI: 'off' } })
+  await $.session.start({ cwd: '/p/sections', surface: 'terminal', isInteractive: true })
+  await $.classic.PostToolBatch({ ...at(w), tool_calls: [READ_CALL] })
+  expect(hookRuns(w).length).toBe(0)
+})
+
+test('the shell can turn the loop on when the setting is off', async ($, on) => {
+  const w = rsiWorld(on, { env: { AH_RSI: 'observe' } })
+  await $.session.start({ cwd: '/p/sections', surface: 'terminal', isInteractive: true })
+  await $.classic.PostToolBatch({ ...at(w), tool_calls: [READ_CALL] })
+  expect(loopRuns(w).length).toBe(1)
+})
+
+test('outside an ah.yaml tree the loop starts no process', { options: { rsi_mode: 'auto' } }, async ($, on) => {
+  const w = rsiWorld(on, { cwd: '/home/u/notes', files: [] })
+  await $.session.start({ cwd: '/home/u/notes', surface: 'terminal', isInteractive: true })
+  await $.classic.PostToolBatch({ cwd: '/home/u/notes', session_id: 'sess-1', tool_calls: [READ_CALL] })
+  expect(hookRuns(w).length).toBe(0)
+})
+
+test('a loop that cannot start never blocks or changes the call', { options: { rsi_mode: 'auto' } }, async ($, on) => {
+  const w = rsiWorld(on, { reply: 'throw' })
+  await $.session.start({ cwd: '/p/sections', surface: 'terminal', isInteractive: true })
+  const out = await $.classic.PostToolBatch({ ...at(w), tool_calls: [READ_CALL] })
   expect(out.block).toBeUndefined()
   expect(out.additionalContext).toBeUndefined()
 })
 
-test('the loop\'s mode setting reaches the bridge as AH_RSI_SETTING, and an empty setting passes nothing', { options: { rsi_mode: 'observe' } }, async ($, on) => {
-  const w = world(on)
-  await $.classic.PostToolUse({ ...at(w), tool_name: 'Read', tool_input: {}, tool_response: '', tool_use_id: 'r5' })
-  expect(w.runs.find((r) => r.event === 'rsi-post')!.env?.AH_RSI_SETTING).toBe('observe')
+test('what the guard hands the bridge: the mode setting when there is one, and that a person is at the prompt', { options: { rsi_mode: 'observe' } }, async ($, on) => {
+  const w = rsiWorld(on)
+  await $.session.start({ cwd: '/p/sections', surface: 'terminal', isInteractive: true })
+  await $.classic.UserPromptSubmit({ ...at(w), prompt: 'write the intro' })
+  expect(hookRuns(w)[0]!.env?.AH_RSI_SETTING).toBe('observe')
+  expect(hookRuns(w)[0]!.env?.AH_RSI_INTERACTIVE).toBe('1')
 })
 
 // ---- paper_mcp ----

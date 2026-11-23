@@ -36,7 +36,7 @@ With no key at all neither tool exists: Claude uses `WebSearch`, `WebFetch` and 
 
 ### The self-improvement loop and `paper_mcp`
 
-**`ah_rsi`** is the control for a local loop that, in a folder with an `ah.yaml`, notes your corrections and what tools returned, learns short lessons, and adds the ones that fit the task to your prompts. It is on by default (the `rsi_mode` setting is `auto`); `observe` records without adding anything, `off` stops it (the `AH_RSI` variable does the same and wins), and `ah_rsi action=forget` retracts a lesson. The doctor shows the mode. Lessons are guidance, never evidence.
+**`ah_rsi`** is the control for a local loop that notes your corrections and what tools returned, learns short lessons, and (in `auto` mode) adds the ones that fit the task to your prompts. It is off by default. You turn it on with the `rsi_mode` setting (`observe` records only, `auto` also adds lessons) or `AH_RSI` (which wins); it then runs only in a folder with an `ah.yaml` and only with a person at the prompt, never in a headless run. `ah_rsi action=forget` retracts a lesson and the doctor shows the mode. Lessons are guidance, never evidence.
 
 **`paper_mcp`** registers a generated Paper2MCP server in the project's `.mcp.json`. It asks you first, showing the program that will run and the variables it names (never their values), and Claude Code asks again before it starts a project server; where nobody can answer (`claude -p`) it is refused.
 

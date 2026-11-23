@@ -1,6 +1,7 @@
 // The environment the upstream modules run in. Called once, before any of them is imported.
 import { mkdirSync } from 'node:fs'
 import { isDevMode, modHome } from './paths.mjs'
+import { rsiMode } from './rsi-mode.mjs'
 
 export const KEY_ENV_PREFIX = 'AH_KEY_'
 
@@ -46,8 +47,9 @@ export function prepareEnv(env = process.env, { areas } = {}) {
     if (env[flag] !== undefined) continue
     if (!(managed && needed.some(a => areas.includes(a)))) env[flag] = '1'
   }
-  // The self-improvement loop's mode: the plugin option arrives as AH_RSI_SETTING, and a variable the person exported wins (store/rsi-store.js reads AH_RSI).
-  if (!env.AH_RSI?.trim() && env.AH_RSI_SETTING?.trim()) env.AH_RSI = env.AH_RSI_SETTING.trim()
+  // The self-improvement loop's mode, settled once for the core (rsi-store.js reads AH_RSI): the shell's variable, else the plugin option (AH_RSI_SETTING),
+  // else off. A value that is not a mode is off (rsi-mode.mjs).
+  env.AH_RSI = rsiMode(env)
   if (isDevMode(env)) env.AH_DEV_MODE = '1'
   return applyKeyEnv(env)
 }

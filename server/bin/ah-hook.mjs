@@ -16,12 +16,13 @@ import { pathToFileURL } from 'node:url'
 import { engineDir, engineStatus } from '../src/engine.mjs'
 import { coreDir, modHome } from '../src/paths.mjs'
 import { loadRsi, mergeReply, rsiEvent } from '../src/rsi-bridge.mjs'
+import { rsiMode } from '../src/rsi-mode.mjs'
 
 export const EXIT_NO_ENGINE = 3
 export const EXIT_TIMEOUT = 124
-const EVENTS = new Set(['userprompt', 'pre', 'post', 'stop', 'rsi-post'])
-/** The events the self-improvement loop (ah_rsi) listens to, and the name it knows each by. `rsi-post` is only the loop: the hooks module sends it for every tool, the engine for the few that edit. */
-const RSI_EVENT = { userprompt: 'userprompt', stop: 'stop', 'rsi-post': 'post' }
+const EVENTS = new Set(['userprompt', 'pre', 'post', 'stop', 'rsi-batch', 'rsi-fail'])
+/** The events the self-improvement loop (ah_rsi) listens to, and the name it knows each by. `rsi-batch` (the calls of one step) and `rsi-fail` (a call that failed) are only the loop: the hooks module sends them, the engine never sees them. */
+const RSI_EVENT = { userprompt: 'userprompt', stop: 'stop', 'rsi-batch': 'batch', 'rsi-fail': 'fail' }
 
 async function readStdin() {
   let text = ''
@@ -47,19 +48,20 @@ export async function main(argv = process.argv.slice(2), env = process.env, stdi
 
   // The loop runs in its own process step and never stops a turn: whatever it does, the reply is the engine's, plus lessons when there are any.
   const runRsi = async (root, engineOut) => {
-    // The shell's AH_RSI wins over the plugin option the hooks module passes as AH_RSI_SETTING.
-    const mode = (env.AH_RSI?.trim() || env.AH_RSI_SETTING?.trim() || '').toLowerCase()
-    if (!RSI_EVENT[event] || ['off', '0', 'false', 'no'].includes(mode)) return {}
+    // The loop is off unless a person turned it on, and never runs headless (server/src/rsi-mode.mjs). Off means nothing is loaded or written.
+    const mode = rsiMode(env)
+    if (!RSI_EVENT[event] || mode === 'off') return {}
     try {
       process.env.DSH_HOME = modHome(env)
-      if (!process.env.AH_RSI?.trim() && mode) process.env.AH_RSI = mode
-      return await rsiEvent({ event: RSI_EVENT[event], payload, root, home: modHome(env), rsi: await loadRsi(coreDir(env)), engineOut })
+      process.env.AH_RSI = mode // the core reads it when it works out its own configuration
+      return await rsiEvent({ event: RSI_EVENT[event], payload, root, home: modHome(env), rsi: await loadRsi(coreDir(env)), mode, engineOut })
     } catch (error) {
       process.stderr.write(`ah-hook: rsi: ${error?.message ?? error}\n`)
       return {}
     }
   }
-  if (event === 'rsi-post') {
+  if (event === 'rsi-batch' || event === 'rsi-fail') {
+    if (rsiMode(env) === 'off') return 0 // nothing is loaded for a loop that is off
     const cli = await import(pathToFileURL(join(coreDir(env), 'academic-harness-cli.js')).href)
     const root = cli.findAhRoot(cwd)
     if (root) await runRsi(root)

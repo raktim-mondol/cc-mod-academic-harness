@@ -153,7 +153,7 @@ export function hostOver(registry, { loaded = [], failed = [], env = process.env
   for (const t of webTools({ registry, env, ...(fence ? { fence } : {}) })) if (!registry.tools.has(t.name)) registry.register(t)
 
   // The doctor tool is the host's own too: it reports what this server loaded and what its environment holds.
-  if (!registry.tools.has('doctor')) registry.register(doctorTool({ env, loaded, failed, served: () => [...registry.tools.keys()], flush: () => usage?.flush() }))
+  if (!registry.tools.has('doctor')) registry.register(doctorTool({ env, loaded, failed, served: () => [...registry.tools.keys()], flush: () => usage?.flush(), cwd: () => cwd }))
 
   let started = false
   const renderValue = (tool, args, value) => (tool.output?.render ? tool.output.render(args, value) : [{ type: 'text', text: typeof value === 'string' ? value : JSON.stringify(value, null, 2) }])
