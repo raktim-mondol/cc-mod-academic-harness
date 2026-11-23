@@ -104,7 +104,9 @@ describe('manifest', () => {
   test('classification: tier 1 by area, host-only with a reason, everything else later', () => {
     assert.deepEqual(classify({ file: 'notebook.js' }), { tier: 1, area: 'notebook' })
     assert.equal(classify({ file: 'zvec-grep.js' }).tier, 'host-only')
-    assert.deepEqual(classify({ file: 'rsi.js' }), { tier: 'dropped', tool: 'ah_rsi', reason: classify({ file: 'rsi.js' }).reason })
+    assert.deepEqual(classify({ file: 'rsi.js' }), { tier: 1, area: 'writing' })
+    assert.equal(classify({ file: 'rsi-hooks.js' }).tier, 'host-only')
+    assert.equal(classify({ file: 'brave-search.js' }).tier, 'dropped')
     assert.equal(classify({ file: 'a-module-nobody-classified.js' }).tier, 'later')
   })
   test('every tier-1 module exists in the snapshot and no module is in two groups', { skip: !existsSync(UP) }, () => {

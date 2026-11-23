@@ -6,6 +6,7 @@ import { startNotices } from './notices'
 import { doctorText, usageText } from './doctor'
 import { addSection, run, showStatus } from './mode'
 import { recordSeen } from './seen'
+import { registerRsi } from './rsi'
 import { registerRouter, registerRouterCommand, startRouter } from './router'
 import { registerTaskCommands, registerTasks } from './tasks'
 import { openPane, registerUi, startUi } from './ui'
@@ -46,6 +47,7 @@ export const register: Register = (on, options) => {
   registerUi(on)
   registerGuard(on, options)
   registerApprovals(on, options)
+  registerRsi(on, options)
 
   on('prompt.compose', async ($, e, next) => {
     const composed = await next(e)

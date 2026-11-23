@@ -4,8 +4,8 @@
 //   node tests/live/fit.mjs                 all
 //   node tests/live/fit.mjs search_route    one or more by name
 //
-// catalogue     what Claude Code lists from the mod: 55 skills (the 15 duplicates of agents, of Anthropic's own skills and of provider docs are
-//               gone, the 17 niche ones are on demand), 21 agents, none of the 15 dropped tools, and the unified literature_search
+// catalogue     what Claude Code lists from the mod: 59 skills (the 10 duplicates of agents and of Anthropic's own skills are
+//               gone, the 18 niche ones are on demand), 21 agents, none of the 12 dropped tools, and the unified literature_search
 // restore       AH_RESTORE_TOOLS=brave_search brings that one tool back, and only that one
 // search_route  asked for papers, the model reaches for an academic search tool through ToolSearch, not for WebSearch (the guidance says which)
 // on_demand     a skill that is not in the catalogue is found with skill_search and read with skill_load
@@ -40,23 +40,23 @@ const scenarios = {
     const r = run('catalogue', 'Say hi in one word.')
     const i = r.init
     const skills = i.skills.filter(s => s.startsWith('academic-harness:'))
-    assert.equal(skills.length, 55, `${skills.length} skills`)
-    for (const gone of ['docx', 'pdf', 'pptx', 'xlsx', 'agent-browser', 'modal', 'runpod', 'peer-reviewer', 'literature-researcher', 'using-science-superpowers']) assert.ok(!skills.includes(`academic-harness:${gone}`), gone)
-    for (const kept of ['academic-search', 'literature-review', 'academic-harness', 'papermemory', 'research-guides']) assert.ok(skills.includes(`academic-harness:${kept}`), kept)
+    assert.equal(skills.length, 59, `${skills.length} skills`)
+    for (const gone of ['docx', 'pdf', 'pptx', 'xlsx', 'peer-reviewer', 'literature-researcher', 'using-science-superpowers']) assert.ok(!skills.includes(`academic-harness:${gone}`), gone)
+    for (const kept of ['academic-search', 'literature-review', 'academic-harness', 'papermemory', 'research-guides', 'agent-browser', 'modal', 'runpod', 'vastai']) assert.ok(skills.includes(`academic-harness:${kept}`), kept)
     const agents = i.agents.filter(a => a.startsWith('academic-harness:'))
     assert.equal(agents.length, 21)
     assert.ok(agents.includes('academic-harness:peer-reviewer') && !agents.includes('academic-harness:pipeline-engineer'))
     const tools = i.tools.filter(t => t.startsWith(PREFIX)).map(t => t.slice(PREFIX.length))
-    for (const gone of ['brave_search', 'tavily_search', 'exa_search', 'perplexity_search', 'parallel_search', 'parallel_extract', 'consensus_search', 'elicit_search', 'scientific_result', 'fold_text', 'research_template', 'paper_mcp', 'latex_compile', 'zvec_index', 'ah_rsi']) assert.ok(!tools.includes(gone), gone)
-    for (const kept of ['literature_search', 'paper_get', 'jina_read', 'notebook', 'deep_research', 'ah_state', 'job_wait']) assert.ok(tools.includes(kept), kept)
-    return `${skills.length} skills, ${agents.length} agents, ${tools.length} ah tools; none of the 15 dropped tools, the unified search stays, ${cost(r)}`
+    for (const gone of ['brave_search', 'tavily_search', 'exa_search', 'perplexity_search', 'parallel_search', 'parallel_extract', 'consensus_search', 'elicit_search', 'scientific_result', 'fold_text', 'research_template', 'latex_compile']) assert.ok(!tools.includes(gone), gone)
+    for (const kept of ['literature_search', 'paper_get', 'jina_read', 'notebook', 'deep_research', 'ah_state', 'job_wait', 'zvec_index', 'ah_rsi', 'paper_mcp']) assert.ok(tools.includes(kept), kept)
+    return `${skills.length} skills, ${agents.length} agents, ${tools.length} ah tools; none of the 12 dropped tools, the unified search stays, ${cost(r)}`
   },
   restore() {
-    const r = run('restore', 'Say hi in one word.', { env: { AH_RESTORE_TOOLS: 'brave_search,paper_mcp,nonsense' } })
+    const r = run('restore', 'Say hi in one word.', { env: { AH_RESTORE_TOOLS: 'brave_search,nonsense', AH_AUTO_PROVIDERS: '0' } })
     const tools = r.init.tools.filter(t => t.startsWith(PREFIX)).map(t => t.slice(PREFIX.length))
     assert.ok(tools.includes('brave_search'), 'brave_search came back')
-    assert.ok(!tools.includes('paper_mcp') && !tools.includes('tavily_search'), 'only the named, restorable tool came back')
-    return `brave_search is served again, paper_mcp (not restorable) and the others are not, ${cost(r)}`
+    assert.ok(!tools.includes('tavily_search'), 'only the named tool came back')
+    return `brave_search is served again and the others are not, ${cost(r)}`
   },
   search_route() {
     const r = run('search_route', 'Find three recent papers on sparse autoencoders for language model interpretability and give their titles and years.', { allow: ['ToolSearch', `${PREFIX}literature_search`, `${PREFIX}openalex_search`, `${PREFIX}s2_search`, 'WebSearch', 'WebFetch'] })

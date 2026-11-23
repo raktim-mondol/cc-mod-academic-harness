@@ -31,9 +31,9 @@ export const RULES = [
   },
   {
     target: 'guide:literature-and-the-web',
-    why: 'the agent-browser skill is not shipped; say what to use',
+    why: 'name the shipped agent-browser skill and the other browsers Claude Code can have',
     find: /When a task needs a real rendered browser rather than a text fetch[\s\S]*?report that limitation instead of guessing\./,
-    to: 'When a task needs a real rendered browser rather than a text fetch (logging in, filling a form, clicking through to a dataset download, checking that a page renders), use a browser tool this session has: Claude Code\'s built-in browser or Claude in Chrome, or the `agent-browser` CLI if it is installed. For a chart or a layout, `Read` the screenshot file. If none of these is available, say so instead of guessing.',
+    to: 'When a task needs a real rendered browser rather than a text fetch (logging in, filling a form, clicking through to a dataset download, checking that a page renders), load the skill `academic-harness:agent-browser` (the `agent-browser` CLI), or use a browser tool this session has: Claude Code\'s built-in browser or Claude in Chrome. For a chart or a layout, `Read` the screenshot file. If none of these is available, say so instead of guessing.',
   },
   {
     target: 'agent:literature-researcher',
@@ -96,15 +96,15 @@ export const RULES = [
   },
   {
     target: 'guide:reading-papers',
-    why: 'the agent-browser skill is not shipped',
+    why: 'the agent-browser skill is shipped as academic-harness:agent-browser',
     find: /open it with `agent-browser` only if the user asks/,
-    to: 'open it in a browser tool only if the user asks',
+    to: 'open it with the `academic-harness:agent-browser` skill only if the user asks',
   },
   {
     target: 'guide:identity-and-audits',
-    why: 'the agent-browser skill is not shipped',
+    why: 'the agent-browser skill is shipped as academic-harness:agent-browser',
     find: /open the forum with `agent-browser`/,
-    to: 'open the forum in a browser tool',
+    to: 'open the forum with the `academic-harness:agent-browser` skill',
   },
   {
     target: 'skill:co-scientist-tournament/references/briefs.md',
@@ -118,6 +118,27 @@ export const RULES = [
     find: /Connect a generated server with `paper_mcp` only when asked\./,
     to: 'Do not connect a generated server yourself; tell the user how (`claude mcp add`, or an entry in `.mcp.json`) when they ask.',
   },
+  // ---- the skills that came back (agent-browser, modal, runpod, vastai) ----
+  {
+    target: 'skill:agent-browser/SKILL.md',
+    why: 'DSH\'s web tool names, and its image reader',
+    find: /`web_search`\/`web_fetch` and `mcp__firecrawl__\*` cover plain pages and search/,
+    to: '`web_search` and `web_extract` (or `WebSearch` and `WebFetch`) and a Firecrawl connector cover plain pages and search',
+  },
+  { target: 'skill:agent-browser/SKILL.md', why: 'DSH\'s web tool names', find: /when web_search\/web_fetch can't reach/g, to: 'when web_search and web_extract (or WebSearch and WebFetch) cannot reach', optional: true },
+  { target: 'skill:agent-browser/SKILL.md', why: 'Claude Code reads an image with Read (the description)', find: /Inspect screenshots with read_image on an image-capable model/, to: 'Inspect screenshots with Read on an image-capable model' },
+  { target: 'skill:agent-browser/SKILL.md', why: 'Claude Code reads an image with Read', find: /with `read_image` on an image-capable session model\. The host checks whether the active route supports images\./, to: 'with `Read` on the image file; the session model must accept images.' },
+  {
+    target: 'skill:modal/SKILL.md',
+    why: 'the other host\'s SDK install path (`dsh plugin ... add modal`, a profile, pnpm build policy)',
+    find: /- `modal_run` loads the `modal` npm SDK from the profile when present\.[\s\S]*?- A failed managed install surfaces as/,
+    to: '- `modal_run` fetches its SDK into the plugin\'s home on first use and loads it at once; there is nothing to add to a profile and no restart.\n- `ACADEMIC_HARNESS_MODAL_SKIP_INSTALL=1` disables that managed install; then install the `modal` npm SDK yourself.\n- A failed managed install surfaces as',
+  },
+  { target: 'skill:modal/SKILL.md', why: 'the other host\'s tool names', find: /via the `bash` tool and/g, to: 'through Bash and', optional: true },
+  { target: 'skill:runpod/SKILL.md', why: 'the other host\'s tool names', find: /via the `bash` tool and/g, to: 'through Bash and', optional: true },
+  { target: 'skill:vastai/SKILL.md', why: 'the other host\'s tool names', find: /via the `bash` tool and/g, to: 'through Bash and', optional: true },
+  { target: 'skill:runpod/SKILL.md', why: 'the other host\'s tool names', find: /`runpodctl` via `bash`/g, to: '`runpodctl` through Bash', optional: true },
+  { target: 'skill:vastai/SKILL.md', why: 'the other host\'s tool names', find: /`vastai` CLI via `bash`/g, to: '`vastai` CLI through Bash', optional: true },
   // ---- the other host's name, and what it did that the plugin does now ----
   { target: '*', why: 'names the other host', find: /Academic Harness on DeepSeek Harness\. Native `ah_\*` tools\. Pi is not required\./g, to: 'Native `ah_*` tools.', optional: true },
   { target: '*', why: 'names the other host', find: /DeepSeek Harness is the chat\. Pi is not required\./g, to: 'Claude Code is the chat.', optional: true },

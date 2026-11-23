@@ -71,8 +71,8 @@ What is copied into this repository
 skills/ and agents/ are generated from core/ by scripts/build-skills.mjs
 and scripts/build-agents.mjs. The build leaves out every skill whose licence is
 non-commercial, GPL or unknown (decision D5), and records what it copied and
-what it left out, with each licence, in skills/.build-info.json. Of the 54
-skills copied, 36 name MIT, 3 name CC-BY-4.0, and 15 name no licence because
+what it left out, with each licence, in skills/.build-info.json. Of the 58
+skills copied, 36 name MIT, 3 name CC-BY-4.0, and 19 name no licence because
 they are the source's own text. Most are first-party Academic Harness skills
 (MIT). The ones that come from other projects, and what each needs, are:
 

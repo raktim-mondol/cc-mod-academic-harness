@@ -31,10 +31,10 @@ You need a working `claude` login, `tmux` for the `-tui` scripts, and the networ
 
 | # | Run | You should see | Cost |
 |---|---|---|---|
-| 1 | `node tests/live/p1.mjs` | `init`: 21 agents, 55 skills, `/academic`, 126 tools; `mode`: no research section outside a project, one inside; `skill`; `papermemory` | cents |
+| 1 | `node tests/live/p1.mjs` | `init`: 21 agents, 59 skills, `/academic`, 129 tools; `mode`: no research section outside a project, one inside; `skill`; `papermemory` | cents |
 | 2 | `node tests/live/p5.mjs papers errors status fold` then `node tests/live/fit.mjs` | The commands answer with no model turn; the catalogue is 55 skills and 21 agents; `search_route` uses `literature_search`, not `WebSearch` | cents |
 | 3 | `node tests/live/p3.mjs` | 15 scenarios `ok`: each way past the guard is refused | about 30 cents |
-| 4 | `node tests/live/install.mjs first_start`, then `install.mjs marketplace` | The server answers with the `doctor` tool alone, copies the core and installs its dependencies, then lists 126 tools; the installed copy sets itself up and its next session has every tool and `/ah-papers` works. **This is the step that shows the mod works from a marketplace install** | cents, network |
+| 4 | `node tests/live/install.mjs first_start`, then `install.mjs marketplace` | The server answers with the `doctor` tool alone, copies the core and installs its dependencies, then lists 129 tools; the installed copy sets itself up and its next session has every tool and `/ah-papers` works. **This is the step that shows the mod works from a marketplace install** | cents, network |
 | 5 | `node tests/live/p6.mjs` | `doctor`, `fresh` (a clone set up from a copy of this repository, with nothing else) | cents, network |
 | 6 | `node tests/live/p5-tui.mjs`, `p3-tui.mjs`, `p4-tui.mjs` | The status line, the pane at three widths, a job from start to notice, the permission dialogs | about 20 cents |
 | 7 | `node tests/live/p4.mjs`, `p2.mjs`, `p2-config.mjs` | The model route, deep research and review, a saved key reaching an installed copy | cents |

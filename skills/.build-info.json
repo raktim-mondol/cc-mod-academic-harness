@@ -12,6 +12,10 @@
       "license": null
     },
     {
+      "name": "agent-browser",
+      "license": null
+    },
+    {
       "name": "ah-audit-section",
       "license": null
     },
@@ -128,6 +132,10 @@
       "license": "MIT"
     },
     {
+      "name": "modal",
+      "license": null
+    },
+    {
       "name": "novelty-triage",
       "license": "MIT"
     },
@@ -196,6 +204,10 @@
       "license": "MIT"
     },
     {
+      "name": "runpod",
+      "license": null
+    },
+    {
       "name": "science-data",
       "license": "MIT"
     },
@@ -214,6 +226,10 @@
     {
       "name": "systematic-review-ledger",
       "license": "MIT"
+    },
+    {
+      "name": "vastai",
+      "license": null
     },
     {
       "name": "verifying-results-before-claiming",
@@ -257,11 +273,6 @@
       "name": "abstract-writer",
       "kind": "dropped",
       "why": "The agent of the same name has the same brief."
-    },
-    {
-      "name": "agent-browser",
-      "kind": "dropped",
-      "why": "Browser automation: its own tool and skill; not an academic skill."
     },
     {
       "name": "agentic-data-science-pipeline",
@@ -324,11 +335,6 @@
       "why": "General documentation style."
     },
     {
-      "name": "modal",
-      "kind": "dropped",
-      "why": "Provider documentation: Modal ships its own skill. `modal_run` carries what the tool needs."
-    },
-    {
       "name": "openfda",
       "kind": "on demand",
       "why": "Tool `openfda` describes itself."
@@ -369,11 +375,6 @@
       "why": "A library the model knows."
     },
     {
-      "name": "runpod",
-      "kind": "dropped",
-      "why": "Provider documentation: Runpod ships its own skills."
-    },
-    {
       "name": "scanpy",
       "kind": "on demand",
       "why": "A library the model knows."
@@ -395,13 +396,8 @@
     },
     {
       "name": "using-science-superpowers",
-      "kind": "dropped",
-      "why": "Teaches DSH's skill mechanism (\"invoke the Skill tool first\"); Claude Code lists and loads skills itself."
-    },
-    {
-      "name": "vastai",
-      "kind": "dropped",
-      "why": "Provider documentation for a CLI; `vastai_run` carries what the tool needs."
+      "kind": "on demand",
+      "why": "Its description tells the model to load a skill before every response, which would apply to every session; it is read on request with skill_load."
     },
     {
       "name": "vibe-research-workflow",
@@ -414,5 +410,5 @@
       "why": "Excel files: Anthropic ships an xlsx skill."
     }
   ],
-  "descriptionChars": 20314
+  "descriptionChars": 21027
 }

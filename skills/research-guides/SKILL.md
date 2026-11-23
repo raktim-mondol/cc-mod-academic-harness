@@ -36,5 +36,6 @@ Each file under `references/` is one area of guidance. Read only the file for th
 | `references/latex-projects.md` | a workspace with ah.yaml, or starting a paper, grant or thesis in LaTeX |
 | `references/latex.md` | compiling or fixing LaTeX |
 | `references/remote-compute.md` | paid GPU or cloud compute (always ask first) |
+| `references/search-providers.md` | Search providers: who answers what |
 
 Tool-name mapping and what to do when a named tool is missing are in the research mode notes and at the top of each file.

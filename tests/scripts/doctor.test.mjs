@@ -64,7 +64,7 @@ describe('the report', () => {
   })
   test('what is left out and what is restored are reported', async () => {
     const r = await diagnose({ env: { ...base, AH_RESTORE_TOOLS: 'brave_search', AH_RESTORE_TOOLS_SETTING: '' }, root: clone, core: snap, home: join(root, 'home4') })
-    assert.match(by(r, 'surface').detail, /15 Academic Harness tools are left out.*restored: brave_search/)
+    assert.match(by(r, 'surface').detail, /12 Academic Harness tools are left out.*restored: brave_search/)
   })
   test('jobs are counted when the folder exists', async () => {
     const home = join(root, 'home5')

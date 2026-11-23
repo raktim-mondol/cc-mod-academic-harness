@@ -55,7 +55,9 @@ export function createContext(registry, { log = () => {}, module = '', services 
     // Optional services, when the host built them; undefined otherwise, as upstream's own lookups expect.
     get: name => services.optional?.[name],
     // `ctx.plugin(...)` mounts a DSH plugin (an MCP client, ...). None is ported: Claude Code adds MCP servers itself.
-    plugin() {
+    plugin(...args) {
+      // paper_mcp mounts through this: the host answers by registering the server with Claude Code (mcpjson.mjs). Any other use is not ported.
+      if (typeof services.plugin === 'function' && module === 'paper-mcp.js') return services.plugin(...args)
       throw new UnportedServiceError('plugin', `${module || 'a module'} uses a DSH plugin, which Claude Code does not have`)
     },
     // Subscriptions are recorded. The host raises the two that have a meaning here (host.mjs `start`): session/created and agent/disposed.

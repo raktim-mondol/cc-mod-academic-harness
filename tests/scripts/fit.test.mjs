@@ -7,7 +7,7 @@ import { join, resolve } from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { adapt, RULES, TARGETS } from '../../scripts/adapt.mjs'
-import { DROPPED_AGENTS, DROPPED_KEY_FIELDS, DROPPED_SKILLS, DROPPED_TOOLS, EXTRA_KEY_FIELDS, ON_DEMAND_SKILLS, restoreList } from '../../server/src/fit.mjs'
+import { autoProviders, DROPPED_AGENTS, DROPPED_KEY_FIELDS, DROPPED_SKILLS, DROPPED_TOOLS, EXTRA_KEY_FIELDS, ON_DEMAND_SKILLS, restoreList } from '../../server/src/fit.mjs'
 import { classify, discover, plan } from '../../server/src/manifest.mjs'
 import { coreDir } from '../../server/src/paths.mjs'
 
@@ -53,6 +53,21 @@ describe('the tools left out', () => {
     assert.deepEqual(restoreList(''), { restore: [], unknown: [] })
     assert.deepEqual(restoreList(undefined), { restore: [], unknown: [] })
   })
+  test('a search provider serves itself once its key is set, and only that one', () => {
+    assert.deepEqual(autoProviders({}), [])
+    assert.deepEqual(autoProviders({ BRAVE_API_KEY: ' ', EXA_API_KEY: '' }), [], 'an empty key is no key')
+    assert.deepEqual(autoProviders({ BRAVE_API_KEY: 'k', AH_KEY_EXA_API_KEY: 'k' }).sort(), ['brave_search', 'exa_search'], 'a shell key or a plugin option')
+    assert.deepEqual(autoProviders({ PARALLEL_API_KEY: 'k' }).sort(), ['parallel_extract', 'parallel_search'], 'one key, both Parallel tools')
+    assert.deepEqual(autoProviders({ CONSENSUS_API_KEY: 'k', ELICIT_API_KEY: 'k' }).sort(), ['consensus_search', 'elicit_search'])
+    assert.deepEqual(autoProviders({ BRAVE_API_KEY: 'k', AH_AUTO_PROVIDERS: '0' }), [], 'AH_AUTO_PROVIDERS=0 turns it off')
+    for (const n of autoProviders(Object.fromEntries(Object.values(DROPPED_TOOLS).filter(t => t.provider).map(t => [t.provider, 'k'])))) assert.notEqual(DROPPED_TOOLS[n].restorable, false, n)
+  })
+  test('the research-mode text routes every search provider and the build keeps it within the limit', () => {
+    const text = read('scripts', 'research-mode.md')
+    for (const [name, t] of Object.entries(DROPPED_TOOLS)) if (t.provider) assert.ok(text.includes(`\`${name}\``), `${name} has a row in "Search providers"`)
+    assert.ok(text.includes('## Search providers'))
+    assert.ok(!/Brave, Tavily, Exa, Perplexity and Parallel search tools/.test(text), 'the providers are no longer listed as not provided')
+  })
   test('a restored tool is served by the host; a dropped one is not', { skip: !HAVE_UP }, async () => {
     const { createHost } = await import('../../server/src/host.mjs')
     const scratchRoot = join(homedir(), '.cache', 'ah-test-homes')
@@ -63,14 +78,40 @@ describe('the tools left out', () => {
     for (const f of ['ACADEMIC_HARNESS_SKIP_INSTALL', 'ACADEMIC_HARNESS_MODAL_SKIP_INSTALL', 'TEXTFOLD_SKIP_INSTALL', 'PAPERMEMORY_SKIP_INSTALL', 'ZVEC_GREP_SKIP_INSTALL']) process.env[f] = '1'
     const hosts = []
     try {
-      const without = await createHost({ upstream: UP, areas: 'search', cwd: home, logger: () => {}, env: { ...process.env, AH_MOD_HOME: home } })
-      const withIt = await createHost({ upstream: UP, areas: 'search', cwd: home, logger: () => {}, env: { ...process.env, AH_MOD_HOME: home, AH_RESTORE_TOOLS: 'brave_search', AH_RESTORE_TOOLS_SETTING: '' } })
-      const bySetting = await createHost({ upstream: UP, areas: 'search', cwd: home, logger: () => {}, env: { ...process.env, AH_MOD_HOME: home, AH_RESTORE_TOOLS_SETTING: 'tavily_search' } })
+      const without = await createHost({ upstream: UP, areas: 'search', cwd: home, logger: () => {}, env: { ...process.env, AH_MOD_HOME: home, AH_AUTO_PROVIDERS: '0' } })
+      const withIt = await createHost({ upstream: UP, areas: 'search', cwd: home, logger: () => {}, env: { ...process.env, AH_MOD_HOME: home, AH_RESTORE_TOOLS: 'brave_search', AH_RESTORE_TOOLS_SETTING: '', AH_AUTO_PROVIDERS: '0' } })
+      const bySetting = await createHost({ upstream: UP, areas: 'search', cwd: home, logger: () => {}, env: { ...process.env, AH_MOD_HOME: home, AH_RESTORE_TOOLS_SETTING: 'tavily_search', AH_AUTO_PROVIDERS: '0' } })
       hosts.push(without, withIt, bySetting)
       assert.ok(bySetting.list().some(t => t.name === 'tavily_search'), 'the plugin setting works too')
       assert.ok(!without.list().some(t => t.name === 'brave_search'))
       assert.ok(withIt.list().some(t => t.name === 'brave_search'))
       assert.ok(without.list().some(t => t.name === 'literature_search'), 'the unified search stays')
+    } finally {
+      for (const h of hosts) await h.dispose()
+      for (const k of Object.keys(process.env)) if (!(k in saved)) delete process.env[k]
+      Object.assign(process.env, saved)
+      rmSync(home, { recursive: true, force: true })
+    }
+  })
+  test('with keys set the host serves the provider tools and web_search and web_extract; without keys it serves none of them', { skip: !HAVE_UP }, async () => {
+    const { createHost } = await import('../../server/src/host.mjs')
+    const scratchRoot = join(homedir(), '.cache', 'ah-test-homes')
+    mkdirSync(scratchRoot, { recursive: true })
+    const home = mkdtempSync(join(scratchRoot, 'web-'))
+    const saved = { ...process.env }
+    process.env.DSH_HOME = home
+    for (const f of ['ACADEMIC_HARNESS_SKIP_INSTALL', 'ACADEMIC_HARNESS_MODAL_SKIP_INSTALL', 'TEXTFOLD_SKIP_INSTALL', 'PAPERMEMORY_SKIP_INSTALL', 'ZVEC_GREP_SKIP_INSTALL']) process.env[f] = '1'
+    const clean = { ...process.env, AH_MOD_HOME: home }
+    for (const k of Object.keys(clean)) if (/^(AH_KEY_)?[A-Z]+_API_KEY$/.test(k)) delete clean[k]
+    const hosts = []
+    try {
+      const none = await createHost({ upstream: UP, areas: 'search', cwd: home, logger: () => {}, env: clean })
+      const some = await createHost({ upstream: UP, areas: 'search', cwd: home, logger: () => {}, env: { ...clean, AH_KEY_EXA_API_KEY: 'k', AH_KEY_FIRECRAWL_API_KEY: 'k' } })
+      hosts.push(none, some)
+      const names = h => h.list().map(t => t.name)
+      for (const n of ['web_search', 'web_extract', 'exa_search']) assert.ok(!names(none).includes(n), `${n} is off without a key`)
+      for (const n of ['web_search', 'web_extract', 'exa_search']) assert.ok(names(some).includes(n), `${n} is on with a key`)
+      assert.ok(!names(some).includes('brave_search'), 'a provider without a key stays off')
     } finally {
       for (const h of hosts) await h.dispose()
       for (const k of Object.keys(process.env)) if (!(k in saved)) delete process.env[k]
@@ -115,7 +156,7 @@ describe('the skills and agents left out', () => {
   test('the catalogue stays small: descriptions cost context on every turn', () => {
     const info = JSON.parse(read('skills', '.build-info.json'))
     assert.ok(info.descriptionChars <= 22_000, `${info.descriptionChars} characters of skill descriptions`)
-    assert.ok(info.included.length <= 56, `${info.included.length} skills`)
+    assert.ok(info.included.length <= 60, `${info.included.length} skills`)
   })
 })
 
@@ -140,7 +181,9 @@ describe('host wording', () => {
     assert.match(t, /`WebSearch`/)
   })
   test('no built skill, guide or agent sends the model to a tool this build does not serve', () => {
-    const named = Object.keys(DROPPED_TOOLS)
+    // The search providers are served when keyed and routed by one guide, written for this plugin; no other built text names them.
+    const named = Object.entries(DROPPED_TOOLS).filter(([, t]) => !t.provider).map(([n]) => n)
+    const routed = Object.entries(DROPPED_TOOLS).filter(([, t]) => t.provider).map(([n]) => n)
     // The ledgers' own text still mentions a result card as one kind of link; it names no call to make.
     const concept = new Set(['skills/experiment-tracking/SKILL.md', 'skills/provenance-audit/SKILL.md'])
     const hits = []
@@ -150,6 +193,7 @@ describe('host wording', () => {
         if (rel.endsWith('.build-info.json')) continue
         const text = readFileSync(f, 'utf8')
         for (const n of named) if (new RegExp(`\\b${n}\\b`).test(text) && !(concept.has(rel) && n === 'scientific_result')) hits.push(`${rel}: ${n}`)
+        if (rel !== 'skills/research-guides/references/search-providers.md') for (const n of routed) if (new RegExp(`\\b${n}\\b`).test(text)) hits.push(`${rel}: ${n}`)
       }
     }
     assert.deepEqual(hits, [])
@@ -165,7 +209,7 @@ describe('the research-mode text', () => {
   test('is about 3,000 tokens, down from 4,700, and names the tools it says are not here', () => {
     const prompt = JSON.parse(/PROMPT_TEXT = (".*")\n/.exec(text)[1])
     assert.ok(prompt.length < 14_000, String(prompt.length))
-    for (const n of ['scientific_result', 'research_template', 'fold_text', 'paper_mcp', 'latex_compile']) assert.match(prompt, new RegExp(n))
+    for (const n of ['scientific_result', 'research_template', 'fold_text', 'latex_compile']) assert.match(prompt, new RegExp(n))
     assert.match(prompt, /AskUserQuestion/)
     assert.doesNotMatch(prompt, /DeepSeek|\bDSH\b|another host|written for another/, 'the research-mode text stands on its own')
   })

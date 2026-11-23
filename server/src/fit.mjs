@@ -10,26 +10,23 @@
 // Nothing here removes a tool for being unusual. A researcher's tools (search, citation, ledgers, the writing engine, reviews, compute)
 // stay. `restore_tools` (setting) / AH_RESTORE_TOOLS brings a dropped tool back by name, for a person who has the key and wants it.
 
-/** Tools not served. `module` is the upstream file that registers it (one tool each), `area` the tool area it came from (for `restore_tools`), `keys` the settings fields only it reads (offered, so the key can be saved before the tool is brought back with `restore_tools`; withheld only when `restorable: false`), `restorable: false` when the machinery it needed is gone too, `why` the reason shown in the report and the docs. */
+/** Tools not served. `module` is the upstream file that registers it (one tool each), `area` the tool area it came from (for `restore_tools`), `keys` the settings fields only it reads (offered, so the key can be saved before the tool is brought back with `restore_tools`; withheld only when `restorable: false`), `provider` the environment variable that holds the key of a search provider: such a tool is served on its own once that key is set (see `autoProviders`) and is routed by the research-mode text, `restorable: false` when the machinery it needed is gone too, `why` the reason shown in the report and the docs. */
 export const DROPPED_TOOLS = {
-  brave_search: { module: 'brave-search.js', area: 'search', keys: ['BRAVE_API_KEY'], why: 'General web search: Claude Code has WebSearch, and a paid key buys nothing it lacks.' },
-  tavily_search: { module: 'tavily-search.js', area: 'search', keys: ['TAVILY_API_KEY'], why: 'General web search: Claude Code has WebSearch.' },
-  exa_search: { module: 'exa-search.js', area: 'search', keys: ['EXA_API_KEY'], why: 'General web search: Claude Code has WebSearch (Exa also publishes its own MCP server).' },
-  perplexity_search: { module: 'perplexity-search.js', area: 'search', keys: ['PERPLEXITY_API_KEY'], why: 'General web search: Claude Code has WebSearch.' },
-  parallel_search: { module: 'parallel-search.js', area: 'search', why: 'General web search: Claude Code has WebSearch. `parallel` stays a keyed source inside `literature_search`.' },
-  parallel_extract: { module: 'parallel-extract.js', area: 'search', why: 'Page fetch: Claude Code has WebFetch; `jina_read` covers JavaScript pages and PDFs.' },
-  consensus_search: { module: 'consensus-search.js', area: 'search', why: 'A vendor search API. `literature_search` keeps `consensus` as a keyed source; Consensus publishes its own MCP server for the full tool.' },
-  elicit_search: { module: 'elicit-search.js', area: 'search', keys: ['ELICIT_API_KEY'], why: 'A vendor search API; Elicit publishes its own MCP server.' },
+  brave_search: { module: 'brave-search.js', area: 'search', provider: 'BRAVE_API_KEY', keys: ['BRAVE_API_KEY'], why: 'General web search: Claude Code has WebSearch, and a paid key buys nothing it lacks.' },
+  tavily_search: { module: 'tavily-search.js', area: 'search', provider: 'TAVILY_API_KEY', keys: ['TAVILY_API_KEY'], why: 'General web search: Claude Code has WebSearch.' },
+  exa_search: { module: 'exa-search.js', area: 'search', provider: 'EXA_API_KEY', keys: ['EXA_API_KEY'], why: 'General web search: Claude Code has WebSearch (Exa also publishes its own MCP server).' },
+  perplexity_search: { module: 'perplexity-search.js', area: 'search', provider: 'PERPLEXITY_API_KEY', keys: ['PERPLEXITY_API_KEY'], why: 'General web search: Claude Code has WebSearch.' },
+  parallel_search: { module: 'parallel-search.js', area: 'search', provider: 'PARALLEL_API_KEY', why: 'General web search: Claude Code has WebSearch. `parallel` stays a keyed source inside `literature_search`.' },
+  parallel_extract: { module: 'parallel-extract.js', area: 'search', provider: 'PARALLEL_API_KEY', why: 'Page fetch: Claude Code has WebFetch; `jina_read` covers JavaScript pages and PDFs.' },
+  consensus_search: { module: 'consensus-search.js', area: 'search', provider: 'CONSENSUS_API_KEY', why: 'A vendor search API. `literature_search` keeps `consensus` as a keyed source; Consensus publishes its own MCP server for the full tool.' },
+  elicit_search: { module: 'elicit-search.js', area: 'search', provider: 'ELICIT_API_KEY', keys: ['ELICIT_API_KEY'], why: 'A vendor search API; Elicit publishes its own MCP server.' },
   scientific_result: { module: 'scientific-result.js', area: 'notebook', why: 'Draws a result card in DSH\'s chat. In Claude Code the answer is the reply (a Markdown table).' },
   fold_text: { module: 'fold-text.js', area: 'notebook', why: 'Folding a reply is `/fold` here; a model has no use for folding text it can summarise.' },
   research_template: { module: 'workflows.js', area: 'notebook', why: 'A catalogue of one-click prompts for DSH\'s chat boxes. Here the skills and the task commands do that job.' },
-  paper_mcp: { module: 'paper-mcp.js', area: 'memory', restorable: false, why: 'Mounts MCP servers mid-session. Claude Code adds MCP servers itself (`claude mcp add`, `.mcp.json`) with its own approval.' },
-  zvec_index: { module: 'zvec-index.js', area: 'search', restorable: false, why: 'Semantic search over a workspace through a background daemon (an HTTP MCP server with its own lifecycle, an embedding provider and a first-run package install). Claude Code searches with Grep and Glob, PaperMemory indexes the papers, and the daemon is more to run than the corpora a researcher keeps in a folder warrant.' },
-  ah_rsi: { module: 'rsi.js', area: 'writing', restorable: false, why: 'A loop that records turns, writes its own lessons and injects them into later turns without asking. Claude Code has memory and CLAUDE.md, which the person controls, and PaperMemory keeps writing lessons on request (`papermemory_lesson`).' },
   latex_compile: { module: 'latex-compile.js', area: 'submission', why: 'A latexmk wrapper: Bash does it, and `ah_build` covers Academic Harness projects.' },
 }
 
-/** Settings fields no served tool reads: the zvec daemon and DSH's custom subagent routes (a Claude Code subagent takes a `model` instead). */
+/** Settings fields not offered as plugin options: DSH's custom subagent routes (a Claude Code subagent takes a `model` instead) and zvec_index's own settings, which it reads from the environment (ZVEC_GREP_CLI, ZVEC_GREP_EMBEDDING). */
 export const NOT_OFFERED_KEY_FIELDS = [/^SUBAGENT_/, /^ZVEC_/]
 
 /** Skills not built into the plugin and not offered on demand either. */
@@ -38,11 +35,6 @@ export const DROPPED_SKILLS = {
   pdf: 'PDF files: Anthropic ships a pdf skill, and Read opens PDFs.',
   pptx: 'PowerPoint files: Anthropic ships a pptx skill.',
   xlsx: 'Excel files: Anthropic ships an xlsx skill.',
-  'agent-browser': 'Browser automation: its own tool and skill; not an academic skill.',
-  'using-science-superpowers': 'Teaches DSH\'s skill mechanism ("invoke the Skill tool first"); Claude Code lists and loads skills itself.',
-  modal: 'Provider documentation: Modal ships its own skill. `modal_run` carries what the tool needs.',
-  runpod: 'Provider documentation: Runpod ships its own skills.',
-  vastai: 'Provider documentation for a CLI; `vastai_run` carries what the tool needs.',
   // the same brief exists as an agent (agents/<name>.md): the agent keeps it, in its own context
   'abstract-writer': 'The agent of the same name has the same brief.',
   'citation-checker': 'The agent of the same name has the same brief.',
@@ -54,6 +46,7 @@ export const DROPPED_SKILLS = {
 
 /** Skills kept out of the session catalogue (each description is context on every turn) and left to `skill_search` / `skill_load`. */
 export const ON_DEMAND_SKILLS = {
+  'using-science-superpowers': 'Its description tells the model to load a skill before every response, which would apply to every session; it is read on request with skill_load.',
   openfda: 'Tool `openfda` describes itself.',
   clinicaltrials: 'Tool `clinicaltrials` describes itself.',
   gget: 'A bioinformatics CLI.',
@@ -83,6 +76,17 @@ export function restoreList(value) {
   const names = String(value ?? '').split(/[\s,]+/).map(s => s.trim()).filter(Boolean)
   const can = n => Object.hasOwn(DROPPED_TOOLS, n) && DROPPED_TOOLS[n].restorable !== false
   return { restore: names.filter(can), unknown: names.filter(n => !can(n)) }
+}
+
+/**
+ * Search providers that serve themselves: a dropped tool with a `provider` key is brought back when that key is set (in the shell, or as a
+ * plugin option, which arrives as AH_KEY_<NAME>), so a person who pays for a provider does not also have to name it in `restore_tools`, and a
+ * provider with no key is not offered to a model that could only be told "key_missing". `AH_AUTO_PROVIDERS=0` turns this off.
+ */
+export function autoProviders(env = process.env) {
+  if (env.AH_AUTO_PROVIDERS?.trim() === '0') return []
+  const has = k => Boolean(env[k]?.trim() || env[`AH_KEY_${k}`]?.trim())
+  return Object.entries(DROPPED_TOOLS).filter(([, t]) => t.provider && t.restorable !== false && has(t.provider)).map(([n]) => n)
 }
 
 /** Settings fields that only a tool which cannot come back reads: not offered. A restorable tool's key is offered, so it can be saved ahead of `restore_tools`. */

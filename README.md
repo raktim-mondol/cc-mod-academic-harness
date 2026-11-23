@@ -1,6 +1,6 @@
 # cc-mod-academic-harness
 
-A Claude Code plugin for academic research and writing. It adds literature search across the scholarly APIs, citation and integrity checks, deep research and deep review that run as background jobs, a PaperMemory library, 54 research skills and 21 specialist agents, hypothesis tournaments, study-design and reproducibility ledgers, and a guard for writing papers in LaTeX projects (`ah.yaml`).
+A Claude Code plugin for academic research and writing. It adds literature search across the scholarly APIs, citation and integrity checks, deep research and deep review that run as background jobs, a PaperMemory library, 58 research skills and 21 specialist agents, hypothesis tournaments, study-design and reproducibility ledgers, and a guard for writing papers in LaTeX projects (`ah.yaml`).
 
 It is a Claude Code *mod*: next to its MCP tools, skills and agents it runs code inside Claude Code, which is what gives it slash commands, a status line, a pane and the guard ([what that means](docs/maintain/next-steps.md#plugin-or-mod-both-and-it-works)).
 
@@ -54,8 +54,8 @@ research mode on · 1 job running · gate FAIL (5 blocking)
 | | |
 |---|---|
 | **Research mode** | A research section in the system prompt, on automatically in a folder with an `ah.yaml` (`/academic on\|off\|auto`) |
-| **Tools** | 126 tools in 16 areas: search, papers, notebook, the writing engine, reviews, tournaments, analysis, provenance, study design, datasets, submission, deep research and review, paid compute |
-| **Skills and agents** | 54 core skills, about 700 more on demand, 21 specialists such as `academic-harness:peer-reviewer` |
+| **Tools** | 129 tools in 16 areas: search, papers, notebook, the writing engine, reviews, tournaments, analysis, provenance, study design, datasets, submission, deep research and review, paid compute |
+| **Skills and agents** | 58 core skills, about 700 more on demand, 21 specialists such as `academic-harness:peer-reviewer` |
 | **Commands** | `/ah-research`, `/ah-review`, `/ah-papers`, `/ah-references`, `/ah-write`, `/ah-analyze`, `/ah-hypotheses`, `/ah-watch`, `/fold`, `/academic`, `/model-router` |
 | **Model router** | Off until you turn it on (`/model-router on`): planning goes to Opus, coding to Sonnet, academic writing to Haiku, everything else to Sonnet, decided by Jev (TypeSafe) or keyword rules ([the model router](docs/guide/model-router.md)) |
 | **Interface** | A status line (`research mode on · 1 job running · gate FAIL (5 blocking)`) and a pane (project state, jobs, notebook, library) |

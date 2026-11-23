@@ -17,6 +17,9 @@ import { jobTools } from './jobtools.mjs'
 import { modHome, modRoot } from './paths.mjs'
 import { makeExec, sessionIdFrom } from './exec.mjs'
 import { parseAreas, plan, restoreList } from './manifest.mjs'
+import { autoProviders } from './fit.mjs'
+import { webTools } from './webtools.mjs'
+import { approvalStub, pluginMounter, removeFromMcpJson } from './mcpjson.mjs'
 import { seedPacing } from './pacing.mjs'
 import { seenDir } from './compat.mjs'
 import { adapt, blocksToContent, clip, DEFAULT_MAX_CHARS, DEFAULT_OUTPUT_KEEP_DAYS, fixSkillSearch, pruneOutputDir } from './render.mjs'
@@ -61,7 +64,9 @@ export async function createHost({ upstream, areas = 'all', env = process.env, c
   const { areas: wanted, unknown } = parseAreas(areas)
   if (unknown.length) logger(`unknown tool area(s) ignored: ${unknown.join(', ')}`)
   // The shell variable and the plugin setting (AH_RESTORE_TOOLS_SETTING, empty when unset) both count.
-  const { restore, unknown: unknownRestore } = restoreList(`${env.AH_RESTORE_TOOLS ?? ''},${env.AH_RESTORE_TOOLS_SETTING ?? ''}`)
+  const { restore: named, unknown: unknownRestore } = restoreList(`${env.AH_RESTORE_TOOLS ?? ''},${env.AH_RESTORE_TOOLS_SETTING ?? ''}`)
+  // A search provider whose key is set comes back without being named (fit.mjs autoProviders).
+  const restore = [...new Set([...named, ...autoProviders(env)])]
   if (unknownRestore.length) logger(`restore_tools names no tool that can come back, ignored: ${unknownRestore.join(', ')}`)
   const { load, missing } = plan(upstream, wanted, { restore })
   if (missing.length) logger(`expected modules not in the core: ${missing.join(', ')}`)
@@ -90,7 +95,9 @@ export async function createHost({ upstream, areas = 'all', env = process.env, c
   }
   const budget = Number(env.AH_LLM_BUDGET_USD)
   const llm = createLlm({ model: env.AH_LLM_MODEL?.trim() || DEFAULT_MODEL, budgetUsd: budget > 0 ? budget : DEFAULT_BUDGET_USD, cwd, env })
-  const services = { jobs, llm }
+  // paper_mcp registers its servers with Claude Code through the project's .mcp.json (mcpjson.mjs); `workspace.cwd` follows the session directory.
+  const workspace = { cwd }
+  const services = { jobs, llm, plugin: pluginMounter(workspace), optional: { approval: approvalStub } }
   const loaded = []
   const failed = []
   for (const entry of load) {
@@ -110,11 +117,26 @@ export async function createHost({ upstream, areas = 'all', env = process.env, c
   let bindParentJob = () => () => {}
   const runner = join(upstream, 'job-runner.js')
   if (existsSync(runner)) ({ bindParentJob } = await import(pathToFileURL(runner).href))
-  return hostOver(registry, { loaded, failed, env, cwd, jobs, llm, usage, bindParentJob })
+  let fence
+  const fencePath = join(upstream, 'untrusted-fence.js')
+  if (existsSync(fencePath)) ({ fenceUntrusted: fence } = await import(pathToFileURL(fencePath).href))
+  // Dropping a server from the registry also takes it out of .mcp.json, if this tool wrote it there.
+  const paperMcp = registry.tools.get('paper_mcp')
+  if (paperMcp) {
+    const run = paperMcp.execute.bind(paperMcp)
+    paperMcp.execute = async (args, exec) => {
+      const value = await run(args, exec)
+      if (args?.action === 'unregister' && value && !value.error && typeof args.serverName === 'string') {
+        try { if (removeFromMcpJson(exec?.agent?.session?.header?.cwd || workspace.cwd, args.serverName.trim())) value.hint = `${value.hint ?? 'Removed from the registry.'} Removed from .mcp.json; reload with /mcp.` } catch { /* the registry entry is gone either way */ }
+      }
+      return value
+    }
+  }
+  return hostOver(registry, { loaded, failed, env, cwd, jobs, llm, usage, bindParentJob, fence, workspace })
 }
 
 /** The calling half of the host, over any registry. createHost loads upstream modules into one; tests fill their own. */
-export function hostOver(registry, { loaded = [], failed = [], env = process.env, cwd: startCwd = process.cwd(), jobs = null, llm = null, usage = null, bindParentJob = () => () => {}, detached = DETACHED_TOOLS } = {}) {
+export function hostOver(registry, { loaded = [], failed = [], env = process.env, cwd: startCwd = process.cwd(), jobs = null, llm = null, usage = null, bindParentJob = () => () => {}, detached = DETACHED_TOOLS, fence, workspace = null } = {}) {
   const sessionId = sessionIdFrom(env)
   // The session directory: the server's own at start, then what the client says with roots/list (it changes with /cd).
   let cwd = startCwd
@@ -135,6 +157,9 @@ export function hostOver(registry, { loaded = [], failed = [], env = process.env
   if (jobs && [...registry.tools.keys()].some(n => detached.has(n))) {
     for (const t of jobTools({ jobs, sessionId, cwd: () => cwd, maxChars })) if (!registry.tools.has(t.name)) registry.register(t)
   }
+
+  // web_search and web_extract are the host's own: they pick among the providers that are served (webtools.mjs), so they exist only when one is.
+  for (const t of webTools({ registry, env, ...(fence ? { fence } : {}) })) if (!registry.tools.has(t.name)) registry.register(t)
 
   // The doctor tool is the host's own too: it reports what this server loaded and what its environment holds.
   if (!registry.tools.has('doctor')) registry.register(doctorTool({ env, loaded, failed, served: () => [...registry.tools.keys()], flush: () => usage?.flush() }))
@@ -217,7 +242,7 @@ export function hostOver(registry, { loaded = [], failed = [], env = process.env
     failed,
     sessionId,
     get cwd() { return cwd },
-    setCwd(next) { if (typeof next === 'string' && next) cwd = next },
+    setCwd(next) { if (typeof next === 'string' && next) { cwd = next; if (workspace) workspace.cwd = next } },
     jobs,
     llm,
     list() {
@@ -236,7 +261,8 @@ export function hostOver(registry, { loaded = [], failed = [], env = process.env
     usage,
     /** Run the handlers modules registered with `ctx.on(event, ...)`. Upstream's events are DSH's; the host raises the ones that have a meaning here. */
     async fire(event, payload) {
-      for (const sub of registry.subscriptions.filter(x => x.event === event)) {
+      // paper_mcp's own session-start mount is not run: a registry that came with a cloned folder must not write .mcp.json by itself. register and approve do.
+      for (const sub of registry.subscriptions.filter(x => x.event === event && x.module !== 'paper-mcp.js')) {
         try { await sub.handler(payload) } catch (error) { process.stderr.write(`[academic-harness] ah: ${sub.module} ${event} handler failed: ${String(error?.message ?? error).split('\n')[0]}\n`) }
       }
     },

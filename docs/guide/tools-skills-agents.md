@@ -23,7 +23,7 @@ The `ah` MCP server serves 121 research tools plus its own `job_status`, `job_wa
 | `figures` | 1 | `image_generate` |
 | `memory` | 1 | `paper_backfill` (and the consolidation pass that runs shortly after the server starts) |
 
-**Left out on purpose (15):** general web search and fetch wrappers, vendor search APIs, result cards, reply folding and prompt templates for a chat box, MCP mounting, a LaTeX wrapper, a workspace-indexing daemon and a self-improvement loop. Each has a reason in [the fit review](../design/fit-review.md); most come back by name with the `restore_tools` setting ([Settings](settings.md)).
+**Left out on purpose (12):** result cards, reply folding and prompt templates for a chat box, a LaTeX wrapper, and the search providers that are off until their key is set (`web_search` and `web_extract` choose among those that are on). Each has a reason in [the fit review](../design/fit-review.md); the rest come back by name with the `restore_tools` setting ([Settings](settings.md)). `zvec_index`, `paper_mcp` and `ah_rsi` were left out first and are served again ([brought back](../design/fit-review.md#brought-back)).
 
 **Long tools.** `deep_research`, `deep_review` and `analysis_run` answer after about 30 seconds with a job id and go on in the background. `job_status`, `job_wait`, `job_log` and `job_kill` follow them. In an interactive session you are told when one ends and the model reads the result on its own; in a non-interactive run the job ends with the session.
 
@@ -35,7 +35,7 @@ The `ah` MCP server serves 121 research tools plus its own `job_status`, `job_wa
 
 ## Skills
 
-54 core skills are listed as `academic-harness:<name>` (Claude loads one with `Skill`), plus `academic-harness:research-guides`, which holds 27 longer per-area guides and is read on demand. About 700 more skills are bundled and not listed; `skill_search` finds one and `skill_load` reads it. Seventeen of the core ones (such as `openfda`, `scanpy`, `pytorch-lightning`) are among the on-demand ones, to keep the always-loaded list short; 15 more are not built because Claude Code or Anthropic already ships them (Word, PDF, PowerPoint and Excel files, a browser tool, provider documentation) or because an agent carries the same brief. Skills with non-commercial, GPL or unknown licences are left out of the repository (decision D5).
+58 core skills are listed as `academic-harness:<name>` (Claude loads one with `Skill`), plus `academic-harness:research-guides`, which holds 27 longer per-area guides and is read on demand. About 700 more skills are bundled and not listed; `skill_search` finds one and `skill_load` reads it. Seventeen of the core ones (such as `openfda`, `scanpy`, `pytorch-lightning`) are among the on-demand ones, to keep the always-loaded list short; 15 more are not built because Claude Code or Anthropic already ships them (Word, PDF, PowerPoint and Excel files, a browser tool, provider documentation) or because an agent carries the same brief. Skills with non-commercial, GPL or unknown licences are left out of the repository (decision D5).
 
 ## Agents
 

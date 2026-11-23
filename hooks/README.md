@@ -7,6 +7,7 @@ The Claude Code side of the mod: a hooks module the engine loads from `hooks.jso
 | `register.tsx` | Every registration, in one place |
 | `mode.ts` | Research mode (`/academic on\|off\|auto\|status`), the research section of the system prompt, and `showStatus`, the only writer of the one status line |
 | `guard.ts`, `guard-core.ts` | The writing-engine guard: the four classic events run `ah hook` through `server/bin/ah-hook.mjs` in an `ah.yaml` project; fails closed for writes and shell |
+| `rsi.ts` | `classic.PostToolUse` for every tool in an `ah.yaml` project: hands the result to the self-improvement loop (`ah-hook.mjs rsi-post`); advisory, never blocks |
 | `approvals.ts` | `tool.check`: `ah_author` and `ah_migrate apply` ask; paid compute always asks |
 | `notices.ts`, `jobs-core.ts` | Job completion notices: a timer reads the job records and notifies, and prompts the model |
 | `tasks.ts`, `tasks-core.ts` | `/ah-research` and the other task commands, `/ah-watch`, `/fold` |

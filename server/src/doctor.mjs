@@ -9,7 +9,7 @@ import { assessVersion, readSeen, TESTED_VERSIONS } from './compat.mjs'
 import { listedAgents, listedSkills } from './skills-list.mjs'
 import { KNOWN_COMMANDS, readUsage, summaryLine, usageDir, usageEnabled } from './usage.mjs'
 import { engineDir, engineStatus } from './engine.mjs'
-import { DROPPED_TOOLS } from './fit.mjs'
+import { DROPPED_TOOLS, autoProviders } from './fit.mjs'
 import { installDir, installedStamp, wantStamp } from './papermemory.mjs'
 import { bundledCoreDir, isDevMode, modHome, modRoot, coreDir } from './paths.mjs'
 import { libraryCounts } from './panel.mjs'
@@ -127,7 +127,12 @@ export async function diagnose({ env = process.env, root = modRoot(), core = cor
   else add('usage', 'info', 'Usage counts', summaryLine(readUsage(usageDir(home)), { ...(served ? { tools: served } : {}), skills: [...listedSkills()], agents: [...listedAgents()], commands: KNOWN_COMMANDS }))
 
   const dropped = Object.keys(DROPPED_TOOLS)
-  const restored = `${env.AH_RESTORE_TOOLS ?? ''},${env.AH_RESTORE_TOOLS_SETTING ?? ''}`.split(/[\s,]+/).filter(n => dropped.includes(n))
+  const restored = [...new Set([...`${env.AH_RESTORE_TOOLS ?? ''},${env.AH_RESTORE_TOOLS_SETTING ?? ''}`.split(/[\s,]+/).filter(n => dropped.includes(n)), ...autoProviders(env)])]
+  const keyed = n => Boolean(env[n]?.trim() || env[`AH_KEY_${n}`]?.trim())
+  const web = [...new Set([...`${env.AH_RESTORE_TOOLS ?? ''},${env.AH_RESTORE_TOOLS_SETTING ?? ''}`.split(/[\s,]+/), ...autoProviders(env)])].filter(n => DROPPED_TOOLS[n]?.provider)
+  const readers = [keyed('FIRECRAWL_API_KEY') && 'firecrawl', web.includes('parallel_extract') && 'parallel_extract', 'jina_read'].filter(Boolean)
+  const webOn = web.length > 0 || keyed('FIRECRAWL_API_KEY')
+  add('web', 'info', 'Search providers', webOn ? `on: ${web.join(', ') || 'none'}; web_extract reads with ${readers.join(' -> ')}` : 'none has a key, so web_search and web_extract are off and Claude uses WebSearch and WebFetch', webOn ? undefined : 'save a key with: claude plugin configure academic-harness@academic-harness-mod (brave_api_key, tavily_api_key, exa_api_key, perplexity_api_key, parallel_api_key, firecrawl_api_key)')
   add('surface', 'info', 'Tools', `areas: ${env.AH_TOOL_AREAS?.trim() || 'all'}; ${dropped.length} Academic Harness tools are left out on purpose${restored.length ? ` (restored: ${restored.join(', ')})` : ''}: docs/design/fit-review.md`)
 
   return { checks, blocking: checks.filter(c => c.state === 'missing').length }

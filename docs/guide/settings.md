@@ -8,7 +8,7 @@ Set the settings where Claude Code configures plugin options (they are the plugi
 |---|---|---|
 | `research_mode` | `auto` | `auto`, `on` or `off`. `/academic on\|off\|auto` overrides it for a session |
 | `tool_areas` | `all` | Which tool groups load; see [Tools](tools-skills-agents.md) for the names |
-| `restore_tools` | empty | Tools the plugin leaves out, to bring back by name. The shell variable `AH_RESTORE_TOOLS` does the same. A restored tool's key has its own option ([Keys](keys.md)). `paper_mcp`, `zvec_index` and `ah_rsi` cannot come back: their machinery is gone |
+| `restore_tools` | empty | Tools the plugin leaves out, to bring back by name. The eight search-provider tools (`brave_search`, `tavily_search`, `exa_search`, `perplexity_search`, `parallel_search`, `parallel_extract`, `consensus_search`, `elicit_search`) need no naming: each is served once its key is set (`AH_AUTO_PROVIDERS=0` turns that off). The shell variable `AH_RESTORE_TOOLS` does the same. A restored tool's key has its own option ([Keys](keys.md)).  |
 | `llm_model` | `sonnet` | The model of the tools that call a model (the alias or id passed to `--model`) |
 | `llm_budget_usd` | `5` | The most the model route spends in one server run; one call is also capped at 1 USD. Calls that run together reserve their caps, so together they can never be allowed more than is left |
 | `job_notices` | `prompt` | When a background job ends: `prompt` notifies you and prompts the model to read the result, `notify` only notifies, `off` neither (`job_status` and `job_wait` still work). Interactive sessions only |

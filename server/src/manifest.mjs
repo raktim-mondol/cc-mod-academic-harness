@@ -25,7 +25,7 @@ export const TIER1 = {
   notebook: ['notebook.js'],
   skills: ['skill-on-demand.js'],
   // P3: the ah_* tools. They run the writing engine's CLI, so they need scripts/install-engine.mjs; without it each call says so.
-  writing: ['academic-harness.js'],
+  writing: ['academic-harness.js', 'rsi.js'],
   // P4, the modules that need only `tools`. Some shell out to an installed program (LaTeX, mermaid, rdkit); a call says what is missing.
   reviews: ['review.js', 'meta-analysis.js'],
   tournament: ['coscientist.js', 'coscientist-rank.js', 'coscientist-verify.js'],
@@ -43,12 +43,12 @@ export const TIER1 = {
   compute: ['modal-run.js', 'runpod-run.js', 'vastai-run.js'],
   figures: ['image-generate.js'],
   // PaperMemory's own modules: the backfill tool and a consolidation pass shortly after the server starts (upstream runs it when an agent is disposed).
-  memory: ['papermemory-backfill.js', 'papermemory-dream.js'],
+  memory: ['papermemory-backfill.js', 'papermemory-dream.js', 'paper-mcp.js'],
   submission: ['submission-pack.js', 'manuscript-diff.js', 'rebuttal.js', 'presentation-build.js', 'paper-artifacts.js', 'paper-fold.js', 'mermaid-render.js'],
   search: [
     'literature-search.js', 'openalex-search.js', 'semantic-scholar-search.js', 'pubmed-search.js', 'arxiv-search.js',
     'crossref-lookup.js', 'journal-search.js', 'domain-search.js', 'academic-databases.js', 'core-search.js',
-    'jina-reader.js',
+    'jina-reader.js', 'zvec-index.js',
   ],
   papers: [
     'paper-resolve.js', 'paper-get.js', 'paper-context.js', 'paper-download.js', 'openalex-cite.js', 'integrity-check.js',
@@ -63,10 +63,10 @@ export const HOST_ONLY = {
   'subagent-models.js': 'subagent routing: a Claude Code agent takes a `model` of its own',
   'subagent-list-compat.js': 'DSH subagent registry',
   'mcp-connectors.js': 'Firecrawl and Scite connectors are attached to Claude Code directly',
-  'zvec-grep.js': 'the zvec daemon: dropped (server/src/fit.mjs, zvec_index)',
+  'zvec-grep.js': 'the zvec-grep MCP connector: zvec-grep installs its own Claude Code integration (zg install --target claude); zvec_index is served',
   'papermemory.js': 'mount MCP server, the manifest runs papermemory-mcp.mjs (P1)',
   'academic-harness-hooks.js': 'writing-engine guards are function hooks (P3)',
-  'rsi-hooks.js': 'host events of the self-improvement loop: dropped (server/src/fit.mjs, ah_rsi; D10)',
+  'rsi-hooks.js': 'DSH host events of the self-improvement loop: the loop runs from the guard bridge instead (server/src/rsi-bridge.mjs, ah-hook.mjs)',
 }
 
 const toFile = rel => rel.replace(/^\.\//, '')
