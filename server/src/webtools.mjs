@@ -78,10 +78,11 @@ export function mergeResults(lists) {
   return [...byUrl.values()].sort((a, b) => b.providers.length - a.providers.length)
 }
 
-const renderSearch = ({ query, intent, tried, results, note }) => {
+/** The listing is third-party text (titles and snippets of pages nobody here chose), so it goes inside the untrusted-source fence; the header and the note, which are ours, stay outside it. */
+const renderSearch = ({ query, intent, tried, results, note }, fence) => {
   const head = `web_search "${query}" (${intent}): ${results.length} result${results.length === 1 ? '' : 's'}${tried.length ? `, via ${tried.map(t => `${t.provider}${t.ok ? '' : ` (${t.why})`}`).join(' -> ')}` : ''}`
   const lines = results.map((r, i) => `${i + 1}. ${r.title}\n   ${r.url}${r.date ? `  (${r.date})` : ''}${r.providers.length > 1 ? `  [found by ${r.providers.join(' and ')}]` : `  [${r.providers[0]}]`}${r.snippet ? `\n   ${r.snippet}` : ''}`)
-  return [head, note, ...lines].filter(Boolean).join('\n')
+  return [head, note, lines.length ? fence(lines.join('\n'), { source: 'web search results', kind: 'web-search' }) : ''].filter(Boolean).join('\n')
 }
 
 /**
@@ -134,16 +135,16 @@ export function webTools({ registry, env = process.env, fence = (body, meta) => 
           const got = lists.filter(Boolean)
           const results = mergeResults(got).slice(0, Math.max(1, Math.min(Number(count) || 8, 20)))
           const note = got.length === 2 ? 'Two independent indexes answered; [found by A and B] marks what both returned. A page both found is a lead, not proof: read it.' : got.length === 1 ? 'Only one independent index answered, so this is not a cross-check.' : ''
-          if (!results.length) return `${renderSearch({ query: q, intent, tried, results: [], note: '' })}\nNo provider answered. Use WebSearch.`
-          return renderSearch({ query: q, intent, tried, results, note })
+          if (!results.length) return `${renderSearch({ query: q, intent, tried, results: [], note: '' }, fence)}\nNo provider answered. Use WebSearch.`
+          return renderSearch({ query: q, intent, tried, results, note }, fence)
         }
 
         const order = [...(provider && available.has(provider) ? [provider] : []), ...SEARCH_ORDER[intent === 'claim' ? 'general' : intent]].filter((t, i, a) => available.has(t) && a.indexOf(t) === i)
         for (const tool of order.slice(0, 3)) {
           const results = await call(tool)
-          if (results) return renderSearch({ query: q, intent, tried, results: mergeResults([results]).slice(0, Math.max(1, Math.min(Number(count) || 8, 20))), note: '' })
+          if (results) return renderSearch({ query: q, intent, tried, results: mergeResults([results]).slice(0, Math.max(1, Math.min(Number(count) || 8, 20))), note: '' }, fence)
         }
-        return `${renderSearch({ query: q, intent, tried, results: [], note: '' })}\nNo provider answered. Use WebSearch.`
+        return `${renderSearch({ query: q, intent, tried, results: [], note: '' }, fence)}\nNo provider answered. Use WebSearch.`
       },
     })
   }

@@ -46,11 +46,14 @@ export async function main(argv = process.argv.slice(2), env = process.env, stdi
   const cwd = typeof payload.cwd === 'string' && payload.cwd ? payload.cwd : process.cwd()
 
   // The loop runs in its own process step and never stops a turn: whatever it does, the reply is the engine's, plus lessons when there are any.
-  const runRsi = async root => {
-    if (!RSI_EVENT[event] || env.AH_RSI?.trim().toLowerCase() === 'off') return {}
+  const runRsi = async (root, engineOut) => {
+    // The shell's AH_RSI wins over the plugin option the hooks module passes as AH_RSI_SETTING.
+    const mode = (env.AH_RSI?.trim() || env.AH_RSI_SETTING?.trim() || '').toLowerCase()
+    if (!RSI_EVENT[event] || ['off', '0', 'false', 'no'].includes(mode)) return {}
     try {
       process.env.DSH_HOME = modHome(env)
-      return await rsiEvent({ event: RSI_EVENT[event], payload, root, home: modHome(env), rsi: await loadRsi(coreDir(env)) })
+      if (!process.env.AH_RSI?.trim() && mode) process.env.AH_RSI = mode
+      return await rsiEvent({ event: RSI_EVENT[event], payload, root, home: modHome(env), rsi: await loadRsi(coreDir(env)), engineOut })
     } catch (error) {
       process.stderr.write(`ah-hook: rsi: ${error?.message ?? error}\n`)
       return {}
@@ -97,7 +100,7 @@ export async function main(argv = process.argv.slice(2), env = process.env, stdi
   const r = await cli.run(launch.command, cli.cliArgs(launch, ['hook', event]), { cwd, timeoutMs, env: childEnv, silent: true, stdin: `${JSON.stringify(payload)}\n` })
   let out = r.out
   if (r.code === 0 && RSI_EVENT[event]) {
-    const lessons = await runRsi(root)
+    const lessons = await runRsi(root, r.out)
     if (lessons.additionalContext) out = mergeReply(out, lessons.additionalContext)
   }
   if (out) process.stdout.write(out)

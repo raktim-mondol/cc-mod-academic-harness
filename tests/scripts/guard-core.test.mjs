@@ -44,3 +44,31 @@ describe('did the engine answer', () => {
     assert.equal(guard.engineAnswered(0, 'Traceback'), false)
   })
 })
+
+describe('paper_mcp asks before it writes a server into .mcp.json', () => {
+  const tool = `${guard.PLUGIN_PREFIX}paper_mcp`
+  test('register and approve ask; status and unregister, and every other tool, do not', () => {
+    assert.equal(guard.paperMcpCheck(tool, { action: 'register', serverName: 'p' })?.decision, 'ask')
+    assert.equal(guard.paperMcpCheck(tool, { action: 'approve', serverName: 'p' })?.decision, 'ask')
+    assert.equal(guard.paperMcpCheck(tool, { action: 'status' }), null)
+    assert.equal(guard.paperMcpCheck(tool, { action: 'unregister', serverName: 'p' }), null)
+    assert.equal(guard.paperMcpCheck(tool, undefined), null)
+    assert.equal(guard.paperMcpCheck(`${guard.PLUGIN_PREFIX}notebook`, { action: 'register' }), null)
+    assert.equal(guard.paperMcpCheck('paper_mcp', { action: 'register' }), null, 'only the plugin\'s own tool name is matched')
+  })
+  test('the reason shows the program, its folder and the variables, and says Claude Code asks again', () => {
+    const r = guard.paperMcpCheck(tool, { action: 'register', serverName: 'demo', command: '/venv/bin/python', args: ['/srv/demo_mcp.py'], cwd: '/srv', envNames: ['S2_API_KEY'] }).reason
+    assert.match(r, /"demo"/)
+    assert.match(r, /\/venv\/bin\/python \/srv\/demo_mcp\.py/)
+    assert.match(r, /in \/srv/)
+    assert.match(r, /S2_API_KEY/)
+    assert.match(r, /Claude Code will ask again/)
+    assert.match(guard.paperMcpReason({ action: 'register', serverName: 'x', command: 'c', args: ['a'] }), /given no secret variables/)
+    assert.match(guard.paperMcpReason({ action: 'approve', serverName: 'x' }), /already in this project's \.dsh\/paper-mcps\.json/)
+  })
+  test('a long or odd input cannot make the reason huge', () => {
+    const r = guard.paperMcpReason({ action: 'register', serverName: 'n'.repeat(500), command: 'c'.repeat(5000), args: ['a'.repeat(5000)], cwd: 'd'.repeat(5000), envNames: Array.from({ length: 500 }, (_, i) => `V${i}`) })
+    assert.ok(r.length < 1400, String(r.length))
+    assert.doesNotThrow(() => guard.paperMcpReason(null))
+  })
+})

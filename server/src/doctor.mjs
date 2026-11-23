@@ -133,6 +133,11 @@ export async function diagnose({ env = process.env, root = modRoot(), core = cor
   const readers = [keyed('FIRECRAWL_API_KEY') && 'firecrawl', web.includes('parallel_extract') && 'parallel_extract', 'jina_read'].filter(Boolean)
   const webOn = web.length > 0 || keyed('FIRECRAWL_API_KEY')
   add('web', 'info', 'Search providers', webOn ? `on: ${web.join(', ') || 'none'}; web_extract reads with ${readers.join(' -> ')}` : 'none has a key, so web_search and web_extract are off and Claude uses WebSearch and WebFetch', webOn ? undefined : 'save a key with: claude plugin configure academic-harness@academic-harness-mod (brave_api_key, tavily_api_key, exa_api_key, perplexity_api_key, parallel_api_key, firecrawl_api_key)')
+  // The self-improvement loop (ah_rsi): its mode is the one thing here that changes what the model is told without anyone asking, so the doctor says it.
+  let rsiMode = String(env.AH_RSI || env.AH_RSI_SETTING || '').trim().toLowerCase()
+  if (!rsiMode) { try { rsiMode = String(JSON.parse(readFileSync(join(home, 'ah-rsi', 'config.json'), 'utf8')).mode ?? '').trim().toLowerCase() } catch { rsiMode = '' } }
+  rsiMode = ['1', 'true', 'on', 'yes'].includes(rsiMode) ? 'auto' : ['0', 'false', 'no'].includes(rsiMode) ? 'off' : (['off', 'observe', 'auto'].includes(rsiMode) ? rsiMode : 'auto')
+  add('rsi', 'info', 'Self-improvement loop (ah_rsi)', rsiMode === 'auto' ? 'auto: in a folder with an ah.yaml it learns short lessons from your corrections and tool results and adds them to your prompts (ah_rsi shows and forgets them; AH_RSI=observe records only, AH_RSI=off stops it)' : rsiMode === 'observe' ? 'observe: it records turns and tool results in ah.yaml folders and adds nothing to your prompts' : 'off: nothing is recorded and nothing is added to your prompts')
   add('surface', 'info', 'Tools', `areas: ${env.AH_TOOL_AREAS?.trim() || 'all'}; ${dropped.length} Academic Harness tools are left out on purpose${restored.length ? ` (restored: ${restored.join(', ')})` : ''}: docs/design/fit-review.md`)
 
   return { checks, blocking: checks.filter(c => c.state === 'missing').length }

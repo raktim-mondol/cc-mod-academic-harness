@@ -69,7 +69,7 @@ const scenarios = {
       assert.match(early, /Core: (being set up by the server|Academic Harness|not set up yet)/)
       await c.until(() => c.lines.some(l => l.method === 'notifications/tools/list_changed'), 240_000, 'the setup to finish and the list to change')
       const full = (await c.send('tools/list')).result.tools.map(t => t.name)
-      assert.ok(full.length >= 126, `${full.length} tools`)
+      assert.ok(full.length >= 129, `${full.length} tools`)
       for (const name of ['literature_search', 'paper_get', 'deep_research', 'ah_state', 'job_wait', 'doctor']) assert.ok(full.includes(name), name)
       const after = (await c.send('tools/call', { name: 'doctor', arguments: {} })).result.content[0].text
       assert.match(after, /Core: Academic Harness \d+\.\d+\.\d+, a working copy at /)

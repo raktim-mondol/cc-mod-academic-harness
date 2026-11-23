@@ -116,6 +116,11 @@ describe('manifest', () => {
     assert.equal(new Set(all).size, all.length)
     for (const f of Object.keys(HOST_ONLY)) assert.ok(!all.includes(f))
   })
+  test('a restored tool loads in the area it came from, so the doctor counts it there', { skip: !existsSync(UP) }, () => {
+    const { load } = plan(UP, ['search'], { restore: ['brave_search', 'parallel_extract'] })
+    assert.deepEqual(load.filter(e => /brave|parallel/.test(e.file)).map(e => [e.file, e.area]), [['brave-search.js', 'search'], ['parallel-extract.js', 'search']])
+    assert.ok(load.every(e => e.area === 'search'))
+  })
   test('plan loads tier 1 for the chosen areas only', { skip: !existsSync(UP) }, () => {
     const { load } = plan(UP, ['skills'])
     assert.deepEqual(load.map(e => e.file), TIER1.skills)
@@ -126,6 +131,11 @@ describe('render', () => {
   test('wording: "restart dsh" says Claude Code, and a tool name that already has the plugin prefix is left alone', () => {
     assert.equal(adapt('If they do not appear, restart dsh.'), 'If they do not appear, restart Claude Code.')
     assert.equal(adapt('mcp__plugin_academic-harness_ah__echo stays'), 'mcp__plugin_academic-harness_ah__echo stays')
+  })
+  test('wording: the other host\'s question tool and Firecrawl connector names are rewritten', () => {
+    assert.equal(adapt('you MUST ask with ask_user_question before action=start'), 'you MUST ask with AskUserQuestion before action=start')
+    assert.equal(adapt('prefer mcp__firecrawl__firecrawl_scrape or pdf_to_markdown'), 'prefer a Firecrawl scrape tool or pdf_to_markdown')
+    assert.equal(adapt('over built-in web_search / mcp__firecrawl__* for papers'), 'over built-in web_search / a Firecrawl connector for papers')
   })
   test('skill_search: a listed skill says how to load it, a left-out one says so', () => {
     const t = '- `peer-review` (in the session catalogue): reviews\n- `deep-research` (in the session catalogue): x\n- `other`: y'

@@ -74,6 +74,17 @@
         "off"
       ]
     },
+    "rsi_mode": {
+      "type": "string",
+      "title": "Self-improvement loop",
+      "description": "In a folder with an ah.yaml, a local loop learns short lessons from your corrections and from what tools returned. auto: it adds the lessons that fit the task to your prompts (ah_rsi shows and forgets them). observe: it records and adds nothing. off: nothing is recorded. The AH_RSI environment variable wins when set.",
+      "default": "auto",
+      "options": [
+        "auto",
+        "observe",
+        "off"
+      ]
+    },
     "model_router": {
       "type": "string",
       "title": "Model router",
@@ -515,6 +526,7 @@
         "AH_LLM_MODEL": "${user_config.llm_model}",
         "AH_LLM_BUDGET_USD": "${user_config.llm_budget_usd}",
         "AH_USAGE_SETTING": "${user_config.usage_counts}",
+        "AH_RSI_SETTING": "${user_config.rsi_mode}",
         "AH_KEY_PARALLEL_API_KEY": "${user_config.parallel_api_key}",
         "AH_KEY_FIRECRAWL_API_KEY": "${user_config.firecrawl_api_key}",
         "AH_KEY_CONSENSUS_API_KEY": "${user_config.consensus_api_key}",

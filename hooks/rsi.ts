@@ -1,6 +1,7 @@
 import type { On, PluginOptions } from 'claude-code'
 
 import { projectOf, runEngine } from './guard'
+import { clipInput, clipResponse } from './rsi-core'
 
 // The self-improvement loop (ah_rsi), the part that needs a hook of its own: what each tool returned.
 //
@@ -9,31 +10,16 @@ import { projectOf, runEngine } from './guard'
 // result, cut to a size the loop can read. The loop's other two events (the prompt, the end of the turn) ride on the guard's own
 // UserPromptSubmit and Stop calls. It is advisory: a failure here changes nothing about the turn.
 
-const MAX_RESPONSE_CHARS = 30_000
-
-/** The tool's result as text, cut at MAX_RESPONSE_CHARS. */
-export function clipResponse(response: unknown): string {
-  let text: string
-  if (typeof response === 'string') text = response
-  else {
-    try {
-      text = JSON.stringify(response ?? '')
-    } catch {
-      text = String(response)
-    }
-  }
-  return text.length > MAX_RESPONSE_CHARS ? text.slice(0, MAX_RESPONSE_CHARS) : text
-}
-
 export function registerRsi(on: On, options: PluginOptions): void {
   on('classic.PostToolUse', async ($, e, next) => {
     const downstream = await next(e)
-    const cwd = e.cwd || (await $.session.cwd())
-    if (!(await projectOf($, cwd))) return downstream
     try {
-      await runEngine($, options, 'rsi-post', { ...(e as Record<string, unknown>), tool_response: clipResponse((e as Record<string, unknown>)['tool_response']), cwd })
+      const cwd = e.cwd || (await $.session.cwd())
+      if (!(await projectOf($, cwd))) return downstream
+      const event = e as Record<string, unknown>
+      await runEngine($, options, 'rsi-post', { ...event, tool_input: clipInput(event['tool_input']), tool_response: clipResponse(event['tool_response']), cwd })
     } catch {
-      // the loop is advisory
+      // the loop is advisory: nothing here may change the turn
     }
     return downstream
   })

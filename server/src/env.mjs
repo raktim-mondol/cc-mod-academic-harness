@@ -4,7 +4,7 @@ import { isDevMode, modHome } from './paths.mjs'
 
 export const KEY_ENV_PREFIX = 'AH_KEY_'
 
-/** Installers that stay off: the engine's (the mod builds it itself, engine-install.mjs), PaperMemory's (its launcher installs it) and zvec-grep's (dropped: server/src/fit.mjs). */
+/** Installers that stay off: the engine's (the mod builds it itself, engine-install.mjs), PaperMemory's (its launcher installs it) and zvec-grep's (zvec_index drives the `zg` you already have and never installs a package behind your back). */
 const ALWAYS_SKIP = ['ACADEMIC_HARNESS_SKIP_INSTALL', 'PAPERMEMORY_SKIP_INSTALL', 'ZVEC_GREP_SKIP_INSTALL']
 /**
  * Installers that run in the background, into the mod's home, when a module that needs them is loaded (plan P2 step 6):
@@ -46,6 +46,8 @@ export function prepareEnv(env = process.env, { areas } = {}) {
     if (env[flag] !== undefined) continue
     if (!(managed && needed.some(a => areas.includes(a)))) env[flag] = '1'
   }
+  // The self-improvement loop's mode: the plugin option arrives as AH_RSI_SETTING, and a variable the person exported wins (store/rsi-store.js reads AH_RSI).
+  if (!env.AH_RSI?.trim() && env.AH_RSI_SETTING?.trim()) env.AH_RSI = env.AH_RSI_SETTING.trim()
   if (isDevMode(env)) env.AH_DEV_MODE = '1'
   return applyKeyEnv(env)
 }

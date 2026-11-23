@@ -112,12 +112,6 @@ export const RULES = [
     find: /`consensus_search` \/ `s2_search` for claim support/,
     to: '`literature_search` / `s2_search` for claim support',
   },
-  {
-    target: 'agent:paper-agent-builder',
-    why: 'paper_mcp is not served: Claude Code adds MCP servers itself, with its own approval',
-    find: /Connect a generated server with `paper_mcp` only when asked\./,
-    to: 'Do not connect a generated server yourself; tell the user how (`claude mcp add`, or an entry in `.mcp.json`) when they ask.',
-  },
   // ---- the skills that came back (agent-browser, modal, runpod, vastai, using-science-superpowers) ----
   {
     target: 'skill:agent-browser/SKILL.md',

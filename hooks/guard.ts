@@ -52,6 +52,8 @@ export async function projectOf($: EngineInterface, cwd: string): Promise<string
 /** Run `ah-hook.mjs <event>` with the payload on stdin. Rejects when the process cannot start or overruns. */
 export async function runEngine($: EngineInterface, options: PluginOptions, event: string, payload: Record<string, unknown>): Promise<Run> {
   const env: Record<string, string> = { AH_T3_MODE: t3Mode(options['evidence_check']) }
+  const rsi = String(options['rsi_mode'] ?? '').trim()
+  if (rsi) env['AH_RSI_SETTING'] = rsi
   let model = ''
   try {
     model = await $.session.model()

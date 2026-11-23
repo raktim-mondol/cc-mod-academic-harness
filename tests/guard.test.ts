@@ -31,6 +31,9 @@ function world(on: any, opts: { cwd?: string; files?: string[]; reply?: Reply | 
   return { runs, cwd }
 }
 
+/** The calls that went to the writing engine: the self-improvement loop's own hook (`rsi-post`) is another call and is tested below. */
+const engineRuns = <T extends { event: string }>(w: { runs: T[] }): T[] => w.runs.filter((r) => r.event !== 'rsi-post')
+
 const deny = (reason: string) => ({ stdout: JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } }), exitCode: 0 })
 const at = (w: { cwd: string }) => ({ cwd: w.cwd, session_id: 'sess-1' })
 const write = ($: any, path = '/p/facts/facts.yaml') => $.tool.call({ tool: 'Write', file_path: path, content: 'x' })
@@ -123,8 +126,8 @@ test('the post-edit note reaches the model, and a failing post check never block
   const w = world(on, { reply: (event) => event === 'post' ? { exitCode: 0, stdout: JSON.stringify({ hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: note } }) } : { exitCode: 0, stdout: '' } })
   const out = await $.classic.PostToolUse({ ...at(w), tool_name: 'Edit', tool_input: { file_path: '/p/sections/a.tex' }, tool_response: { big: 'x'.repeat(1000) }, tool_use_id: 't1' })
   expect(out.additionalContext).toEqual([note])
-  expect(JSON.stringify(w.runs[0]!.payload)).not.toContain('tool_response')
-
+  expect(engineRuns(w).length).toBe(1)
+  expect(JSON.stringify(engineRuns(w)[0]!.payload)).not.toContain('tool_response')
 })
 
 test('a post check that fails never blocks the turn', async ($, on) => {
@@ -132,13 +135,13 @@ test('a post check that fails never blocks the turn', async ($, on) => {
   const out = await $.classic.PostToolUse({ ...at(w), tool_name: 'Edit', tool_input: { file_path: '/p/sections/a.tex' }, tool_response: {}, tool_use_id: 't2' })
   expect(out.block).toBeUndefined()
   expect(out.additionalContext).toBeUndefined()
-  expect(w.runs.length).toBe(1)
+  expect(engineRuns(w).length).toBe(1)
 })
 
 test('a Read does not run the post check', async ($, on) => {
   const w = world(on)
   await $.classic.PostToolUse({ ...at(w), tool_name: 'Read', tool_input: { file_path: '/p/a' }, tool_response: {}, tool_use_id: 't3' })
-  expect(w.runs.length).toBe(0)
+  expect(engineRuns(w).length).toBe(0)
 })
 
 test('the prompt hook adds the paper-state card, without the shell sentence and with the tool names', async ($, on) => {
@@ -257,5 +260,65 @@ test('other tools are not asked about', async ($, on) => {
   const w = world(on)
   const r = await $.tool.check({ tool: 'mcp__plugin_academic-harness_ah__deep_research', input: { query: 'q' } })
   expect(r.decision).toBe('allow')
+  expect(w.runs.length).toBe(0)
+})
+
+// ---- the self-improvement loop's hook (hooks/rsi.ts) ----
+
+test('the loop is handed every tool\'s result in a project, the engine\'s own post check still sees none of it, and the call goes on unchanged', async ($, on) => {
+  const w = world(on)
+  const out = await $.classic.PostToolUse({ ...at(w), tool_name: 'Read', tool_input: { file_path: '/p/a.tex' }, tool_response: { content: 'y'.repeat(100_000) }, tool_use_id: 'r1' })
+  expect(out.block).toBeUndefined()
+  const rsi = w.runs.filter((r) => r.event === 'rsi-post')
+  expect(rsi.length).toBe(1)
+  expect(rsi[0]!.argv[1]).toMatch(/server\/bin\/ah-hook\.mjs$/)
+  expect(rsi[0]!.payload.tool_name).toBe('Read')
+  expect(rsi[0]!.payload.tool_input).toEqual({ file_path: '/p/a.tex' })
+  expect(typeof rsi[0]!.payload.tool_response).toBe('string')
+  expect(rsi[0]!.payload.tool_response.length).toBeLessThanOrEqual(30_000)
+  expect(engineRuns(w).length).toBe(0)
+})
+
+test('a large tool input is cut before it is handed over', async ($, on) => {
+  const w = world(on)
+  await $.classic.PostToolUse({ ...at(w), tool_name: 'Write', tool_input: { file_path: '/p/big.tex', content: 'z'.repeat(200_000) }, tool_response: 'ok', tool_use_id: 'r2' })
+  const rsi = w.runs.find((r) => r.event === 'rsi-post')!
+  expect(typeof rsi.payload.tool_input).toBe('string')
+  expect(rsi.payload.tool_input.length).toBeLessThanOrEqual(20_000)
+})
+
+test('the loop starts no process outside an ah.yaml tree, and a loop that cannot start never changes the turn', async ($, on) => {
+  const outside = world(on, { cwd: '/home/u/notes', files: [] })
+  await $.classic.PostToolUse({ ...at(outside), tool_name: 'Read', tool_input: {}, tool_response: '', tool_use_id: 'r3' })
+  expect(outside.runs.length).toBe(0)
+})
+
+test('a loop that cannot start never blocks or changes the call', async ($, on) => {
+  const w = world(on, { reply: 'throw' })
+  const out = await $.classic.PostToolUse({ ...at(w), tool_name: 'Read', tool_input: {}, tool_response: '', tool_use_id: 'r4' })
+  expect(out.block).toBeUndefined()
+  expect(out.additionalContext).toBeUndefined()
+})
+
+test('the loop\'s mode setting reaches the bridge as AH_RSI_SETTING, and an empty setting passes nothing', { options: { rsi_mode: 'observe' } }, async ($, on) => {
+  const w = world(on)
+  await $.classic.PostToolUse({ ...at(w), tool_name: 'Read', tool_input: {}, tool_response: '', tool_use_id: 'r5' })
+  expect(w.runs.find((r) => r.event === 'rsi-post')!.env?.AH_RSI_SETTING).toBe('observe')
+})
+
+// ---- paper_mcp ----
+
+const PAPER_MCP = 'mcp__plugin_academic-harness_ah__paper_mcp'
+
+test('paper_mcp register and approve ask, showing the program and the variables; status and unregister do not', async ($, on) => {
+  const w = world(on)
+  const reg = await $.tool.check({ tool: PAPER_MCP, input: { action: 'register', serverName: 'demo', command: '/venv/bin/python', args: ['/srv/demo_mcp.py'], cwd: '/srv', envNames: ['S2_API_KEY'] } })
+  expect(reg.decision).toBe('ask')
+  expect(reg.reason).toContain('"demo"')
+  expect(reg.reason).toContain('/venv/bin/python /srv/demo_mcp.py')
+  expect(reg.reason).toContain('S2_API_KEY')
+  expect((await $.tool.check({ tool: PAPER_MCP, input: { action: 'approve', serverName: 'demo' } })).decision).toBe('ask')
+  expect((await $.tool.check({ tool: PAPER_MCP, input: { action: 'status' } })).decision).toBe('allow')
+  expect((await $.tool.check({ tool: PAPER_MCP, input: { action: 'unregister', serverName: 'demo' } })).decision).toBe('allow')
   expect(w.runs.length).toBe(0)
 })

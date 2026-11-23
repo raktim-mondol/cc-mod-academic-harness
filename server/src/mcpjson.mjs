@@ -78,3 +78,86 @@ export function pluginMounter(workspace) {
 
 /** The `approval` service paper-mcp.js asks. The person's real approval is Claude Code's, when it first sees the .mcp.json entry; this only lets the entry be written. */
 export const approvalStub = { request: async () => 'allowed-once' }
+
+// ---- the tool as the model sees it ----
+//
+// Upstream's paper_mcp talks about mounting a server into the running process, asking the person inside the tool, and restarting dsh.
+// None of that is what happens here, so the description, the results and the status are rewritten to say what does: the entry is written
+// to .mcp.json after the hooks module has asked the person (hooks/approvals.ts), and Claude Code asks again before it starts the server.
+
+export const PAPER_MCP_DESCRIPTION = [
+  'Register, list or drop Paper2MCP stdio servers for this project.',
+  'The registry is <project>/.dsh/paper-mcps.json (python, server script, environment variable *names*, never secrets).',
+  'action=status lists the registered servers and whether each is in the project\'s .mcp.json.',
+  'action=register adds a server (from Paper2MCP\'s USAGE.md after a verified ZIP) and writes it into .mcp.json; the person is asked to confirm first, and Claude Code asks again before it starts the server, so its tools (mcp__<serverName>__*) appear once they approve it and reload with /mcp or start a new session.',
+  'action=approve does the same for an entry that is already in the registry (for example one that came with a cloned folder).',
+  'action=unregister removes it from the registry and from .mcp.json.',
+  'Connect a server only when the user asked. Never put API keys in the JSON: name the variables in envNames, and the person sets them in the shell Claude Code starts in.',
+].join(' ')
+
+/** Is `serverName` in <root>/.mcp.json? */
+export function hasMcpEntry(root, serverName) {
+  try { return Boolean(JSON.parse(readFileSync(join(root, '.mcp.json'), 'utf8'))?.mcpServers?.[serverName]) } catch { return false }
+}
+
+const writtenHint = (name, file) => `Written to ${file}. Claude Code asks you to approve the server the next time the project loads; run /mcp to reload now. Its tools will be mcp__${name}__*, and any variable it names must be set in the shell Claude Code was started from.`
+
+/** The text of a paper_mcp result. */
+export function renderPaperMcp(v) {
+  if (!v || typeof v !== 'object') return String(v ?? '')
+  if (v.error && !v.action) return `Error: ${v.error}`
+  const lines = []
+  if (v.action) lines.push(`action: ${v.action}`)
+  if (v.path) lines.push(`registry: ${v.path}`)
+  if (v.mcp_json) lines.push(`.mcp.json: ${v.in_mcp_json ? 'has the entry' : 'has no entry'} (${v.mcp_json})`)
+  if (v.hint) lines.push(v.hint)
+  if (Array.isArray(v.servers)) {
+    if (!v.servers.length) lines.push('no paper MCP servers are registered in this project')
+    for (const s of v.servers) {
+      const bits = [s.serverName, s.in_mcp_json ? 'in .mcp.json' : 'not in .mcp.json']
+      if (s.approved === false) bits.push('not confirmed yet')
+      if (s.command) bits.push(s.command)
+      lines.push(`- ${bits.join(' · ')}`)
+      if (s.hint) lines.push(`  ${s.hint}`)
+      if (s.error) lines.push(`  error: ${s.error}`)
+    }
+  }
+  if (v.error) lines.push(`error: ${v.error}`)
+  return lines.join('\n')
+}
+
+/** Rewrite the core's paper_mcp tool in place: its description, what its results say, and what happens on unregister. `workspace.cwd` is the session folder. */
+export function adaptPaperMcpTool(tool, workspace) {
+  const run = tool.execute.bind(tool)
+  tool.description = PAPER_MCP_DESCRIPTION
+  tool.output = { ...(tool.output ?? {}), render: (_args, value) => [{ type: 'text', text: renderPaperMcp(value) }] }
+  tool.execute = async (args, exec) => {
+    const root = exec?.agent?.session?.header?.cwd || workspace.cwd
+    const action = args?.action ?? 'status'
+    const value = await run(args, exec)
+    if (!value || typeof value !== 'object') return value
+    const name = typeof args?.serverName === 'string' ? args.serverName.trim() : ''
+    if (action === 'status' && Array.isArray(value.servers)) {
+      for (const s of value.servers) {
+        s.in_mcp_json = hasMcpEntry(root, s.serverName)
+        delete s.mounted; delete s.restart
+        s.hint = s.in_mcp_json
+          ? 'In .mcp.json. Claude Code starts it once you have approved it there (run /mcp to reload).'
+          : (s.approved === false ? 'Not confirmed here yet: run paper_mcp action=approve, which asks the person.' : 'In the registry but not in .mcp.json: run paper_mcp action=approve to write it.')
+      }
+    } else if ((action === 'register' || action === 'approve') && !value.error) {
+      value.mcp_json = join(root, '.mcp.json')
+      value.in_mcp_json = hasMcpEntry(root, name)
+      delete value.mounted; delete value.already; delete value.restart
+      value.hint = value.in_mcp_json ? writtenHint(name, value.mcp_json) : (value.hint ?? 'The entry was not written to .mcp.json.')
+    } else if (action === 'unregister' && !value.error && name) {
+      try {
+        const removed = removeFromMcpJson(root, name)
+        delete value.mounted; delete value.restart
+        value.hint = removed ? 'Removed from the registry and from .mcp.json; reload with /mcp.' : 'Removed from the registry.'
+      } catch { /* the registry entry is gone either way */ }
+    }
+    return value
+  }
+  return tool
+}

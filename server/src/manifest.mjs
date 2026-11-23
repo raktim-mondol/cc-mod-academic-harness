@@ -136,7 +136,7 @@ export function plan(upstream, areas = AREAS, { restore = [] } = {}) {
     const back = restore.map(n => DROPPED_TOOLS[n]).filter(t => t && t.area === area).map(t => t.module)
     for (const file of [...(TIER1[area] ?? []), ...back]) {
       const e = all.find(x => x.file === file)
-      if (e) load.push(e)
+      if (e) load.push({ ...e, area })   // a restored tool is classed `dropped`, which has no area of its own: it loads, and is counted, in the area it came from
     }
   }
   const missing = []

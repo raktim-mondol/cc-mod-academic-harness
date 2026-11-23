@@ -94,6 +94,7 @@ export async function build(manifest) {
   delete userConfig.llm_budget_usd
   delete userConfig.job_notices
   delete userConfig.usage_counts
+  delete userConfig.rsi_mode
   for (const name of Object.keys(ROUTER_OPTIONS)) delete userConfig[name]
   userConfig.tool_areas = {
     type: 'string',
@@ -140,9 +141,16 @@ export async function build(manifest) {
     default: 'on',
     options: ['on', 'off'],
   }
+  userConfig.rsi_mode = {
+    type: 'string',
+    title: 'Self-improvement loop',
+    description: 'In a folder with an ah.yaml, a local loop learns short lessons from your corrections and from what tools returned. auto: it adds the lessons that fit the task to your prompts (ah_rsi shows and forgets them). observe: it records and adds nothing. off: nothing is recorded. The AH_RSI environment variable wins when set.',
+    default: 'auto',
+    options: ['auto', 'observe', 'off'],
+  }
   // The model router's settings are read by the hooks module (hooks/router-core.ts), not the server, so they carry no AH_ variable.
   Object.assign(userConfig, ROUTER_OPTIONS)
-  const env = { AH_TOOL_AREAS: '${user_config.tool_areas}', AH_RESTORE_TOOLS_SETTING: '${user_config.restore_tools}', AH_LLM_MODEL: '${user_config.llm_model}', AH_LLM_BUDGET_USD: '${user_config.llm_budget_usd}', AH_USAGE_SETTING: '${user_config.usage_counts}' }
+  const env = { AH_TOOL_AREAS: '${user_config.tool_areas}', AH_RESTORE_TOOLS_SETTING: '${user_config.restore_tools}', AH_LLM_MODEL: '${user_config.llm_model}', AH_LLM_BUDGET_USD: '${user_config.llm_budget_usd}', AH_USAGE_SETTING: '${user_config.usage_counts}', AH_RSI_SETTING: '${user_config.rsi_mode}' }
   for (const { name, secret } of fields) {
     const key = name.toLowerCase()
     userConfig[key] = {

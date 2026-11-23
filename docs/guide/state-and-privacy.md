@@ -14,6 +14,8 @@ What the mod reads, what it writes and where, and what it can spend.
 | A tool result longer than 40,000 characters, in full | `<project>/.dsh/tool-output/`, removed after 30 days (`AH_TOOL_OUTPUT_KEEP_DAYS`) |
 | Usage counts: per tool, skill, agent and command, how often and when last, one small file per server run and per session | `<home>/usage/`, removed after a year (`AH_USAGE_KEEP_DAYS`) |
 | A small record that the hooks module loaded (session id, Claude Code version, time), one per session | `<home>/mod-seen/`, removed after a week |
+| The self-improvement loop: episodes (one per turn, with task class, tool counts and findings, no prompt text), lessons and their evidence | `<home>/ah-rsi/` (`AH_RSI_STORE`). The turn in progress, one folder per session, in `<home>/rsi-sessions/`, removed after a week. Only in folders with an `ah.yaml` |
+| A Paper2MCP server you register | The project's `.mcp.json` (the program and the *names* of its variables, never a value) and `<project>/.dsh/paper-mcps.json` |
 | A system prompt over 30,000 characters, while a model call that needs it runs | `<home>/tmp/`, removed when the call ends |
 | The `/academic on\|off` override, the pane's data, which job notices were shown | Claude Code's plugin state for the session; nothing of the mod's on disk |
 
@@ -26,6 +28,18 @@ The server counts its tools. The hooks module counts this plugin's skills and ag
 ## The model router
 
 Off by default. When it is on and a TypeSafe key is saved, each prompt it classifies sends TypeSafe the start (1,200 characters) and the end (400) of the prompt, with the key, over HTTPS; nothing else, and nothing is kept by the mod. With no key, or with `router_engine` set to `rules`, nothing leaves the machine. The last decision (route, model, reason) is held in Claude Code's plugin state for the session. [The page](model-router.md) has the rest.
+
+## The self-improvement loop
+
+In a folder with an `ah.yaml` (and nowhere else) the loop records, per turn, the kind of task, a hash of your message (not the message), which tools ran and whether they failed, the findings they reported, and whether the stop gate held the turn. A sentence in which you state a preference ("from now on, always run integrity_check before citing") is kept as a lesson. Lessons that fit the task are added to your next prompts as short guidance. Nothing leaves the machine unless you set `AH_RSI_REMOTE=1`. `/academic doctor` shows its mode; the `rsi_mode` setting (or `AH_RSI`) set to `off` stops it and `observe` records without adding anything, and `ah_rsi` lists, forgets and rolls back lessons.
+
+## What leaves the machine
+
+- **Search providers**, only when you have saved their key: the query goes to the provider the tool chose (`web_search` says which), `web_extract` sends a URL to Firecrawl or Parallel and then, failing those, to Jina. Keys travel as request headers to that provider only. With no key set none of them is contacted.
+- **Scholarly APIs** (OpenAlex, Semantic Scholar, Crossref, PubMed and the others `literature_search` uses): the query, as always.
+- **The model router**, as described above, and only with a TypeSafe key.
+
+Text that comes back from any of these is fenced as untrusted (below).
 
 ## What it reads
 
@@ -55,6 +69,6 @@ In a folder with an `ah.yaml` (and nowhere else), every `Write`, `Edit`, `Notebo
 
 ## Text that is not an instruction
 
-Search results, abstracts and paper text are wrapped in `<untrusted-source>` and the research-mode text tells the model to read them as claims, never as instructions.
+Search results (including the listing `web_search` returns), page text from `web_extract`, abstracts and paper text are wrapped in `<untrusted-source>` and the research-mode text tells the model to read them as claims, never as instructions.
 
 Next: [Troubleshooting](troubleshooting.md).

@@ -19,7 +19,7 @@ import { makeExec, sessionIdFrom } from './exec.mjs'
 import { parseAreas, plan, restoreList } from './manifest.mjs'
 import { autoProviders } from './fit.mjs'
 import { webTools } from './webtools.mjs'
-import { approvalStub, pluginMounter, removeFromMcpJson } from './mcpjson.mjs'
+import { adaptPaperMcpTool, approvalStub, pluginMounter } from './mcpjson.mjs'
 import { seedPacing } from './pacing.mjs'
 import { seenDir } from './compat.mjs'
 import { adapt, blocksToContent, clip, DEFAULT_MAX_CHARS, DEFAULT_OUTPUT_KEEP_DAYS, fixSkillSearch, pruneOutputDir } from './render.mjs'
@@ -120,18 +120,9 @@ export async function createHost({ upstream, areas = 'all', env = process.env, c
   let fence
   const fencePath = join(upstream, 'untrusted-fence.js')
   if (existsSync(fencePath)) ({ fenceUntrusted: fence } = await import(pathToFileURL(fencePath).href))
-  // Dropping a server from the registry also takes it out of .mcp.json, if this tool wrote it there.
+  // paper_mcp says what really happens here: the entry goes into .mcp.json, and Claude Code asks before it starts the server.
   const paperMcp = registry.tools.get('paper_mcp')
-  if (paperMcp) {
-    const run = paperMcp.execute.bind(paperMcp)
-    paperMcp.execute = async (args, exec) => {
-      const value = await run(args, exec)
-      if (args?.action === 'unregister' && value && !value.error && typeof args.serverName === 'string') {
-        try { if (removeFromMcpJson(exec?.agent?.session?.header?.cwd || workspace.cwd, args.serverName.trim())) value.hint = `${value.hint ?? 'Removed from the registry.'} Removed from .mcp.json; reload with /mcp.` } catch { /* the registry entry is gone either way */ }
-      }
-      return value
-    }
-  }
+  if (paperMcp) adaptPaperMcpTool(paperMcp, workspace)
   return hostOver(registry, { loaded, failed, env, cwd, jobs, llm, usage, bindParentJob, fence, workspace })
 }
 

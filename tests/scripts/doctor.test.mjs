@@ -66,6 +66,17 @@ describe('the report', () => {
     const r = await diagnose({ env: { ...base, AH_RESTORE_TOOLS: 'brave_search', AH_RESTORE_TOOLS_SETTING: '' }, root: clone, core: snap, home: join(root, 'home4') })
     assert.match(by(r, 'surface').detail, /12 Academic Harness tools are left out.*restored: brave_search/)
   })
+  test('the search providers and the self-improvement loop are reported, and no key is printed', async () => {
+    const none = await diagnose({ env: base, root: clone, core: snap, home: join(root, 'home7') })
+    assert.match(by(none, 'web').detail, /none has a key, so web_search and web_extract are off/)
+    assert.match(by(none, 'rsi').detail, /^auto: /, 'the default is the one that adds lessons to prompts, so it is said')
+    const keyed = await diagnose({ env: { ...base, AH_KEY_BRAVE_API_KEY: 'brave-secret-1', AH_KEY_FIRECRAWL_API_KEY: 'fc-secret-2', AH_RSI: 'observe' }, root: clone, core: snap, home: join(root, 'home8') })
+    assert.match(by(keyed, 'web').detail, /^on: brave_search; web_extract reads with firecrawl -> jina_read$/)
+    assert.match(by(keyed, 'rsi').detail, /^observe: /)
+    assert.ok(!format(keyed).includes('brave-secret-1') && !format(keyed).includes('fc-secret-2'))
+    const off = await diagnose({ env: { ...base, AH_RSI: '0' }, root: clone, core: snap, home: join(root, 'home9') })
+    assert.match(by(off, 'rsi').detail, /^off: /)
+  })
   test('jobs are counted when the folder exists', async () => {
     const home = join(root, 'home5')
     mkdirSync(join(home, 'jobs'), { recursive: true })

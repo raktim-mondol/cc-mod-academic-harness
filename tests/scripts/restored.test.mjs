@@ -1,5 +1,6 @@
 // The tools and skills brought back: the self-improvement loop (ah_rsi) driven by hook events, paper_mcp registering servers with Claude Code
 // through .mcp.json, zvec_index, and the five skills.
+import '../helpers/ts-resolve.mjs'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -8,7 +9,10 @@ import { dirname, join, resolve } from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { mcpEntry, removeFromMcpJson, writeMcpJson } from '../../server/src/mcpjson.mjs'
-import { addTool, bareName, loadRsi, mergeReply, rsiEvent } from '../../server/src/rsi-bridge.mjs'
+import { addTool, bareName, gateKind, loadRsi, mergeReply, rsiEvent } from '../../server/src/rsi-bridge.mjs'
+
+const guard = await import('../../hooks/guard-core.ts')
+const rsiHook = await import('../../hooks/rsi-core.ts')
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const UP = join(root, 'core')
@@ -33,19 +37,85 @@ describe('the self-improvement loop, one hook event at a time', () => {
       assert.deepEqual(await ev('post', { tool_name: 'mcp__plugin_academic-harness_ah__integrity_check', tool_input: { doi: '10.1/x' }, tool_response: '{"verdict":"retracted"}' }), {})
       assert.deepEqual(await ev('stop', {}), {})
       const events = readFileSync(join(dir, 'store', 'events.jsonl'), 'utf8').trim().split('\n').map(l => JSON.parse(l))
-      assert.deepEqual(events.map(e => e.type), ['user_turn', 'lesson_injected', 'tool'])
+      assert.deepEqual(events.map(e => e.type), ['user_turn', 'lesson_injected', 'tool', 'gate'], 'the stop is recorded as a gate event too')
       assert.equal(events[2].tool, 'integrity_check', 'the MCP prefix is stripped')
       assert.equal(events[2].verdict, 'retracted')
       const episodes = readFileSync(join(dir, 'store', 'episodes.jsonl'), 'utf8').trim().split('\n').map(l => JSON.parse(l))
       assert.equal(episodes.length, 1, 'the stop closed the turn into one episode')
       // a second prompt opens a new turn with its own index
       await ev('userprompt', { prompt: 'Please revise the introduction.' })
-      const state = JSON.parse(readFileSync(join(dir, 'home', 'rsi-sessions', 's1.json'), 'utf8'))
+      const state = JSON.parse(readFileSync(join(dir, 'home', 'rsi-sessions', 's1', 'state.json'), 'utf8'))
       assert.equal(state.currentTurn.index, 1)
     } finally {
       for (const k of Object.keys(process.env)) if (!(k in saved)) delete process.env[k]
       Object.assign(process.env, saved)
       rmSync(dir, { recursive: true, force: true })
+    }
+  })
+  test('a stop the gate blocks keeps the turn open; the stop that ends it closes it once, and a handoff is a signal', { skip: !HAVE_UP }, async () => {
+    const dir = scratch('rsi-gate-')
+    const saved = { ...process.env }
+    try {
+      process.env.DSH_HOME = join(dir, 'home')
+      process.env.AH_RSI_STORE = join(dir, 'store')
+      delete process.env.AH_RSI
+      const rsi = await loadRsi(UP)
+      const ev = (event, payload = {}, engineOut) => rsiEvent({ event, payload: { session_id: 'g', ...payload }, root: dir, home: join(dir, 'home'), rsi, engineOut })
+      const episodes = () => (existsSync(join(dir, 'store', 'episodes.jsonl')) ? readFileSync(join(dir, 'store', 'episodes.jsonl'), 'utf8').trim().split('\n').filter(Boolean).map(l => JSON.parse(l)) : [])
+      await ev('userprompt', { prompt: 'Please revise the introduction of the manuscript.' })
+      await ev('post', { tool_name: 'Edit', tool_input: { file_path: 'a.tex' }, tool_response: 'ok' })
+      await ev('stop', {}, JSON.stringify({ decision: 'block', reason: 'AH gate: 2 blocking findings remain.' }))
+      assert.equal(episodes().length, 0, 'the gate blocked the stop, so the turn is still open')
+      await ev('post', { tool_name: 'Edit', tool_input: { file_path: 'a.tex', again: 1 }, tool_response: 'ok' })
+      await ev('stop', {}, '')
+      const [episode] = episodes()
+      assert.equal(episodes().length, 1, 'closed once, when the gate let go')
+      assert.deepEqual(episode.gate_history, ['continue', 'none'])
+      assert.equal(episode.gate, null, 'a gate that let go leaves no gate on the turn')
+      // a turn that ends in a handoff keeps it
+      await ev('userprompt', { prompt: 'Please revise the introduction of the manuscript again.' })
+      await ev('post', { tool_name: 'Edit', tool_input: { file_path: 'b.tex' }, tool_response: 'ok' })
+      await ev('stop', {}, JSON.stringify({ systemMessage: 'AH gate: stopped after 3 attempts with 2 blocking finding(s) the agent\'s edits introduced:\n- X-1\nThe author decides what to do next.' }))
+      const handed = episodes().at(-1)
+      assert.equal(episodes().length, 2)
+      assert.equal(handed.gate?.kind, 'handoff')
+    } finally {
+      for (const k of Object.keys(process.env)) if (!(k in saved)) delete process.env[k]
+      Object.assign(process.env, saved)
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+  test('hook events that arrive together (parallel tool calls) are all counted', { skip: !HAVE_UP }, async () => {
+    const dir = scratch('rsi-par-')
+    const saved = { ...process.env }
+    try {
+      process.env.DSH_HOME = join(dir, 'home')
+      process.env.AH_RSI_STORE = join(dir, 'store')
+      delete process.env.AH_RSI
+      const rsi = await loadRsi(UP)
+      const ev = (event, payload = {}) => rsiEvent({ event, payload: { session_id: 'p', ...payload }, root: dir, home: join(dir, 'home'), rsi })
+      await ev('userprompt', { prompt: 'Please check the statistics in the results section.' })
+      const results = await Promise.all(Array.from({ length: 24 }, (_, i) => ev('post', { tool_name: 'Read', tool_input: { file_path: `f${i}.tex` }, tool_response: 'x' })))
+      assert.ok(results.every(r => !r.error), JSON.stringify(results.find(r => r.error)))
+      const state = JSON.parse(readFileSync(join(dir, 'home', 'rsi-sessions', 'p', 'state.json'), 'utf8'))
+      assert.equal(state.currentTurn.toolCounts.Read, 24, 'no update was lost')
+    } finally {
+      for (const k of Object.keys(process.env)) if (!(k in saved)) delete process.env[k]
+      Object.assign(process.env, saved)
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+  test('the loop reads the stop gate the way the guard does', () => {
+    const samples = [
+      '', '{}', 'not json', '{"decision":"block","reason":"AH gate: 2 blocking findings remain."}',
+      '{"decision":"block","reason":"AH gate: stopping after 5 attempts. The author decides what to do next."}',
+      '{"hookSpecificOutput":{"hookEventName":"Stop","permissionDecision":"deny","permissionDecisionReason":"no"},"reason":"blocked by the gate"}',
+      '{"systemMessage":"AH gate: stopped after 3 attempts."}', '{"systemMessage":"Evidence check: 2 clauses look unsupported."}',
+      '{"additionalContext":"note only"}', '{"hookSpecificOutput":{"additionalContext":"card"}}', '{"decision":"deny","reason":"AH gate: stopping after 2 rounds."}',
+    ]
+    for (const raw of samples) {
+      const expected = guard.gateDecision(guard.parseEngineStdout(raw)).kind
+      assert.equal(gateKind(raw), expected, JSON.stringify(raw))
     }
   })
   test('mode off does nothing and writes nothing; observe records but injects nothing', { skip: !HAVE_UP }, async () => {
@@ -77,6 +147,41 @@ describe('the self-improvement loop, one hook event at a time', () => {
       assert.equal(r.status, 0, r.stderr)
       assert.equal(existsSync(join(dir, 'store')), false, 'nothing is written outside an ah.yaml project')
     } finally { rmSync(dir, { recursive: true, force: true }) }
+  })
+  test('the hook hands the loop a bounded tool input and result', () => {
+    assert.deepEqual(rsiHook.clipInput({ file_path: 'a.tex' }), { file_path: 'a.tex' }, 'a small input is passed as it is')
+    const big = rsiHook.clipInput({ file_path: 'a.tex', content: 'x'.repeat(100_000) })
+    assert.equal(typeof big, 'string')
+    assert.equal(big.length, rsiHook.MAX_INPUT_CHARS)
+    assert.equal(rsiHook.clipResponse('y'.repeat(100_000)).length, rsiHook.MAX_RESPONSE_CHARS)
+    assert.equal(rsiHook.clipResponse({ content: [{ type: 'text', text: 'ok' }] }), '{"content":[{"type":"text","text":"ok"}]}')
+    assert.equal(rsiHook.clipResponse(undefined), '""')
+    const cyclic = {}; cyclic.self = cyclic
+    assert.doesNotThrow(() => rsiHook.clipResponse(cyclic), 'a value that cannot be printed does not throw')
+  })
+  test('the loop\'s mode is a plugin option; the hook bridge and the server read it, and the shell wins', { skip: !HAVE_UP }, async () => {
+    const manifest = JSON.parse(readFileSync(join(root, '.claude-plugin', 'plugin.json'), 'utf8'))
+    assert.deepEqual(manifest.userConfig.rsi_mode.options, ['auto', 'observe', 'off'])
+    assert.equal(manifest.userConfig.rsi_mode.default, 'auto')
+    assert.equal(manifest.mcpServers.ah.env.AH_RSI_SETTING, '${user_config.rsi_mode}')
+    const { prepareEnv } = await import('../../server/src/env.mjs')
+    const home = scratch('rsi-opt-')
+    try {
+      const a = { AH_MOD_HOME: home, AH_RSI_SETTING: 'observe' }
+      prepareEnv(a)
+      assert.equal(a.AH_RSI, 'observe', 'the option becomes AH_RSI for the server')
+      const b = { AH_MOD_HOME: home, AH_RSI_SETTING: 'observe', AH_RSI: 'off' }
+      prepareEnv(b)
+      assert.equal(b.AH_RSI, 'off', 'a variable the person exported wins')
+      // the hook bridge: off records nothing, observe opens the session folder
+      mkdirSync(join(home, 'proj'), { recursive: true })
+      writeFileSync(join(home, 'proj', 'ah.yaml'), 'name: x\n')
+      const hook = setting => spawnSync('node', [join(root, 'server', 'bin', 'ah-hook.mjs'), 'rsi-post'], { input: JSON.stringify({ session_id: `s-${setting}`, cwd: join(home, 'proj'), tool_name: 'Bash', tool_input: {}, tool_response: '' }), env: { ...process.env, AH_MOD_HOME: join(home, 'mod'), AH_RSI_STORE: join(home, `store-${setting}`), AH_RSI_SETTING: setting, AH_RSI: '' }, encoding: 'utf8' })
+      assert.equal(hook('off').status, 0)
+      assert.equal(existsSync(join(home, 'mod', 'rsi-sessions', 's-off')), false, 'off wrote nothing')
+      assert.equal(hook('observe').status, 0)
+      assert.ok(existsSync(join(home, 'mod', 'rsi-sessions', 's-observe')), 'observe is on')
+    } finally { rmSync(home, { recursive: true, force: true }) }
   })
   test('the lessons are merged into the engine reply when there is one, and stand alone when there is not', () => {
     assert.equal(mergeReply('x', undefined), 'x')
@@ -153,14 +258,21 @@ describe('what the host serves now', () => {
       assert.equal(existsSync(join(proj, '.mcp.json')), false, 'session start mounted nothing')
       const status = await host.call('paper_mcp', { action: 'status' })
       assert.match(status.content[0].text, /shipped/)
-      assert.match(status.content[0].text, /pending approval|not-mounted/)
+      assert.match(status.content[0].text, /shipped · not in \.mcp\.json · not confirmed yet/)
+      assert.match(host.list().find(t => t.name === 'paper_mcp').description, /writes it into \.mcp\.json; the person is asked to confirm first/, 'the description says what really happens')
+      assert.doesNotMatch(host.list().find(t => t.name === 'paper_mcp').description, /mounts it|restart dsh/i)
       const reg = await host.call('paper_mcp', { action: 'register', serverName: 'p', command: process.execPath, args: [join(proj, 'srv', 'p_mcp.py')], cwd: proj, envNames: ['S2_API_KEY'] })
       assert.notEqual(reg.isError, true, JSON.stringify(reg))
+      assert.match(reg.content[0].text, /\.mcp\.json: has the entry/)
+      assert.match(reg.content[0].text, /Claude Code asks you to approve the server/)
+      assert.doesNotMatch(reg.content[0].text, /mounted|restart/i)
+      assert.match((await host.call('paper_mcp', { action: 'status' })).content[0].text, /- p · in \.mcp\.json/)
       const doc = JSON.parse(readFileSync(join(proj, '.mcp.json'), 'utf8'))
       assert.equal(doc.mcpServers.p.command, 'bash')
       assert.equal(doc.mcpServers.p.env.S2_API_KEY, '${S2_API_KEY}')
       const gone = await host.call('paper_mcp', { action: 'unregister', serverName: 'p' })
       assert.notEqual(gone.isError, true)
+      assert.match(gone.content[0].text, /Removed from the registry and from \.mcp\.json/)
       assert.equal(JSON.parse(readFileSync(join(proj, '.mcp.json'), 'utf8')).mcpServers.p, undefined)
       const rsi = await host.call('ah_rsi', { action: 'status' })
       assert.match(rsi.content[0].text, /RSI mode: /)
