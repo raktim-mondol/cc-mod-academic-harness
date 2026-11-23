@@ -84,6 +84,7 @@ All write under `~/.cache/ah-cc-*`, use Haiku, and cap spending per run. They ne
 | `p5.mjs` | The task commands headless (no model turn), errors, `/fold`, a deep research run from `/ah-research` | cents |
 | `p5-tui.mjs` | The status line, the pane docked, wide and narrow, a job from start to notice (tmux) | about 10 cents |
 | `p6.mjs` | `/academic doctor` in a session; a fresh clone set up from a copy of this repository, with no other source | cents |
+| `papermcp.mjs` | `paper_mcp` register, the approval prompt Claude Code shows (under tmux), the server running in its folder with the variable, unregister | cents |
 | `fit.mjs` | The catalogue (skills, agents, tools), `restore_tools`, papers searched with `literature_search`, an on-demand skill | cents |
 | `install.mjs` | The first start of an installed copy: the doctor answers at once, the core is copied and its dependencies installed, the list changes (`first_start`: network, no Claude); installed from a local marketplace into a scratch configuration (`marketplace`) | cents, network |
 
