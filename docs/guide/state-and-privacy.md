@@ -14,6 +14,8 @@ What the mod reads, what it writes and where, and what it can spend.
 | A tool result longer than 40,000 characters, in full | `<project>/.dsh/tool-output/`, removed after 30 days (`AH_TOOL_OUTPUT_KEEP_DAYS`) |
 | Usage counts: per tool, skill, agent and command, how often and when last, one small file per server run and per session | `<home>/usage/`, removed after a year (`AH_USAGE_KEEP_DAYS`) |
 | A small record that the hooks module loaded (session id, Claude Code version, time), one per session | `<home>/mod-seen/`, removed after a week |
+| The self-improvement loop, only if you turn it on: episodes (one per turn: task class, tool counts, findings; no prompt text), events, lessons and their evidence | `<home>/ah-rsi/` (`AH_RSI_STORE`), kept bounded: a file past its limit is rotated to `<name>.1` and the lessons file is compacted, once a day. The turn in progress, one folder per session, in `<home>/rsi-sessions/`, removed after a week. Only in folders with an `ah.yaml` and with a person at the prompt |
+| A Paper2MCP server you register | The project's `.mcp.json` (the program and the *names* of its variables, never a value) and `<project>/.dsh/paper-mcps.json` |
 | A system prompt over 30,000 characters, while a model call that needs it runs | `<home>/tmp/`, removed when the call ends |
 | The `/academic on\|off` override, the pane's data, which job notices were shown | Claude Code's plugin state for the session; nothing of the mod's on disk |
 
@@ -27,11 +29,24 @@ The server counts its tools. The hooks module counts this plugin's skills and ag
 
 Off by default. When it is on and a TypeSafe key is saved, each prompt it classifies sends TypeSafe the start (1,200 characters) and the end (400) of the prompt, with the key, over HTTPS; nothing else, and nothing is kept by the mod. With no key, or with `router_engine` set to `rules`, nothing leaves the machine. The last decision (route, model, reason) is held in Claude Code's plugin state for the session. [The page](model-router.md) has the rest.
 
+## The self-improvement loop
+
+Off unless you turn it on (the `rsi_mode` setting or `AH_RSI`; the doctor shows the mode). When it is on it records, per turn, the kind of task, a hash of your message (not the message), which tools ran and whether they failed, the findings they reported, and whether the stop gate held the turn. A tool's result text is read in memory to find those findings and is not stored: what is kept is its size, a hash, the finding ids it reported and, for a failure, a short signature of the error with paths and numbers replaced. It does this only in a folder with an `ah.yaml`, and only when a person is at the prompt: a headless run (`claude -p`, the SDK) is never recorded and never gets lessons, so a scripted run stays reproducible. A sentence in which you state a preference ("from now on, always run integrity_check before citing") is kept, as written, as a lesson. In `auto` mode the lessons that fit the task are added to your next prompts as short guidance; in `observe` mode nothing is added. Nothing leaves the machine unless you set `AH_RSI_REMOTE=1`. `ah_rsi` lists, forgets and rolls back lessons, and deleting `<home>/ah-rsi/` erases everything it learned.
+
+## What leaves the machine
+
+- **Search providers**, only when you have saved their key: the query goes to the provider the tool chose (`web_search` says which), `web_extract` sends a URL to Firecrawl or Parallel and then, failing those, to Jina. Keys travel as request headers to that provider only. With no key set none of them is contacted.
+- **Scholarly APIs** (OpenAlex, Semantic Scholar, Crossref, PubMed and the others `literature_search` uses): the query, as always.
+- **The model router**, as described above, and only with a TypeSafe key.
+
+Text that comes back from any of these is fenced as untrusted (below).
+
 ## What it reads
 
 - **The plugin's own `core/`**: read, and copied to the mod's home on a first start. It is never written by the server.
 - **The PaperMemory database**, opened read-only and immutable (`?immutable=1`) by the pane, so not even a `-shm` or `-wal` file appears beside it. The PaperMemory tools themselves write to it, as they always did.
 - **Keys**: from the plugin's options and the environment, into the server's environment. The doctor and the diagnostics print names, never values.
+- **A folder's `.mcp.json` and `.claude/settings*.json`**, by the doctor only, to say what the folder starts on its own (server names and hook event names, never a command or a value). See [Running headless](headless.md).
 
 ## What it never touches
 
@@ -55,6 +70,6 @@ In a folder with an `ah.yaml` (and nowhere else), every `Write`, `Edit`, `Notebo
 
 ## Text that is not an instruction
 
-Search results, abstracts and paper text are wrapped in `<untrusted-source>` and the research-mode text tells the model to read them as claims, never as instructions.
+Search results (including the listing `web_search` returns), page text from `web_extract`, abstracts and paper text are wrapped in `<untrusted-source>` and the research-mode text tells the model to read them as claims, never as instructions.
 
 Next: [Troubleshooting](troubleshooting.md).

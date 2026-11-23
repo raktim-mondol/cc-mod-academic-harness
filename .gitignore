@@ -15,3 +15,6 @@ core/.ah-core-ready
 # The pre-0.6.0 snapshot folder, left on disk by a clone that had been set up
 /upstream/
 server/dist/
+
+# Generated when the Pele skill first installs itself to render the diagrams (docs/maintain/building.md)
+core/skills/pele/package-lock.json

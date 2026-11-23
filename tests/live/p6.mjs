@@ -68,7 +68,7 @@ const scenarios = {
     const doctor = claude(fresh, '/academic doctor', { cwd: join(base, 'fresh-work'), env })
     assert.equal(serverOf(doctor.init)?.status, 'connected', 'the ah server of a fresh clone connects')
     const tools = doctor.init.tools.filter(t => t.startsWith('mcp__plugin_academic-harness_ah__')).length
-    assert.ok(tools >= 126, `${tools} ah tools`)
+    assert.ok(tools >= 129, `${tools} ah tools`)
     assert.match(doctor.said, /Core: Academic Harness \d+\.\d+\.\d+, in the plugin folder/)
     assert.match(doctor.said, /PaperMemory CLI: installed/)
     const papers = claude(fresh, '/ah-papers --effort low sparse autoencoders', { cwd: join(base, 'fresh-work'), env })

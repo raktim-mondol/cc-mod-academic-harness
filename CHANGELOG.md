@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.7.0 (2026-11-24)
+
+**Upgrade notes**
+
+- **Claude Code 2.1.331 or newer.** The hooks this release adds (`PostToolBatch`, `PostToolUseFailure`, and a `tool.check` for `paper_mcp`) were run on 2.1.331 only (the whole live matrix; they were first tried on 2.1.330, the version before). 2.1.325 was not run for 0.7.0, so it is no longer in `TESTED_VERSIONS` and the doctor warns on anything older.
+- **Search providers serve themselves once their key is set** (Brave, Tavily, Exa, Perplexity, Parallel, Consensus, Elicit, and Firecrawl for reading pages). With no key nothing changes: 129 tools, and Claude uses `WebSearch` and `WebFetch`. With keys, up to 139 tools.
+- **The self-improvement loop (`ah_rsi`) is off by default.** Turn it on with the `rsi_mode` setting or `AH_RSI` (`observe` records, `auto` also adds lessons to prompts). It never runs headless.
+- **`paper_mcp` asks before it registers a server**, and is refused where nobody can answer.
+- `plugin.json` now declares the network hosts the plugin reaches (`network.hosts`).
+
+**Added**
+
+- **`web_search` and `web_extract`** (`server/src/webtools.mjs`): `web_search` picks the best provider that is on for the kind of search (`general`, `semantic`, `fresh`, `news`, `excerpts`), falls to the next when one has no key, fails or finds nothing, and says which answered; `intent=claim` asks one provider from each of two independent groups and marks what both found. `web_extract` reads URLs with Firecrawl, then Parallel Extract, then Jina Reader (keyless), naming the reader of each. Both exist only when a provider is on. The guide `search-providers` gives each provider one job.
+- **Brought back at the person's request:** `zvec_index` (drives the `zg` you have and asks before it indexes), `paper_mcp` (registers a Paper2MCP server in the project's `.mcp.json`; only variable names are written), `ah_rsi` with its loop, and the skills `agent-browser`, `modal`, `runpod`, `vastai` and `using-science-superpowers` (rewritten to load the skill that fits a task by itself, and none for a greeting). 60 skills in all.
+- **The self-improvement loop** is driven from the guard bridge (`server/src/rsi-bridge.mjs`) and two hooks (`hooks/rsi.ts`): `PostToolBatch` hands it a step's calls in one process, `PostToolUseFailure` the calls that failed. It runs only in a folder with an `ah.yaml`, only with a person at the prompt, and starts no process when it is off. A turn the stop gate holds stays open until the gate lets go, and a handoff is a signal. Its store is kept bounded (rotation and compaction once a day).
+- **The doctor** shows which search providers are on, the loop's mode, and what a folder starts on its own (`.mcp.json` servers and project hooks: names only).
+- **[Running headless](docs/guide/headless.md)**, checked live: the plugin's asks are refusals where nobody can answer, also under `--permission-mode bypassPermissions`; Claude Code starts a folder's own `.mcp.json` servers and hooks in `claude -p`, `--restricted` stops that and leaves the plugin and the guard working; `--bare` and `--strict-mcp-config` remove the plugin.
+- `npm run typecheck` says what to do when the generated typings are the cause of a TS2589.
+- New live scripts: `tests/live/rsi.mjs`, `tests/live/headless.mjs`, `tests/live/papermcp.mjs`.
+
+**Fixed**
+
+- `paper_mcp` wrote a program into `.mcp.json` without asking anyone, so under `claude -p` a registered server started unasked. It now asks (a `tool.check` showing the program, its folder and its variables) and its description and results say what really happens.
+- `web_search` returned third-party titles and snippets unfenced; the listing is now inside the untrusted-source fence.
+- The loop closed a turn at the first blocked stop, never saw failed calls, and could lose updates from parallel hooks; it also used to be on by default.
+- Restored search tools were counted under an `undefined` area; tool descriptions named the other host's question tool and a `mcp__firecrawl__*` tool; the `paper-agent-builder` brief had a stale `paper_mcp` rewrite; counts and statements across the docs were out of date.
+- The hooks tests (`claude plugin test .`) were skipped by the checks and failed once the loop's hook was added; they now cover the loop's hooks and the `paper_mcp` ask.
+
+**Security**
+
+- **Dependencies:** `npm audit` found 18 advisories in the core's production dependencies (15 high), all from three packages the DSH packages pull in: `zod` (memory exhaustion on oversized collections), `undici` (eight advisories: denial of service, TLS validation bypass, cache poisoning) and `@modelcontextprotocol/client` (cross-origin redirects that re-sent headers). They are pinned to patched versions with npm `overrides` in `core/package.json` (zod 4.6.7, undici 8.13.1, @modelcontextprotocol/client 2.4.0) and the lockfile is regenerated; `npm audit` now reports none, including the dev-only `minimatch` advisory, and the core's own 125 test files pass on the patched versions.
+- A new test (`tests/scripts/hosts.test.mjs`) fails when the code names a network host `plugin.json` does not declare.
+- `SECURITY.md`: supported line is now `0.7.x`; new in-scope items and design guarantees (asks refuse headless, fencing, the loop, declared hosts); a section on running headless.
+
+Still left out: `scientific_result`, `research_template`, `fold_text` and `latex_compile`, which duplicate something already there.
+
 ## 0.6.1 (2026-11-18)
 
 - README: an optional zvec-grep section says how to add semantic workspace search to Claude Code (`npm install -g @zvec/zvec-grep --allow-scripts=@zvec/zvec-grep`, then `zg install --target claude --yes --mcp-toolset full`), what it adds (`zvec_grep_search`, `zvec_grep_rg` and the index tools), and that the plugin still bundles none of it.

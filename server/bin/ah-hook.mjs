@@ -14,11 +14,15 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { engineDir, engineStatus } from '../src/engine.mjs'
-import { coreDir } from '../src/paths.mjs'
+import { coreDir, modHome } from '../src/paths.mjs'
+import { loadRsi, mergeReply, rsiEvent } from '../src/rsi-bridge.mjs'
+import { rsiMode } from '../src/rsi-mode.mjs'
 
 export const EXIT_NO_ENGINE = 3
 export const EXIT_TIMEOUT = 124
-const EVENTS = new Set(['userprompt', 'pre', 'post', 'stop'])
+const EVENTS = new Set(['userprompt', 'pre', 'post', 'stop', 'rsi-batch', 'rsi-fail'])
+/** The events the self-improvement loop (ah_rsi) listens to, and the name it knows each by. `rsi-batch` (the calls of one step) and `rsi-fail` (a call that failed) are only the loop: the hooks module sends them, the engine never sees them. */
+const RSI_EVENT = { userprompt: 'userprompt', stop: 'stop', 'rsi-batch': 'batch', 'rsi-fail': 'fail' }
 
 async function readStdin() {
   let text = ''
@@ -41,6 +45,28 @@ export async function main(argv = process.argv.slice(2), env = process.env, stdi
     return 2
   }
   const cwd = typeof payload.cwd === 'string' && payload.cwd ? payload.cwd : process.cwd()
+
+  // The loop runs in its own process step and never stops a turn: whatever it does, the reply is the engine's, plus lessons when there are any.
+  const runRsi = async (root, engineOut) => {
+    // The loop is off unless a person turned it on, and never runs headless (server/src/rsi-mode.mjs). Off means nothing is loaded or written.
+    const mode = rsiMode(env)
+    if (!RSI_EVENT[event] || mode === 'off') return {}
+    try {
+      process.env.DSH_HOME = modHome(env)
+      process.env.AH_RSI = mode // the core reads it when it works out its own configuration
+      return await rsiEvent({ event: RSI_EVENT[event], payload, root, home: modHome(env), rsi: await loadRsi(coreDir(env)), mode, engineOut })
+    } catch (error) {
+      process.stderr.write(`ah-hook: rsi: ${error?.message ?? error}\n`)
+      return {}
+    }
+  }
+  if (event === 'rsi-batch' || event === 'rsi-fail') {
+    if (rsiMode(env) === 'off') return 0 // nothing is loaded for a loop that is off
+    const cli = await import(pathToFileURL(join(coreDir(env), 'academic-harness-cli.js')).href)
+    const root = cli.findAhRoot(cwd)
+    if (root) await runRsi(root)
+    return 0
+  }
 
   // AH_NO_ENFORCE=1 is the engine's own switch for working without the guard (it skips pre, post and stop). The fail-closed text names it
   // as the way on when the engine cannot run, so it has to hold then too: without this an engine that is not built refused every edit and the
@@ -74,7 +100,12 @@ export async function main(argv = process.argv.slice(2), env = process.env, stdi
   const childEnv = cli.ahEnv({ AH_LOG: env.AH_LOG?.trim() || join(root, '.ah', 'claude-hooks.jsonl'), ...(env.AH_T3_MODE ? { AH_T3_MODE: env.AH_T3_MODE } : {}) }, { root, model: env.AH_MODEL })
   const timeoutMs = Number(env.AH_HOOK_TIMEOUT_MS) > 0 ? Number(env.AH_HOOK_TIMEOUT_MS) : 110_000
   const r = await cli.run(launch.command, cli.cliArgs(launch, ['hook', event]), { cwd, timeoutMs, env: childEnv, silent: true, stdin: `${JSON.stringify(payload)}\n` })
-  if (r.out) process.stdout.write(r.out)
+  let out = r.out
+  if (r.code === 0 && RSI_EVENT[event]) {
+    const lessons = await runRsi(root, r.out)
+    if (lessons.additionalContext) out = mergeReply(out, lessons.additionalContext)
+  }
+  if (out) process.stdout.write(out)
   if (r.err) process.stderr.write(r.err)
   if (r.code === EXIT_TIMEOUT) process.stderr.write(`ah-hook: the engine did not answer within ${timeoutMs} ms\n`)
   return r.code

@@ -11,6 +11,7 @@ For someone using the mod in Claude Code. Read in order the first time; after th
 | [Settings and switches](settings.md) | How do I trim the tools, bring a left-out tool back, or change a default? |
 | [Keys and credentials](keys.md) | How do I save an API key? Where is it stored, and is it safe? Which keys are there? |
 | [State and privacy](state-and-privacy.md) | What does it read and write, where, and what can it spend? |
+| [Running headless](headless.md) | What happens in `claude -p`, CI and the SDK, where nobody can answer? How do I run a folder I did not write? |
 | [Troubleshooting](troubleshooting.md) | Something does not work: what do I run? |
 
 Other places: [the documentation index](../README.md), [why things are the way they are](../design/README.md), [keeping it up to date](../maintain/README.md).

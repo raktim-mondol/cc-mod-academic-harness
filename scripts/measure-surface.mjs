@@ -19,6 +19,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { createHost } from '../server/src/host.mjs'
 import { adapt } from '../server/src/render.mjs'
+import { PAPER_MCP_DESCRIPTION } from '../server/src/mcpjson.mjs'
 import { discover, classify } from '../server/src/manifest.mjs'
 import { coreDir } from '../server/src/paths.mjs'
 
@@ -95,7 +96,9 @@ export async function compare({ upstream = coreDir() } = {}) {
   for (const t of served) {
     const u = recorded.get(t.name)
     if (!u) { mismatched.push({ tool: t.name, why: 'served but not registered upstream' }); continue }
-    if (adapt(u.description) !== t.description) mismatched.push({ tool: t.name, why: 'description differs' })
+    // paper_mcp's description is written for this plugin (server/src/mcpjson.mjs): it registers in .mcp.json, it does not mount.
+    const expected = t.name === 'paper_mcp' ? PAPER_MCP_DESCRIPTION : adapt(u.description)
+    if (expected !== t.description) mismatched.push({ tool: t.name, why: 'description differs' })
     else if (JSON.stringify(u.parameters) !== JSON.stringify(t.inputSchema)) mismatched.push({ tool: t.name, why: 'parameters differ' })
     else if (u.cls?.tier !== 1) mismatched.push({ tool: t.name, why: `served although its module is ${u.cls?.tier}` })
   }

@@ -2,15 +2,19 @@ flowchart TB
   subgraph CC["Claude Code session"]
     direction TB
     H["Hooks module<br/>commands, research mode,<br/>status line, pane,<br/>guard, approvals"]
-    AH["MCP server ah<br/>126 tools, jobs, doctor"]
+    AH["MCP server ah<br/>129 tools (139 with keys)<br/>jobs, doctor"]
     PM["MCP server papermemory<br/>paper library"]
-    SK["Skills and agents<br/>54 skills, 21 specialists"]
+    SK["Skills and agents<br/>60 skills, 21 specialists"]
   end
-  H -->|"process.run"| BIN["Node helpers<br/>ah-hook, ah-approve, ah-ui, ah-doctor"]
+  H -->|"process.run"| BIN["Node helpers<br/>ah-hook, ah-approve,<br/>ah-ui, ah-doctor"]
   BIN --> ENG["Writing engine<br/>Python, ah_* tools"]
+  BIN -->|"turn events; lessons<br/>come back as context"| RSI[("Lesson store<br/>self-improvement loop")]
   AH -->|"loads tool modules"| UP[("Bundled core<br/>tools, skills, writing engine<br/>committed in core/")]
-  AH -->|"long tools run as"| JOBS["Background jobs"]
+  AH -->|"long tools"| JOBS["Background jobs"]
   AH -->|"model route"| CLI["claude -p"]
+  AH -->|"web tools, when keyed"| NET["Search and fetch APIs<br/>Brave, Tavily, Exa,<br/>Perplexity, Parallel,<br/>Consensus, Elicit,<br/>Firecrawl, Jina"]
+  AH -->|"paper_mcp, after<br/>you confirm"| MCPJ[".mcp.json<br/>Paper2MCP servers"]
+  AH -->|"zvec_index"| ZG["zg index<br/>zvec-grep"]
   ENG --- UP
   PM --> LIB[("PaperMemory library")]
 
@@ -24,6 +28,6 @@ flowchart TB
   class AH,PM,JOBS server
   class SK content
   class ENG engine
-  class UP,LIB store
-  class CLI outside
+  class UP,LIB,RSI store
+  class CLI,NET,MCPJ,ZG outside
   style CC fill:#f8fafc,stroke:#94a3b8,stroke-width:2px,color:#334155

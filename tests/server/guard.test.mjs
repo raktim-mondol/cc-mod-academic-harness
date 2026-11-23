@@ -41,7 +41,8 @@ function project(name) {
 
 function hook(event, payload, env = {}) {
   return new Promise(resolve => {
-    const child = spawn('node', [HOOK, event], { env: { ...process.env, ...env }, stdio: ['pipe', 'pipe', 'pipe'] })
+    // AH_RSI=off: these tests drive the guard, and the self-improvement loop would write into the real mod home.
+    const child = spawn('node', [HOOK, event], { env: { ...process.env, AH_RSI: 'off', ...env }, stdio: ['pipe', 'pipe', 'pipe'] })
     let out = ''
     let err = ''
     child.stdout.on('data', d => { out += d })

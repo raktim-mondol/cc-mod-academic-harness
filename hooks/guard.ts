@@ -2,6 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, On, PluginOptions } from 'claude-code'
 
 import { findProject } from './mode'
+import { rsiInteractive } from './rsi-core'
 import {
   caughtReason,
   engineAnswered,
@@ -52,6 +53,11 @@ export async function projectOf($: EngineInterface, cwd: string): Promise<string
 /** Run `ah-hook.mjs <event>` with the payload on stdin. Rejects when the process cannot start or overruns. */
 export async function runEngine($: EngineInterface, options: PluginOptions, event: string, payload: Record<string, unknown>): Promise<Run> {
   const env: Record<string, string> = { AH_T3_MODE: t3Mode(options['evidence_check']) }
+  // The self-improvement loop's mode and whether a person is at the prompt, for the bridge (server/src/rsi-mode.mjs decides): the setting is
+  // off unless chosen, and a headless run is never recorded.
+  const rsi = String(options['rsi_mode'] ?? '').trim()
+  if (rsi) env['AH_RSI_SETTING'] = rsi
+  env['AH_RSI_INTERACTIVE'] = rsiInteractive() ? '1' : '0'
   let model = ''
   try {
     model = await $.session.model()

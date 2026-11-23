@@ -110,9 +110,9 @@ Option names are lower case; the environment variable of the same name in upper 
 
 Rented compute asks before every run and is capped by `compute_session_cap_usd`; see [State and privacy](state-and-privacy.md).
 
-### Tools that are off until you bring them back
+### Search providers: on when the key is set
 
-These general web-search tools are left out because Claude Code searches the web itself. Their keys can be saved ahead of time; the tool appears when its name is in `restore_tools` ([Settings](settings.md)).
+These search tools are not served until you give them a key, so a model is never offered a provider that can only answer `key_missing`. Save the key and restart Claude Code; the tool appears with no other step (naming it in `restore_tools` also works, and `AH_AUTO_PROVIDERS=0` turns the automatic part off). `web_search` and `web_extract` then choose among whichever are on, fall back when one fails, and say which answered; with no key at all Claude uses `WebSearch`, `WebFetch` and any connector you have signed in to. Research mode routes between them by the job each does: the guide `search-providers` (in `skills/research-guides`) is the table, and `/academic doctor` lists which are on.
 
 | Option | Tool |
 |---|---|
@@ -121,6 +121,9 @@ These general web-search tools are left out because Claude Code searches the web
 | `exa_api_key` | `exa_search` |
 | `perplexity_api_key` | `perplexity_search` |
 | `elicit_api_key` | `elicit_search` |
+| `firecrawl_api_key` | `web_extract` (Firecrawl is its first reader), and `firecrawl` as a source of `literature_search` |
+| `parallel_api_key` | `parallel_search` and `parallel_extract` (and `parallel` as a source of `literature_search`) |
+| `consensus_api_key` | `consensus_search` (and `consensus` as a source of `literature_search`) |
 
 ## For people changing the plugin
 
