@@ -13,6 +13,7 @@ Node scripts for setting the mod up, building what is generated, and checking it
 | `build-manifest.mjs` | Writes the generated part of `.claude-plugin/plugin.json` (`--check` to verify) |
 | `adapt.mjs` | The rewrites of the core's text for Claude Code, used by the builds |
 | `research-mode.md`, `prompt-reviewed.json` | Hand-written: the research-mode text, and the text of `core/prompt.js` it was written against |
+| `guides/` | Hand-written guides for `research-guides` (today [`search-providers.md`](guides/search-providers.md), the routing of the keyed search providers), built next to the ones from the core's prompt |
 | `measure-surface.mjs` | The host's tools against what the core registers |
 | `check.mjs` | The gates CI runs, in one command: `npm run check` (add `-- --types` for the hooks module's type check) |
 | `test-core.mjs`, `test-engine.mjs` | The core's own tests, and the writing engine's own suite, in `core/` |

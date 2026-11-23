@@ -195,6 +195,29 @@ export function authorCheck(tool: string, input: any): { decision: 'ask' | 'deny
   return null
 }
 
+// ---- Paper2MCP servers ----
+
+export const PAPER_MCP_TOOL = `${PLUGIN_PREFIX}paper_mcp`
+export const PAPER_MCP_HEADLESS_HINT = ' Nobody is available to confirm in a non-interactive session, so the call is refused: register the server from an interactive session.'
+
+/** What the person is shown before paper_mcp writes a server into the project's .mcp.json: the program that will run, where, and which variables it can read. */
+export function paperMcpReason(input: any): string {
+  const name = String(input?.serverName ?? '').slice(0, 64) || '(no name)'
+  const cmd = [input?.command, ...(Array.isArray(input?.args) ? input.args : [])].map(v => String(v ?? '')).filter(Boolean).join(' ').slice(0, 400)
+  const env = Array.isArray(input?.envNames) && input.envNames.length ? ` It can read these variables from your shell: ${input.envNames.map((n: unknown) => String(n)).join(', ').slice(0, 200)}.` : ' It is given no secret variables.'
+  const what = input?.action === 'approve'
+    ? `Approve the Paper2MCP server "${name}" that is already in this project's .dsh/paper-mcps.json and write it into .mcp.json.`
+    : `Register the Paper2MCP server "${name}" in this project's .mcp.json: ${cmd || '(no command)'}${input?.cwd ? ` in ${String(input.cwd).slice(0, 200)}` : ''}.`
+  return `${what}${env} Claude Code will ask again before it starts the server. Confirm only if you asked for this and recognise the program.`
+}
+
+/** register and approve write something that runs a program the next time the project loads, so they ask. status and unregister do not. */
+export function paperMcpCheck(tool: string, input: any): { decision: 'ask'; reason: string } | null {
+  if (tool !== PAPER_MCP_TOOL) return null
+  if (input?.action !== 'register' && input?.action !== 'approve') return null
+  return { decision: 'ask', reason: paperMcpReason(input) }
+}
+
 // ---- paid compute ----
 
 export const COMPUTE_TOOLS = ['modal_run', 'runpod_run', 'vastai_run'] as const

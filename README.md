@@ -1,16 +1,16 @@
 # cc-mod-academic-harness
 
-A Claude Code plugin for academic research and writing. It adds literature search across the scholarly APIs, citation and integrity checks, deep research and deep review that run as background jobs, a PaperMemory library, 54 research skills and 21 specialist agents, hypothesis tournaments, study-design and reproducibility ledgers, and a guard for writing papers in LaTeX projects (`ah.yaml`).
+A Claude Code plugin for academic research and writing. It adds literature search across the scholarly APIs, web search and page reading through whichever provider you have a key for (with fallbacks, so a missing key is never a dead end), citation and integrity checks, deep research and deep review that run as background jobs, a PaperMemory library, 59 research skills and 21 specialist agents, hypothesis tournaments, study-design and reproducibility ledgers, a guard for writing papers in LaTeX projects (`ah.yaml`), and a local loop that learns lessons from your corrections.
 
 It is a Claude Code *mod*: next to its MCP tools, skills and agents it runs code inside Claude Code, which is what gives it slash commands, a status line, a pane and the guard ([what that means](docs/maintain/next-steps.md#plugin-or-mod-both-and-it-works)).
 
-**Version 0.6.1.** Linux only. MIT licence.
+**Version 0.7.0.** Linux only. MIT licence.
 
 ## How it fits together
 
-![How the plugin is built: the hooks module, the ah and papermemory MCP servers, the bundled core (the tools, skills and writing engine)](docs/assets/architecture.svg)
+![How the plugin is built: the hooks module, the ah and papermemory MCP servers, skills and agents, the bundled core, the writing engine, the lesson store, and what the server reaches outside the plugin](docs/assets/architecture.svg)
 
-Blue is code that runs inside Claude Code's hooks, green the MCP servers and background jobs, purple the writing engine, orange stored data, yellow skills and agents, and grey what is outside the plugin. The diagram is `docs/assets/architecture.mmd`, rendered with [Pele](https://github.com/obsidianmd/pele) (`node scripts/render.mjs --static-colors architecture.mmd architecture.svg` in the pele skill). [Architecture](docs/design/architecture.md) explains each part.
+Blue is code that runs inside Claude Code's hooks, green the MCP servers and background jobs, purple the writing engine, orange stored data (the bundled core, the PaperMemory library and the lessons the self-improvement loop has learned), yellow skills and agents, and grey what is outside the plugin: the model route, the search and fetch APIs, the project's `.mcp.json` and the `zg` index. The diagram is `docs/assets/architecture.mmd`, rendered with [Pele](https://github.com/obsidianmd/pele) (`node core/skills/pele/scripts/render.mjs --static-colors docs/assets/architecture.mmd docs/assets/architecture.svg`). [Architecture](docs/design/architecture.md) explains each part.
 
 ## Requirements
 
@@ -18,7 +18,7 @@ Blue is code that runs inside Claude Code's hooks, green the MCP servers and bac
 |---|---|
 | **OS** | Linux. The writing engine is Linux-only |
 | **Node.js** | 22 or newer, with `npm` and `tar` |
-| **Claude Code** | 2.1.325 or newer, the oldest version the mod was seen working on; `/academic doctor` reports the running version and whether the hooks module loaded |
+| **Claude Code** | 2.1.331 or newer, the oldest version this release was tested on; `/academic doctor` reports the running version and whether the hooks module loaded |
 | **Python** | 3.11 or newer for the writing engine. `uv` is used when present, otherwise `python -m venv` and pip |
 | **Login** | a working `claude` login for the tools that call a model. They need no API key |
 
@@ -54,24 +54,31 @@ research mode on · 1 job running · gate FAIL (5 blocking)
 | | |
 |---|---|
 | **Research mode** | A research section in the system prompt, on automatically in a folder with an `ah.yaml` (`/academic on\|off\|auto`) |
-| **Tools** | 126 tools in 16 areas: search, papers, notebook, the writing engine, reviews, tournaments, analysis, provenance, study design, datasets, submission, deep research and review, paid compute |
-| **Skills and agents** | 54 core skills, about 700 more on demand, 21 specialists such as `academic-harness:peer-reviewer` |
+| **Tools** | 129 tools in 16 areas (up to 139 when search-provider keys are set): search, papers, notebook, the writing engine, reviews, tournaments, analysis, provenance, study design, datasets, submission, deep research and review, paid compute |
+| **Web search and page reading** | Eight providers (Brave, Tavily, Exa, Perplexity, Parallel, Consensus, Elicit, Firecrawl) each serve themselves once their key is set, with one job each. `web_search` picks the best one that is on, falls back when one fails, and can cross-check a claim with two independent indexes; `web_extract` reads pages with Firecrawl, then Parallel, then Jina. With no key at all, Claude uses `WebSearch`, `WebFetch` and any connector you have ([keys](docs/guide/keys.md)) |
+| **Self-improvement loop** | Off unless you turn it on (the `rsi_mode` setting or `AH_RSI`). When on, in a folder with an `ah.yaml` and with a person at the prompt (never in a headless run), it learns short lessons from your corrections and tool results: `observe` only records, `auto` also adds the lessons that fit to your prompts. `ah_rsi` shows and forgets them and the doctor shows the mode |
+| **Paper2MCP** | `paper_mcp` registers a generated server in the project's `.mcp.json` after you confirm; Claude Code asks again before it starts it |
+| **Skills and agents** | 59 core skills, about 700 more on demand, 21 specialists such as `academic-harness:peer-reviewer` |
 | **Commands** | `/ah-research`, `/ah-review`, `/ah-papers`, `/ah-references`, `/ah-write`, `/ah-analyze`, `/ah-hypotheses`, `/ah-watch`, `/fold`, `/academic`, `/model-router` |
 | **Model router** | Off until you turn it on (`/model-router on`): planning goes to Opus, coding to Sonnet, academic writing to Haiku, everything else to Sonnet, decided by Jev (TypeSafe) or keyword rules ([the model router](docs/guide/model-router.md)) |
 | **Interface** | A status line (`research mode on · 1 job running · gate FAIL (5 blocking)`) and a pane (project state, jobs, notebook, library) |
 | **Guard** | In a folder with an `ah.yaml`: protected files, unit anchors and author-only acts enforced on every write and shell call |
-| **Safety** | Paid compute always asks. Keys are never printed. Tools stay inside the project folder |
+| **Safety** | Paid compute and `paper_mcp` registration always ask (and are refused where nobody can answer). Keys are never printed. Tools stay inside the project folder. Text from the web and from papers is fenced as untrusted |
+
+## Optional: search provider keys
+
+Nothing needs a key to start. To add a provider, save its key (`brave_api_key`, `tavily_api_key`, `exa_api_key`, `perplexity_api_key`, `parallel_api_key`, `consensus_api_key`, `elicit_api_key`, `firecrawl_api_key`) with `claude plugin configure academic-harness@academic-harness-mod` and restart Claude Code. `/academic doctor` lists which providers are on. [Keys and credentials](docs/guide/keys.md) has the details and [tools, skills and agents](docs/guide/tools-skills-agents.md#search-providers-and-the-web-tools) says how the choice is made.
 
 ## Optional: semantic workspace search
 
-The plugin does not bundle or serve zvec-grep. If you want meaning-based search over the workspace, with exact and regex search through the same interface, install it and run its own Claude Code integration:
+The plugin does not bundle zvec-grep. Its `zvec_index` tool builds the index with the `zg` you install (and asks before it indexes), but the search itself is zvec-grep's. If you want meaning-based search over the workspace, with exact and regex search through the same interface, install it and run its own Claude Code integration:
 
 ```
 npm install -g @zvec/zvec-grep --allow-scripts=@zvec/zvec-grep
 zg install --target claude --yes --mcp-toolset full
 ```
 
-That adds the `mcp__zvec_grep__*` tools to Claude Code: `zvec_grep_search` for semantic or cross-file discovery, `zvec_grep_rg` for exact and regex search, and the index and status tools. It also pre-approves them and writes retrieval guidance to `~/.claude/CLAUDE.md`. Indexing is per workspace and opt-in: `zvec_grep_index` creates `<project>/.zvec-grep/`, the default embedding runs locally, and the shared daemon listens on loopback only. Research mode uses these tools when they are present and falls back to `Grep` and `Glob` otherwise; [what was left out and why](docs/design/fit-review.md) explains why the plugin serves none of them itself.
+That adds the `mcp__zvec_grep__*` tools to Claude Code: `zvec_grep_search` for semantic or cross-file discovery, `zvec_grep_rg` for exact and regex search, and the index and status tools. It also pre-approves them and writes retrieval guidance to `~/.claude/CLAUDE.md`. Indexing is per workspace and opt-in: `zvec_grep_index` creates `<project>/.zvec-grep/`, the default embedding runs locally, and the shared daemon listens on loopback only. Research mode uses these tools when they are present and falls back to `Grep` and `Glob` otherwise; [what was left out and why](docs/design/fit-review.md) explains why the plugin does not serve the search itself.
 
 ## Documentation
 
@@ -79,7 +86,7 @@ Every folder has its own index; start from [the documentation index](docs/README
 
 | For | Start at |
 |---|---|
-| **Using it** | [User guide](docs/guide/README.md): [getting started](docs/guide/getting-started.md), [commands](docs/guide/commands.md), [tools, skills and agents](docs/guide/tools-skills-agents.md), [settings](docs/guide/settings.md), [keys and credentials](docs/guide/keys.md), [state and privacy](docs/guide/state-and-privacy.md), [troubleshooting](docs/guide/troubleshooting.md) |
+| **Using it** | [User guide](docs/guide/README.md): [getting started](docs/guide/getting-started.md), [commands](docs/guide/commands.md), [tools, skills and agents](docs/guide/tools-skills-agents.md), [settings](docs/guide/settings.md), [keys and credentials](docs/guide/keys.md), [state and privacy](docs/guide/state-and-privacy.md), [running headless](docs/guide/headless.md), [troubleshooting](docs/guide/troubleshooting.md) |
 | **Understanding it** | [Design](docs/design/README.md): [architecture](docs/design/architecture.md), [decisions](docs/design/decisions.md), [what was left out and why](docs/design/fit-review.md) |
 | **Changing it** | [Maintenance](docs/maintain/README.md): [building](docs/maintain/building.md), [testing](docs/maintain/testing.md), [releasing](docs/maintain/releasing.md), [what to do next](docs/maintain/next-steps.md) |
 | **How it was built** | [History](docs/history/README.md), and the [changelog](CHANGELOG.md) |
@@ -102,6 +109,14 @@ The ground rules, the test map and the release checklist are in [Maintaining the
 | [`types/`](types/README.md) | The `$.state` contract of the hooks module | |
 | `core/` | The research engine, tool code, writing engine and about 790 skills the plugin runs, with the licences they carry ([`core/NOTICE`](core/NOTICE)) | Committed, so the repository stands alone; `setup` installs what is built from it |
 | `.claude-plugin/` | The manifest and the marketplace file | `plugin.json` is partly generated |
+
+## What it runs, sends and fetches
+
+- **Runs on your machine.** Two MCP servers (`ah`, `papermemory`, Node) that Claude Code starts; a hooks module inside Claude Code that starts small Node helpers (`server/bin/`) for the guard, the approvals and the pane. The first start copies `core/` to `~/.local/share/cc-mod-academic-harness/home` and installs its dependencies there (`npm ci`, and a Python environment for the writing engine with `uv` or `pip`). On request only: LaTeX, the `zg` index, and the Modal, Runpod and Vast.ai tools, which ask first. Tools that call a model run a headless `claude -p` under your own login, capped by `llm_budget_usd`.
+- **Sends.** Only to the hosts declared in `plugin.json` (`network.hosts`): public scholarly and registry APIs for the queries you make, and a search, fetch or model service (a search or fetch provider, the model router's Jev, a reranker, embeddings, image generation) only when you have saved its key. A tool sends what it needs (a query, a DOI, a URL); files go only to rented compute you approved. No telemetry. [State and privacy](docs/guide/state-and-privacy.md) lists what is read, written and kept.
+- **Fetches.** The papers, pages and datasets you ask for, and the npm and Python packages at the first start.
+- **Credentials.** Plugin options marked sensitive, or the provider's environment variable (`GITHUB_TOKEN` for `repo_audit`, for example); never printed, never committed.
+- **Asks before it acts**: paid compute, author-only acts and registering a Paper2MCP server; where nobody can answer (`claude -p`) those are refused. [Running headless](docs/guide/headless.md) says how to run a folder you did not write.
 
 ## Security
 

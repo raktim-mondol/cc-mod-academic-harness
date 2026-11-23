@@ -31,9 +31,9 @@ export const RULES = [
   },
   {
     target: 'guide:literature-and-the-web',
-    why: 'the agent-browser skill is not shipped; say what to use',
+    why: 'name the shipped agent-browser skill and the other browsers Claude Code can have',
     find: /When a task needs a real rendered browser rather than a text fetch[\s\S]*?report that limitation instead of guessing\./,
-    to: 'When a task needs a real rendered browser rather than a text fetch (logging in, filling a form, clicking through to a dataset download, checking that a page renders), use a browser tool this session has: Claude Code\'s built-in browser or Claude in Chrome, or the `agent-browser` CLI if it is installed. For a chart or a layout, `Read` the screenshot file. If none of these is available, say so instead of guessing.',
+    to: 'When a task needs a real rendered browser rather than a text fetch (logging in, filling a form, clicking through to a dataset download, checking that a page renders), load the skill `academic-harness:agent-browser` (the `agent-browser` CLI), or use a browser tool this session has: Claude Code\'s built-in browser or Claude in Chrome. For a chart or a layout, `Read` the screenshot file. If none of these is available, say so instead of guessing.',
   },
   {
     target: 'agent:literature-researcher',
@@ -96,15 +96,15 @@ export const RULES = [
   },
   {
     target: 'guide:reading-papers',
-    why: 'the agent-browser skill is not shipped',
+    why: 'the agent-browser skill is shipped as academic-harness:agent-browser',
     find: /open it with `agent-browser` only if the user asks/,
-    to: 'open it in a browser tool only if the user asks',
+    to: 'open it with the `academic-harness:agent-browser` skill only if the user asks',
   },
   {
     target: 'guide:identity-and-audits',
-    why: 'the agent-browser skill is not shipped',
+    why: 'the agent-browser skill is shipped as academic-harness:agent-browser',
     find: /open the forum with `agent-browser`/,
-    to: 'open the forum in a browser tool',
+    to: 'open the forum with the `academic-harness:agent-browser` skill',
   },
   {
     target: 'skill:co-scientist-tournament/references/briefs.md',
@@ -112,11 +112,70 @@ export const RULES = [
     find: /`consensus_search` \/ `s2_search` for claim support/,
     to: '`literature_search` / `s2_search` for claim support',
   },
+  // ---- the skills that came back (agent-browser, modal, runpod, vastai, using-science-superpowers) ----
   {
-    target: 'agent:paper-agent-builder',
-    why: 'paper_mcp is not served: Claude Code adds MCP servers itself, with its own approval',
-    find: /Connect a generated server with `paper_mcp` only when asked\./,
-    to: 'Do not connect a generated server yourself; tell the user how (`claude mcp add`, or an entry in `.mcp.json`) when they ask.',
+    target: 'skill:agent-browser/SKILL.md',
+    why: 'DSH\'s web tool names, and its image reader',
+    find: /`web_search`\/`web_fetch` and `mcp__firecrawl__\*` cover plain pages and search/,
+    to: '`web_search` and `web_extract` (or `WebSearch` and `WebFetch`) and a Firecrawl connector cover plain pages and search',
+  },
+  { target: 'skill:agent-browser/SKILL.md', why: 'DSH\'s web tool names', find: /when web_search\/web_fetch can't reach/g, to: 'when web_search and web_extract (or WebSearch and WebFetch) cannot reach', optional: true },
+  { target: 'skill:agent-browser/SKILL.md', why: 'Claude Code reads an image with Read (the description)', find: /Inspect screenshots with read_image on an image-capable model/, to: 'Inspect screenshots with Read on an image-capable model' },
+  { target: 'skill:agent-browser/SKILL.md', why: 'Claude Code reads an image with Read', find: /with `read_image` on an image-capable session model\. The host checks whether the active route supports images\./, to: 'with `Read` on the image file; the session model must accept images.' },
+  {
+    target: 'skill:modal/SKILL.md',
+    why: 'the other host\'s SDK install path (`dsh plugin ... add modal`, a profile, pnpm build policy)',
+    find: /- `modal_run` loads the `modal` npm SDK from the profile when present\.[\s\S]*?- A failed managed install surfaces as/,
+    to: '- `modal_run` fetches its SDK into the plugin\'s home on first use and loads it at once; there is nothing to add to a profile and no restart.\n- `ACADEMIC_HARNESS_MODAL_SKIP_INSTALL=1` disables that managed install; then install the `modal` npm SDK yourself.\n- A failed managed install surfaces as',
+  },
+  { target: 'skill:modal/SKILL.md', why: 'the other host\'s tool names', find: /via the `bash` tool and/g, to: 'through Bash and', optional: true },
+  { target: 'skill:runpod/SKILL.md', why: 'the other host\'s tool names', find: /via the `bash` tool and/g, to: 'through Bash and', optional: true },
+  { target: 'skill:vastai/SKILL.md', why: 'the other host\'s tool names', find: /via the `bash` tool and/g, to: 'through Bash and', optional: true },
+  { target: 'skill:runpod/SKILL.md', why: 'the other host\'s tool names', find: /`runpodctl` via `bash`/g, to: '`runpodctl` through Bash', optional: true },
+  { target: 'skill:vastai/SKILL.md', why: 'the other host\'s tool names', find: /`vastai` CLI via `bash`/g, to: '`vastai` CLI through Bash', optional: true },
+  {
+    target: 'skill:using-science-superpowers/SKILL.md',
+    why: 'the description told the model to load a skill before every response; it should load the one that fits the task, when there is one',
+    find: /^description: .*$/m,
+    to: 'description: "Use when a research task begins (an analysis, a paper, a review, a literature search, a result that looks wrong) to find the skill that fits it and load it before acting. Not for greetings, one-line factual questions or edits the person fully specified."',
+  },
+  {
+    target: 'skill:using-science-superpowers/SKILL.md',
+    why: 'the absolute rule (a skill before ANY response, even at 1%) replaced by a need-based one',
+    find: /<EXTREMELY-IMPORTANT>[\s\S]*?<\/EXTREMELY-IMPORTANT>/,
+    to: 'When a task matches a skill\'s description, load that skill with the `Skill` tool before you act on the task, without waiting to be asked: the person will not name skills. If nothing matches, or the message is a greeting, a one-line factual question or a small edit that is fully specified, answer it directly. Do not load a skill "to be safe".',
+  },
+  {
+    target: 'skill:using-science-superpowers/SKILL.md',
+    why: 'the rule restated without "any response" and "1%"',
+    find: /\*\*Invoke relevant or requested skills BEFORE any response or action\.\*\* Even a 1% chance a skill might apply means that you should invoke the skill to check\. If an invoked skill turns out to be wrong for the situation, you don't need to use it\./,
+    to: '**Load the skill that fits the task before you act on it.** Decide from the skill descriptions you can see; if one clearly covers what you are about to do, load it. If a loaded skill turns out to be wrong for the situation, drop it.',
+  },
+  {
+    target: 'skill:using-science-superpowers/SKILL.md',
+    why: 'the diagram edge "yes, even 1%"',
+    find: /\[label="yes, even 1%"\]/g,
+    to: '[label="yes, it matches"]',
+  },
+  {
+    target: 'skill:using-science-superpowers/SKILL.md',
+    why: 'the red-flag table argued for a skill on every thought; keep the research ones that matter',
+    find: /## Red Flags[\s\S]*?(?=## Skill Priority)/,
+    to: `## Red Flags
+
+These thoughts, on a research task a skill covers, mean stop and load it:
+
+| Thought | Reality |
+|---------|---------|
+| "This is just a quick data peek" | A peek can poison a confirmatory analysis. Load the skill that says when looking is safe. |
+| "I'll frame the question after I explore" | Framing comes before exploration. |
+| "Let me just run the analysis" | The skill says how to run it honestly. |
+| "The skill is overkill" | Simple analyses become p-hacked papers. |
+| "I remember this skill" | Skills evolve. Read the current version. |
+
+A greeting, a one-line factual answer or a fully specified small edit is not a research task: no skill is needed.
+
+`,
   },
   // ---- the other host's name, and what it did that the plugin does now ----
   { target: '*', why: 'names the other host', find: /Academic Harness on DeepSeek Harness\. Native `ah_\*` tools\. Pi is not required\./g, to: 'Native `ah_*` tools.', optional: true },

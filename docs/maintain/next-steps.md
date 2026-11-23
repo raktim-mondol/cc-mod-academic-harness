@@ -13,9 +13,9 @@ In Claude Code a **plugin** is the package: a folder with `.claude-plugin/plugin
 | Skills and agents | Instructions and specialists | `skills/`, `agents/` |
 | The manifest | Settings, the servers, the version | `.claude-plugin/plugin.json` |
 
-So there is nothing to choose between: loading the plugin loads the mod. It has been seen working, in Claude Code 2.1.325, from `--plugin-dir`: the commands answer, the status line and the pane draw (also in a real terminal under tmux), the guard refuses protected writes, and the servers connect with their tools. See [How Claude Code mods work](../design/how-claude-code-mods-work.md).
+So there is nothing to choose between: loading the plugin loads the mod. It has been seen working, in Claude Code 2.1.331 (0.7.0; earlier releases on 2.1.325), from `--plugin-dir` and from a marketplace install in a scratch configuration (`tests/live/install.mjs`): the commands answer, the status line and the pane draw (also in a real terminal under tmux), the guard refuses protected writes, and the servers connect with their tools. See [How Claude Code mods work](../design/how-claude-code-mods-work.md).
 
-**Not yet seen:** the mod part of a copy *installed from the marketplace* (step 4 below), and any Claude Code version other than 2.1.325 (`/academic doctor` says which version is running and whether the mod was seen on it; after running the live scripts on another, add it to `TESTED_VERSIONS` in `server/src/compat.mjs`, see [Testing](testing.md)). The servers, skills and agents are ordinary plugin parts; the hooks module needs a Claude Code that has the mod platform.
+**Not yet seen:** any Claude Code version other than 2.1.331 (`/academic doctor` says which version is running and whether the mod was seen on it; after running the live scripts on another, add it to `TESTED_VERSIONS` in `server/src/compat.mjs`, see [Testing](testing.md)). The servers, skills and agents are ordinary plugin parts; the hooks module needs a Claude Code that has the mod platform.
 
 ## Before you start
 
@@ -31,13 +31,14 @@ You need a working `claude` login, `tmux` for the `-tui` scripts, and the networ
 
 | # | Run | You should see | Cost |
 |---|---|---|---|
-| 1 | `node tests/live/p1.mjs` | `init`: 21 agents, 55 skills, `/academic`, 126 tools; `mode`: no research section outside a project, one inside; `skill`; `papermemory` | cents |
-| 2 | `node tests/live/p5.mjs papers errors status fold` then `node tests/live/fit.mjs` | The commands answer with no model turn; the catalogue is 55 skills and 21 agents; `search_route` uses `literature_search`, not `WebSearch` | cents |
+| 1 | `node tests/live/p1.mjs` | `init`: 21 agents, 60 skills, `/academic`, 129 tools; `mode`: no research section outside a project, one inside; `skill`; `papermemory` | cents |
+| 2 | `node tests/live/p5.mjs papers errors status fold` then `node tests/live/fit.mjs` | The commands answer with no model turn; the catalogue is 60 skills and 21 agents; `search_route` uses `literature_search`, not `WebSearch` | cents |
 | 3 | `node tests/live/p3.mjs` | 15 scenarios `ok`: each way past the guard is refused | about 30 cents |
-| 4 | `node tests/live/install.mjs first_start`, then `install.mjs marketplace` | The server answers with the `doctor` tool alone, copies the core and installs its dependencies, then lists 126 tools; the installed copy sets itself up and its next session has every tool and `/ah-papers` works. **This is the step that shows the mod works from a marketplace install** | cents, network |
+| 4 | `node tests/live/install.mjs first_start`, then `install.mjs marketplace` | The server answers with the `doctor` tool alone, copies the core and installs its dependencies, then lists 129 tools; the installed copy sets itself up and its next session has every tool and `/ah-papers` works. **This is the step that shows the mod works from a marketplace install** | cents, network |
 | 5 | `node tests/live/p6.mjs` | `doctor`, `fresh` (a clone set up from a copy of this repository, with nothing else) | cents, network |
 | 6 | `node tests/live/p5-tui.mjs`, `p3-tui.mjs`, `p4-tui.mjs` | The status line, the pane at three widths, a job from start to notice, the permission dialogs | about 20 cents |
 | 7 | `node tests/live/p4.mjs`, `p2.mjs`, `p2-config.mjs` | The model route, deep research and review, a saved key reaching an installed copy | cents |
+| 8 | `node tests/live/papermcp.mjs` | `refused` (under `-p`, nothing written), `no`, `yes` (the confirmation shows the program and the variable, and Yes writes `.mcp.json` with no secret), `gated` (Claude Code's own new-server prompt), `approved` (the server runs in its folder with the variable), `unregister`. Needs tmux | cents |
 
 A script prints `name: ok: ...` or `name: FAIL ...` per scenario, with the screen for the terminal ones. If something fails, read `/academic doctor` first, then `claude --debug`, then `<project>/.ah/claude-hooks.jsonl` for the guard; the script's own output usually names the cause. Fix it, or keep the output and bring it back.
 

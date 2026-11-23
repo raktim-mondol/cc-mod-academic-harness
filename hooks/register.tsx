@@ -6,6 +6,8 @@ import { startNotices } from './notices'
 import { doctorText, usageText } from './doctor'
 import { addSection, run, showStatus } from './mode'
 import { recordSeen } from './seen'
+import { registerRsi } from './rsi'
+import { setRsiInteractive } from './rsi-core'
 import { registerRouter, registerRouterCommand, startRouter } from './router'
 import { registerTaskCommands, registerTasks } from './tasks'
 import { openPane, registerUi, startUi } from './ui'
@@ -16,6 +18,7 @@ import { count, registerUsage } from './usage'
 // One session.start hook only: the engine refuses two with no matcher, so everything that must happen at start is called from it.
 export const register: Register = (on, options) => {
   on('session.start', async ($, e, next) => {
+    setRsiInteractive(e.isInteractive === true) // first, so nothing below can leave it unset: the loop never runs in a headless session
     await startRouter($, options)
     await showStatus($, options)
     await recordSeen($)
@@ -46,6 +49,7 @@ export const register: Register = (on, options) => {
   registerUi(on)
   registerGuard(on, options)
   registerApprovals(on, options)
+  registerRsi(on, options)
 
   on('prompt.compose', async ($, e, next) => {
     const composed = await next(e)

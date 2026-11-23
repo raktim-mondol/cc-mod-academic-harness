@@ -14,6 +14,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { DROPPED_KEY_FIELDS, DROPPED_TOOLS, EXTRA_KEY_FIELDS, NOT_OFFERED_KEY_FIELDS } from '../server/src/fit.mjs'
+import { NETWORK_HOSTS } from '../server/src/hosts.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const manifestPath = join(root, '.claude-plugin', 'plugin.json')
@@ -94,6 +95,7 @@ export async function build(manifest) {
   delete userConfig.llm_budget_usd
   delete userConfig.job_notices
   delete userConfig.usage_counts
+  delete userConfig.rsi_mode
   for (const name of Object.keys(ROUTER_OPTIONS)) delete userConfig[name]
   userConfig.tool_areas = {
     type: 'string',
@@ -140,9 +142,16 @@ export async function build(manifest) {
     default: 'on',
     options: ['on', 'off'],
   }
+  userConfig.rsi_mode = {
+    type: 'string',
+    title: 'Self-improvement loop',
+    description: 'Off unless you turn it on. In a folder with an ah.yaml, in a session with a person at the prompt (never a headless run), a local loop learns short lessons from your corrections and from what tools returned. observe: it records and adds nothing to your prompts. auto: it also adds the lessons that fit the task to your prompts (ah_rsi shows and forgets them). The AH_RSI environment variable wins when set.',
+    default: 'off',
+    options: ['off', 'observe', 'auto'],
+  }
   // The model router's settings are read by the hooks module (hooks/router-core.ts), not the server, so they carry no AH_ variable.
   Object.assign(userConfig, ROUTER_OPTIONS)
-  const env = { AH_TOOL_AREAS: '${user_config.tool_areas}', AH_RESTORE_TOOLS_SETTING: '${user_config.restore_tools}', AH_LLM_MODEL: '${user_config.llm_model}', AH_LLM_BUDGET_USD: '${user_config.llm_budget_usd}', AH_USAGE_SETTING: '${user_config.usage_counts}' }
+  const env = { AH_TOOL_AREAS: '${user_config.tool_areas}', AH_RESTORE_TOOLS_SETTING: '${user_config.restore_tools}', AH_LLM_MODEL: '${user_config.llm_model}', AH_LLM_BUDGET_USD: '${user_config.llm_budget_usd}', AH_USAGE_SETTING: '${user_config.usage_counts}', AH_RSI_SETTING: '${user_config.rsi_mode}' }
   for (const { name, secret } of fields) {
     const key = name.toLowerCase()
     userConfig[key] = {
@@ -157,6 +166,8 @@ export async function build(manifest) {
   return {
     ...manifest,
     userConfig,
+    // The hosts the plugin reaches, for everything it ships (server/src/hosts.mjs): the author's word, shown to whoever installs it and read by the directory.
+    network: { hosts: NETWORK_HOSTS },
     mcpServers: {
       ...manifest.mcpServers,
       ah: { command: 'node', args: ['${CLAUDE_PLUGIN_ROOT}/server/bin/ah-mcp.mjs'], env },

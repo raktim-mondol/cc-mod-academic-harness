@@ -6,7 +6,7 @@ import { formatReport, KNOWN_COMMANDS, readUsage, usageDir, usageEnabled } from 
 import { modHome } from './paths.mjs'
 
 /** `served` returns the names of the tools this server offers, `flush` writes the counts not yet written, so a report includes this server's own. */
-export function doctorTool({ env = process.env, loaded = [], failed = [], served = () => undefined, flush = () => {} } = {}) {
+export function doctorTool({ env = process.env, loaded = [], failed = [], served = () => undefined, flush = () => {}, cwd = () => process.cwd() } = {}) {
   return {
     name: 'doctor',
     description: 'Check what is ready in the academic-harness plugin: the core (source), tool dependencies, the writing engine, PaperMemory, TextFold, the Python helpers, LaTeX, the Claude Code CLI the model route uses, which keys are set (names only), and which tool modules this server loaded or failed to load. Use it when a tool says something is not installed or not ready, or before a long run.',
@@ -20,7 +20,7 @@ export function doctorTool({ env = process.env, loaded = [], failed = [], served
         if (!usageEnabled(env)) return 'Usage counting is off (the usage_counts setting, or AH_USAGE=0), so nothing new is counted. Counts kept earlier, if any:\n\n' + formatReport(readUsage(usageDir(modHome(env))), knownNames(served()), { all: all === true })
         return formatReport(readUsage(usageDir(modHome(env))), knownNames(served()), { all: all === true })
       }
-      const report = await diagnose({ env, served: served() })
+      const report = await diagnose({ env, served: served(), cwd: cwd() })
       const byArea = {}
       for (const m of loaded) byArea[m.area] = (byArea[m.area] ?? 0) + m.tools
       const areas = Object.entries(byArea).map(([a, n]) => `${a} ${n}`).join(', ')

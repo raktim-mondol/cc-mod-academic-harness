@@ -42,6 +42,10 @@ const HOST_WORDING = [
   [/built-in web_fetch or Parallel\/Firecrawl fail/g, 'WebFetch fails'],
   [/\s*Call `scientific_result` separately when a run produced a finding\./g, ''],
   [/open the forum URL with the agent-browser skill/g, 'open the forum URL in a browser tool'],
+  // names of the other host's tools that a description or a result still carries
+  [/\bask_user_question\b/g, 'AskUserQuestion'],
+  [/mcp__firecrawl__firecrawl_scrape/g, 'a Firecrawl scrape tool'],
+  [/mcp__firecrawl__\*/g, 'a Firecrawl connector'],
   [/\brestart dsh\b/gi, 'restart Claude Code'],
   [/\bthis dsh process\b/g, 'this session'],
 ]

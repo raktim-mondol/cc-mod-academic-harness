@@ -29,7 +29,7 @@ body:
     attributes:
       label: Version
       description: The mod's version, then the Claude Code and Node.js versions.
-      placeholder: "0.4.0 · Claude Code 2.1.325 · Node 22.18"
+      placeholder: "0.7.0 · Claude Code 2.1.331 · Node 22.18"
     validations:
       required: true
   - type: dropdown
